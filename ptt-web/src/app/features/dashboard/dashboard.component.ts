@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '@core/services/state.service';
@@ -10,11 +10,12 @@ import { ModalService } from '@core/services/modal.service';
 import { AddStaffModalComponent } from './modals/add-staff-modal.component';
 import { RegisterCompanyModalComponent } from './modals/register-company-modal.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
+import { TabGroupComponent } from '@shared/components/tab-group/tab-group.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, TabGroupComponent],
   templateUrl: './dashboard.component.html'
 })
 export class DashboardComponent implements OnInit {
@@ -24,6 +25,16 @@ export class DashboardComponent implements OnInit {
 
   // Tab active
   public activeTab = signal<'overview' | 'staffs' | 'settings'>('overview');
+  public tabOptions = computed(() => {
+    const options = [
+      { value: 'overview', label: 'Tổng quan', icon: 'pos' }
+    ];
+    if (this.stateService.hasPermission('staffs.view')) {
+      options.push({ value: 'staffs', label: 'Nhân sự', icon: 'staffs' });
+    }
+    options.push({ value: 'settings', label: 'Cấu hình', icon: 'settings' });
+    return options;
+  });
 
   // Dữ liệu quản lý nhân viên
   public staffsList = signal<any[]>([]);

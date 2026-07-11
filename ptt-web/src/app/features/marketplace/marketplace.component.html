@@ -254,8 +254,10 @@
                   <td class="p-3.5 pr-4 text-right">
                     @if (trade.tx_hash === 'MATCHED_PENDING_SETTLEMENT') {
                       <button
+                        app-button
+                        variant="primary"
+                        size="sm"
                         (click)="handleSettleTrade(trade)"
-                        class="px-3 py-1.5 rounded-lg text-sm font-black bg-primary text-white hover:bg-primary-hover shadow-sm select-none transition-colors"
                       >
                         SETTLE ON-CHAIN
                       </button>

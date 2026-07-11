@@ -5,12 +5,13 @@ import { StateService } from '@core/services/state.service';
 import { ApiService } from '@core/services/api.service';
 import { IconComponent } from '@shared/components/icon/icon.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
+import { TabGroupComponent } from '@shared/components/tab-group/tab-group.component';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-kyc',
   standalone: true,
-  imports: [CommonModule, FormsModule, IconComponent, ButtonComponent],
+  imports: [CommonModule, FormsModule, IconComponent, ButtonComponent, TabGroupComponent],
   templateUrl: './kyc.component.html'
 })
 export class KycComponent implements OnInit {
@@ -19,6 +20,11 @@ export class KycComponent implements OnInit {
 
   public kycList = signal<any[]>([]);
   public activeFilter = signal<string>('PENDING');
+  public filterOptions = [
+    { value: 'PENDING', label: 'Chờ duyệt' },
+    { value: 'APPROVED', label: 'Đã duyệt' },
+    { value: 'REJECTED', label: 'Từ chối' }
+  ];
   public selectedUser = signal<any | null>(null);
   public rejectionReason = '';
 

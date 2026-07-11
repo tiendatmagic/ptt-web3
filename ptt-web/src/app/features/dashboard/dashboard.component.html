@@ -26,8 +26,10 @@
     <div class="shrink-0">
       @if (!stateService.isConnected()) {
         <button
+          app-button
+          variant="secondary"
+          size="sm"
           (click)="stateService.connectWallet()"
-          class="bg-white text-violet-700 hover:bg-violet-50 font-black text-xs h-9 px-4 rounded-xl flex items-center gap-2 shadow transition-all"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -48,8 +50,10 @@
         </div>
       } @else {
         <button
+          app-button
+          variant="secondary"
+          size="sm"
           (click)="openRegisterCompany()"
-          class="bg-white/15 hover:bg-white/25 border border-white/20 text-white font-bold text-xs h-9 px-4 rounded-xl flex items-center gap-1.5 transition-all"
         >
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -173,43 +177,13 @@
       <div
         class="lg:col-span-2 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] shadow-sm flex flex-col"
       >
-        <!-- Tabs header -->
-        <div
-          class="flex items-center gap-1 px-5 pt-4 border-b border-slate-100 dark:border-slate-800/60"
-        >
-          <button
-            (click)="setTab('overview')"
-            class="px-4 py-2.5 text-sm font-black uppercase tracking-wider border-b-2 transition-all -mb-px"
-            [class.border-violet-500]="activeTab() === 'overview'"
-            [class.text-violet-600]="activeTab() === 'overview'"
-            [class.border-transparent]="activeTab() !== 'overview'"
-            [class.text-slate-400]="activeTab() !== 'overview'"
-          >
-            Tổng quan
-          </button>
-          @if (stateService.hasPermission('staffs.view')) {
-            <button
-              (click)="setTab('staffs')"
-              class="px-4 py-2.5 text-sm font-black uppercase tracking-wider border-b-2 transition-all -mb-px"
-              [class.border-violet-500]="activeTab() === 'staffs'"
-              [class.text-violet-600]="activeTab() === 'staffs'"
-              [class.border-transparent]="activeTab() !== 'staffs'"
-              [class.text-slate-400]="activeTab() !== 'staffs'"
-            >
-              Nhân sự
-            </button>
-          }
-          <button
-            (click)="setTab('settings')"
-            class="px-4 py-2.5 text-sm font-black uppercase tracking-wider border-b-2 transition-all -mb-px"
-            [class.border-violet-500]="activeTab() === 'settings'"
-            [class.text-violet-600]="activeTab() === 'settings'"
-            [class.border-transparent]="activeTab() !== 'settings'"
-            [class.text-slate-400]="activeTab() !== 'settings'"
-          >
-            Cấu hình
-          </button>
-        </div>
+        <app-tab-group
+          [options]="tabOptions()"
+          [activeValue]="activeTab()"
+          (valueChange)="setTab($event)"
+          containerClass="px-5 pt-4 border-b border-slate-100 dark:border-slate-800/60"
+          buttonClass="font-black text-sm uppercase tracking-wider whitespace-nowrap"
+        ></app-tab-group>
 
         <!-- Tab: Overview -->
         @if (activeTab() === 'overview') {
@@ -324,8 +298,10 @@
               </h3>
               @if (stateService.hasPermission('staffs.create')) {
                 <button
+                  app-button
+                  variant="primary"
+                  size="sm"
                   (click)="openAddStaff()"
-                  class="bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold h-8 px-3.5 rounded-xl flex items-center gap-1.5 transition-colors"
                 >
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -394,8 +370,10 @@
                             staff.user_id !== stateService.currentUser().id
                           ) {
                             <button
+                              app-button
+                              variant="danger-light"
+                              size="sm"
                               (click)="handleDeactivateStaff(staff.id)"
-                              class="text-red-500 hover:text-red-700 font-bold text-sm transition-colors"
                             >
                               Vô hiệu
                             </button>
@@ -444,15 +422,17 @@
                 />
                 @if (bscApiKey()) {
                   <button
+                    app-button
+                    variant="danger-light"
                     (click)="clearBscApiKey()"
-                    class="h-11 px-4 rounded-xl border border-red-200 dark:border-red-900/40 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 font-bold text-xs transition-colors"
                   >
                     Xóa Key
                   </button>
                 }
                 <button
+                  app-button
+                  variant="primary"
                   (click)="saveBscApiKey(apiKeyInput.value)"
-                  class="h-11 px-5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-extrabold text-xs transition-all shadow-md shadow-violet-500/20"
                 >
                   Lưu Key
                 </button>
@@ -481,8 +461,10 @@
                   class="flex-1 h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 font-mono text-xs outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all"
                 />
                 <button
+                  app-button
+                  variant="primary"
                   (click)="addOwner()"
-                  class="h-11 px-5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-extrabold text-xs transition-all shadow-md shadow-violet-500/20"
+                  [disabled]="!newOwnerAddr"
                 >
                   Thêm Owner
                 </button>
@@ -533,28 +515,25 @@
                     </div>
 
                     <div class="flex items-center gap-2.5 shrink-0">
-                      <!-- Deploy Action -->
                       @if (!stateService.currentCompany()[c.key] || stateService.currentCompany()[c.key] === '—') {
                         <button
+                          app-button
+                          variant="primary"
+                          size="sm"
                           (click)="handleDeploy(c.contractKey)"
-                          [disabled]="deployLoading()[c.contractKey]"
-                          class="h-9 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-extrabold text-xs transition-colors flex items-center justify-center gap-1.5"
+                          [loading]="deployLoading()[c.contractKey]"
                         >
-                          @if (deployLoading()[c.contractKey]) {
-                            <span class="animate-spin w-3 h-3 border-2 border-white/30 border-t-white rounded-full"></span>
-                          }
                           Deploy Contract
                         </button>
                       } @else {
                         <!-- Verify Action -->
                         <button
+                          app-button
+                          variant="secondary"
+                          size="sm"
                           (click)="handleVerify(c.contractKey, stateService.currentCompany()[c.key], c.name)"
-                          [disabled]="verifyLoading()[c.contractKey]"
-                          class="h-9 px-4 rounded-xl border border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/20 font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
+                          [loading]="verifyLoading()[c.contractKey]"
                         >
-                          @if (verifyLoading()[c.contractKey]) {
-                            <span class="animate-spin w-3 h-3 border-2 border-violet-600/30 border-t-violet-600 rounded-full"></span>
-                          }
                           @if (verifyStatus()[c.contractKey] === 'verified') {
                             <span>✓ Đã Verify</span>
                           } @else if (verifyStatus()[c.contractKey] === 'submitted') {
@@ -732,8 +711,11 @@
             <!-- Nút CTA -->
             <div class="mt-auto pt-2">
               <button
+                app-button
+                variant="primary"
+                size="lg"
+                class="w-full"
                 (click)="handleRegisterCompany()"
-                class="w-full bg-violet-600 hover:bg-violet-700 active:scale-[0.98] text-white font-extrabold text-sm h-12 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-violet-500/25 transition-all"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
