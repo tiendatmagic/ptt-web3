@@ -49,31 +49,21 @@ async function main() {
   const tokenAddr = await token.getAddress();
   console.log("EquityToken deployed to:", tokenAddr);
 
-  // 3.3. Deploy Treasury with Owner set to BoardGovernance
-  console.log("Deploying Treasury...");
-  const Treasury = await ethers.getContractFactory("Treasury");
-  const treasury = await Treasury.deploy(govAddr);
-  await treasury.waitForDeployment();
-  const treasuryAddr = await treasury.getAddress();
-  console.log("Treasury deployed to:", treasuryAddr);
+  // 3.3. Treasury address is set directly to BoardGovernance address
+  const treasuryAddr = govAddr;
+  console.log("Treasury address mapped to BoardGovernance:", treasuryAddr);
 
-  // 3.4. Deploy FundingManager with Owner set to BoardGovernance
-  console.log("Deploying FundingManager...");
-  const FundingManager = await ethers.getContractFactory("FundingManager");
-  const fundingManager = await FundingManager.deploy(govAddr);
-  await fundingManager.waitForDeployment();
-  const fundingAddr = await fundingManager.getAddress();
-  console.log("FundingManager deployed to:", fundingAddr);
+  // 3.4. Deploy FinanceManager with Owner set to BoardGovernance
+  console.log("Deploying FinanceManager...");
+  const FinanceManager = await ethers.getContractFactory("FinanceManager");
+  const financeManager = await FinanceManager.deploy(govAddr);
+  await financeManager.waitForDeployment();
+  const financeAddr = await financeManager.getAddress();
+  const fundingAddr = financeAddr;
+  const distAddr = financeAddr;
+  console.log("FinanceManager deployed to:", financeAddr);
 
-  // 3.5. Deploy DistributionManager with Owner set to BoardGovernance
-  console.log("Deploying DistributionManager...");
-  const DistributionManager = await ethers.getContractFactory("DistributionManager");
-  const distributionManager = await DistributionManager.deploy(govAddr);
-  await distributionManager.waitForDeployment();
-  const distAddr = await distributionManager.getAddress();
-  console.log("DistributionManager deployed to:", distAddr);
-
-  // 3.6. Deploy Marketplace with Owner set to BoardGovernance, fee wallet set to Treasury
+  // 3.5. Deploy Marketplace with Owner set to BoardGovernance, fee wallet set to Treasury (BoardGovernance)
   console.log("Deploying Marketplace...");
   const Marketplace = await ethers.getContractFactory("Marketplace");
   const marketplace = await Marketplace.deploy(govAddr, treasuryAddr);
@@ -81,7 +71,7 @@ async function main() {
   const marketAddr = await marketplace.getAddress();
   console.log("Marketplace deployed to:", marketAddr);
 
-  // 3.7. Deploy Oracle with Owner set to BoardGovernance
+  // 3.6. Deploy Oracle with Owner set to BoardGovernance
   console.log("Deploying Oracle...");
   const Oracle = await ethers.getContractFactory("Oracle");
   const oracle = await Oracle.deploy(govAddr);
@@ -108,11 +98,9 @@ async function main() {
   console.log("====================================================");
   console.log("ALL CONTRACTS DEPLOYED & REGISTERED SUCCESSFULLY!");
   console.log("CompanyRegistry:", registryAddress);
-  console.log("Governance (Board Multisig):", govAddr);
+  console.log("Governance (Board Multisig & Treasury):", govAddr);
   console.log("EquityToken (Shares):", tokenAddr);
-  console.log("Treasury Wallet:", treasuryAddr);
-  console.log("FundingManager:", fundingAddr);
-  console.log("DistributionManager (Dividend):", distAddr);
+  console.log("FinanceManager (Funding & Dividend):", financeAddr);
   console.log("Marketplace (Trading):", marketAddr);
   console.log("Oracle (Pricing):", oracleAddr);
   console.log("====================================================");
@@ -122,9 +110,7 @@ async function main() {
   console.log(`npx hardhat verify --network bscTestnet ${registryAddress}`);
   console.log(`npx hardhat verify --network bscTestnet ${govAddr} "[\\"${initialBoard.join('\\",\\"')}\\"]" ${threshold}`);
   console.log(`npx hardhat verify --network bscTestnet ${tokenAddr} "${tokenName}" "${tokenSymbol}" ${govAddr}`);
-  console.log(`npx hardhat verify --network bscTestnet ${treasuryAddr} ${govAddr}`);
-  console.log(`npx hardhat verify --network bscTestnet ${fundingAddr} ${govAddr}`);
-  console.log(`npx hardhat verify --network bscTestnet ${distAddr} ${govAddr}`);
+  console.log(`npx hardhat verify --network bscTestnet ${financeAddr} ${govAddr}`);
   console.log(`npx hardhat verify --network bscTestnet ${marketAddr} ${govAddr} ${treasuryAddr}`);
   console.log(`npx hardhat verify --network bscTestnet ${oracleAddr} ${govAddr}`);
   console.log("====================================================");

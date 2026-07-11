@@ -501,14 +501,10 @@
 
               <div class="space-y-4">
                 @for (c of [
-                  { name: 'Company Registry (Đăng ký Doanh nghiệp)', key: 'registry_address', contractKey: 'CompanyRegistry', canVerify: false },
-                  { name: 'Board Governance (HĐQT Đa chữ ký)', key: 'governance_address', contractKey: 'BoardGovernance', canVerify: true },
+                  { name: 'Board Governance (HĐQT Đa chữ ký / Treasury)', key: 'governance_address', contractKey: 'BoardGovernance', canVerify: true },
                   { name: 'Equity Token (Cổ phần Doanh nghiệp)', key: 'token_address', contractKey: 'EquityToken', canVerify: true },
-                  { name: 'Treasury (Quỹ Doanh nghiệp)', key: 'treasury_address', contractKey: 'Treasury', canVerify: true },
-                  { name: 'Funding Manager (Gọi vốn)', key: 'funding_address', contractKey: 'FundingManager', canVerify: false },
-                  { name: 'Distribution Manager (Chia cổ tức)', key: 'distribution_address', contractKey: 'DistributionManager', canVerify: false },
-                  { name: 'Marketplace (Sàn Giao dịch Cổ phần)', key: 'marketplace_address', contractKey: 'Marketplace', canVerify: true },
-                  { name: 'Oracle (Dữ liệu giá)', key: 'oracle_address', contractKey: 'Oracle', canVerify: false }
+                  { name: 'Finance Manager (Gọi vốn & Cổ tức)', key: 'funding_address', contractKey: 'FinanceManager', canVerify: true },
+                  { name: 'Marketplace (Sàn Giao dịch Cổ phần)', key: 'marketplace_address', contractKey: 'Marketplace', canVerify: true }
                 ]; track c.key) {
                   <div class="bg-slate-50 dark:bg-slate-900/30 rounded-[15px] border border-slate-100 dark:border-slate-800/40 p-4 space-y-3">
                     <div class="flex items-center justify-between gap-4">

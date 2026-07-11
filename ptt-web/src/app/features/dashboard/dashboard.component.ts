@@ -163,6 +163,10 @@ export class DashboardComponent implements OnInit {
 
     this.saveContractsLoading.set(true);
     try {
+      // Tự động sao chép địa chỉ Board Governance sang Treasury, và Finance Manager sang Distribution Manager
+      this.editingContracts['treasury_address'] = this.editingContracts['governance_address'];
+      this.editingContracts['distribution_address'] = this.editingContracts['funding_address'];
+
       await firstValueFrom(
         this.apiService.put<any>(`companies/${comp.id}/contracts`, this.editingContracts)
       );

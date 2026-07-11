@@ -13,11 +13,9 @@ describe("PTT Dapp Suite", function () {
   
   let governance;
   let token;
-  let treasury;
-  let fundingManager;
-  let distributionManager;
+  let financeManager;
   let marketplace;
-  let oracle;
+  let buyBlock;
 
   const companyCode = "PTT";
   const companyName = "PTT Group";
@@ -37,7 +35,7 @@ describe("PTT Dapp Suite", function () {
     const initialBoard = [memberA.address, memberB.address, memberC.address];
     const threshold = 2; // 2/3 signatures
 
-    // 1. Deploy BoardGovernance (acts as Board representative and Owner of the entire system)
+    // 1. Deploy BoardGovernance (acts as Board representative and Owner/Treasury)
     const BoardGovernance = await ethers.getContractFactory("BoardGovernance");
     governance = await BoardGovernance.deploy(initialBoard, threshold);
     await governance.waitForDeployment();
@@ -49,47 +47,29 @@ describe("PTT Dapp Suite", function () {
     await token.waitForDeployment();
     const tokenAddr = await token.getAddress();
 
-    // 3. Deploy Treasury with Owner set to BoardGovernance
-    const Treasury = await ethers.getContractFactory("Treasury");
-    treasury = await Treasury.deploy(govAddr);
-    await treasury.waitForDeployment();
-    const treasuryAddr = await treasury.getAddress();
+    // 3. Deploy FinanceManager with Owner set to BoardGovernance
+    const FinanceManager = await ethers.getContractFactory("FinanceManager");
+    financeManager = await FinanceManager.deploy(govAddr);
+    await financeManager.waitForDeployment();
+    const financeAddr = await financeManager.getAddress();
 
-    // 4. Deploy FundingManager with Owner set to BoardGovernance
-    const FundingManager = await ethers.getContractFactory("FundingManager");
-    fundingManager = await FundingManager.deploy(govAddr);
-    await fundingManager.waitForDeployment();
-    const fundingAddr = await fundingManager.getAddress();
-
-    // 5. Deploy DistributionManager with Owner set to BoardGovernance
-    const DistributionManager = await ethers.getContractFactory("DistributionManager");
-    distributionManager = await DistributionManager.deploy(govAddr);
-    await distributionManager.waitForDeployment();
-    const distAddr = await distributionManager.getAddress();
-
-    // 6. Deploy Marketplace with Owner set to BoardGovernance, fee wallet set to Treasury
+    // 4. Deploy Marketplace with Owner set to BoardGovernance, fee wallet set to BoardGovernance (Treasury)
     const Marketplace = await ethers.getContractFactory("Marketplace");
-    marketplace = await Marketplace.deploy(govAddr, treasuryAddr);
+    marketplace = await Marketplace.deploy(govAddr, govAddr);
     await marketplace.waitForDeployment();
     const marketAddr = await marketplace.getAddress();
 
-    // 7. Deploy Oracle with Owner set to BoardGovernance
-    const Oracle = await ethers.getContractFactory("Oracle");
-    oracle = await Oracle.deploy(govAddr);
-    await oracle.waitForDeployment();
-    const oracleAddr = await oracle.getAddress();
-
-    // 8. Register company details in CompanyRegistry
+    // 5. Register company details in CompanyRegistry
     await registry.registerCompany(
       companyCode,
       companyName,
       govAddr,
       tokenAddr,
-      treasuryAddr,
-      fundingAddr,
-      distAddr,
+      govAddr, // treasury = governance
+      financeAddr, // fundingManager = financeManager
+      financeAddr, // distributionManager = financeManager
       marketAddr,
-      oracleAddr
+      ethers.ZeroAddress // oracle not used
     );
 
     // Read details from registry
@@ -99,7 +79,8 @@ describe("PTT Dapp Suite", function () {
 
     expect(await governance.threshold()).to.equal(2n);
     expect(await token.owner()).to.equal(govAddr);
-    expect(await treasury.owner()).to.equal(govAddr);
+    expect(await financeManager.owner()).to.equal(govAddr);
+    expect(await marketplace.owner()).to.equal(govAddr);
   });
 
   it("Should execute a Proposal to whitelist investorA and investorB", async function () {
@@ -137,16 +118,18 @@ describe("PTT Dapp Suite", function () {
     expect(await token.isWhitelisted(investorB.address)).to.equal(true);
   });
 
-  it("Should run a funding round and allow investor to purchase shares", async function () {
+  it("Should run a funding round and allow investor to purchase shares using pre-minted tokens", async function () {
     const govAddress = await governance.getAddress();
-    
-    // Set FundingManager as minter on token
-    const setMinterData = token.interface.encodeFunctionData("setMinter", [await fundingManager.getAddress(), true]);
+    const financeAddress = await financeManager.getAddress();
+    const tokenAddress = await token.getAddress();
+
+    // 1. Whitelist FinanceManager in EquityToken compliance whitelist
+    const whitelistFinanceData = token.interface.encodeFunctionData("setWhitelisted", [financeAddress, true]);
     let propTx = await governance.connect(memberA).createProposal(
-      await token.getAddress(),
+      tokenAddress,
       0,
-      setMinterData,
-      "Authorize FundingManager in Token as Minter",
+      whitelistFinanceData,
+      "Whitelist FinanceManager",
       0,
       3600
     );
@@ -155,18 +138,37 @@ describe("PTT Dapp Suite", function () {
     await governance.connect(memberB).signProposal(propId);
     await governance.executeProposal(propId);
 
-    // Create a funding round (paying in Native BNB)
+    // 2. Mint 500 shares to FinanceManager (via BoardGovernance Multisig)
+    const mintAmount = ethers.parseEther("500");
+    const mintData = token.interface.encodeFunctionData("mint", [financeAddress, mintAmount]);
+    propTx = await governance.connect(memberA).createProposal(
+      tokenAddress,
+      0,
+      mintData,
+      "Mint 500 PTT to FinanceManager",
+      0,
+      3600
+    );
+    await propTx.wait();
+    propId = await governance.proposalCount();
+    await governance.connect(memberB).signProposal(propId);
+    await governance.executeProposal(propId);
+
+    // Confirm FinanceManager received PTT
+    expect(await token.balanceOf(financeAddress)).to.equal(mintAmount);
+
+    // 2. Create a funding round (paying in Native BNB)
     const now = Math.floor(Date.now() / 1000);
     const startTime = now - 60; // started 1 min ago
     const endTime = now + 3600; // ends in 1 hour
     const price = ethers.parseEther("0.1"); // 1 PTTS = 0.1 BNB
     const maxSupply = ethers.parseEther("500"); // sell 500 PTTS max
 
-    const createRoundData = fundingManager.interface.encodeFunctionData("createFundingRound", [
+    const createRoundData = financeManager.interface.encodeFunctionData("createFundingRound", [
       "Seed Round",
-      await token.getAddress(),
-      ethers.ZeroAddress, // BNB
-      await treasury.getAddress(),
+      tokenAddress,
+      ethers.ZeroAddress, // BNB payment
+      govAddress, // treasury = BoardGovernance
       price,
       maxSupply,
       startTime,
@@ -177,7 +179,7 @@ describe("PTT Dapp Suite", function () {
     ]);
 
     propTx = await governance.connect(memberA).createProposal(
-      await fundingManager.getAddress(),
+      financeAddress,
       0,
       createRoundData,
       "Create Seed Round",
@@ -189,40 +191,54 @@ describe("PTT Dapp Suite", function () {
     await governance.connect(memberB).signProposal(propId);
     await governance.executeProposal(propId);
 
-    const roundId = await fundingManager.roundCount();
+    const roundId = await financeManager.roundCount();
     
     // Investor A buys 100 PTTS. Cost = 100 * 0.1 BNB = 10 BNB
     const buyAmount = ethers.parseEther("100");
     const cost = ethers.parseEther("10");
 
-    await fundingManager.connect(investorA).buyShares(roundId, buyAmount, { value: cost });
+    const buyTx = await financeManager.connect(investorA).buyShares(roundId, buyAmount, { value: cost });
+    const buyReceipt = await buyTx.wait();
+    buyBlock = buyReceipt.blockNumber;
+
+    // Mine a block to ensure checkpoint is finalized in the past
+    await ethers.provider.send("evm_mine", []);
 
     expect(await token.balanceOf(investorA.address)).to.equal(buyAmount);
-    expect(await ethers.provider.getBalance(await treasury.getAddress())).to.equal(cost);
+    expect(await ethers.provider.getBalance(govAddress)).to.equal(cost);
   });
 
-  it("Should distribute dividends using Pull Claim model", async function () {
+  it("Should distribute dividends using Pull Claim model in FinanceManager", async function () {
     const govAddress = await governance.getAddress();
+    const financeAddress = await financeManager.getAddress();
+    const tokenAddress = await token.getAddress();
     
-    const currentBlock = await ethers.provider.getBlockNumber();
-    const snapshotBlock = currentBlock;
-    const totalDividendAmount = ethers.parseEther("2"); // 2 BNB
+    const snapshotBlock = buyBlock; // block where Investor A held 100 shares
+    const totalDividendAmount = ethers.parseEther("2"); // 2 BNB dividend
     const now = Math.floor(Date.now() / 1000);
 
-    // Create distribution on DistributionManager
-    const createDistData = distributionManager.interface.encodeFunctionData("createDistribution", [
-      await token.getAddress(),
+    // Create and fund dividend on FinanceManager
+    const createDistData = financeManager.interface.encodeFunctionData("createDividendRound", [
+      "Q1 Dividend",
+      tokenAddress,
       ethers.ZeroAddress, // BNB
-      snapshotBlock,
       totalDividendAmount,
-      now - 10 // payment date is in the past
+      snapshotBlock,
+      now - 10,
+      now + 3600
     ]);
 
+    // Member B/C funded the governance to pay.
+    await memberA.sendTransaction({
+      to: govAddress,
+      value: totalDividendAmount
+    });
+
     let propTx = await governance.connect(memberA).createProposal(
-      await distributionManager.getAddress(),
-      0,
+      financeAddress,
+      totalDividendAmount, // send 2 BNB value to financeManager
       createDistData,
-      "Create Dividend Distribution",
+      "Create and Fund Q1 Dividend Distribution",
       0,
       3600
     );
@@ -231,52 +247,16 @@ describe("PTT Dapp Suite", function () {
     await governance.connect(memberB).signProposal(propId);
     await governance.executeProposal(propId);
 
-    const distId = await distributionManager.distributionCount();
+    const divId = await financeManager.dividendCount();
 
-    // Approve distribution on Governance
-    const approveDistData = distributionManager.interface.encodeFunctionData("approveDistribution", [distId]);
-    propTx = await governance.connect(memberA).createProposal(
-      await distributionManager.getAddress(),
-      0,
-      approveDistData,
-      "Approve Dividend Distribution",
-      0,
-      3600
-    );
-    await propTx.wait();
-    propId = await governance.proposalCount();
-    await governance.connect(memberB).signProposal(propId);
-    await governance.executeProposal(propId);
-
-    // Activate distribution (Requires funding the contract with 2 BNB)
-    const activateDistData = distributionManager.interface.encodeFunctionData("activateDistribution", [distId]);
-    propTx = await governance.connect(memberA).createProposal(
-      await distributionManager.getAddress(),
-      totalDividendAmount, // 2 BNB
-      activateDistData,
-      "Activate and Fund Dividend",
-      0,
-      3600
-    );
-    await propTx.wait();
-    propId = await governance.proposalCount();
-    await governance.connect(memberB).signProposal(propId);
-    
-    // Member B/C funded the governance to pay.
-    await memberA.sendTransaction({
-      to: govAddress,
-      value: totalDividendAmount
-    });
-    
-    await governance.executeProposal(propId);
-
-    // Investor A claims dividend
+    // Investor A claims dividend (Investor A owns 20% of the total shares: 100 / 500)
     const beforeBalance = await ethers.provider.getBalance(investorA.address);
-    const claimTx = await distributionManager.connect(investorA).claimDividend(distId);
+    const claimTx = await financeManager.connect(investorA).claimDividend(divId);
     const receipt = await claimTx.wait();
     const gasPaid = receipt.gasUsed * receipt.gasPrice;
 
     const afterBalance = await ethers.provider.getBalance(investorA.address);
-    expect(afterBalance + gasPaid - beforeBalance).to.equal(totalDividendAmount);
+    const expectedClaim = (totalDividendAmount * 100n) / 500n; // 20% of 2 BNB = 0.4 BNB
+    expect(afterBalance + gasPaid - beforeBalance).to.equal(expectedClaim);
   });
 });
