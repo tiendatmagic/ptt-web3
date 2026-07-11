@@ -3,20 +3,18 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '@core/services/state.service';
 import { ApiService } from '@core/services/api.service';
-import { IconComponent } from '@shared/components/icon/icon.component';
-import { ButtonComponent } from '@shared/components/button/button.component';
-import { LogoComponent } from '@shared/components/logo/logo.component';
 import { firstValueFrom } from 'rxjs';
 import { ethers } from 'ethers';
 
 import { ModalService } from '@core/services/modal.service';
 import { AddStaffModalComponent } from './modals/add-staff-modal.component';
 import { RegisterCompanyModalComponent } from './modals/register-company-modal.component';
+import { ButtonComponent } from '@shared/components/button/button.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, IconComponent, ButtonComponent, LogoComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent],
   templateUrl: './dashboard.component.html'
 })
 export class DashboardComponent implements OnInit {
