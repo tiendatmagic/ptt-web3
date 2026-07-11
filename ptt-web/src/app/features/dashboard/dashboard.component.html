@@ -1,0 +1,772 @@
+<div class="w-full px-4 sm:px-6 py-5 space-y-5 select-none">
+  <!-- ====================================================
+       WELCOME BANNER — compact, cân đối
+  ===================================================== -->
+  <div
+    class="relative overflow-hidden rounded-[15px] bg-gradient-to-r from-violet-600 via-violet-700 to-indigo-700 text-white px-6 py-4 shadow-md flex items-center justify-between gap-4"
+  >
+    <!-- Text -->
+    <div class="min-w-0">
+      @if (stateService.currentUser()) {
+        <h1 class="text-base sm:text-lg font-black truncate">
+          Xin chào, {{ stateService.currentUser().name || 'Nhà đầu tư Web3' }}! 👋
+        </h1>
+        <p class="text-sm text-violet-200 mt-0.5 hidden sm:block">
+          PTT Dapp · Token hóa cổ phần doanh nghiệp · Quản trị on-chain phi tập trung
+        </p>
+      } @else {
+        <h1 class="text-base sm:text-lg font-black">Kết nối Ví Web3 để trải nghiệm</h1>
+        <p class="text-sm text-violet-200 mt-0.5 hidden sm:block">
+          Kết nối Metamask hoặc TrustWallet để bắt đầu quản trị doanh nghiệp.
+        </p>
+      }
+    </div>
+
+    <!-- Action -->
+    <div class="shrink-0">
+      @if (!stateService.isConnected()) {
+        <button
+          (click)="stateService.connectWallet()"
+          class="bg-white text-violet-700 hover:bg-violet-50 font-black text-xs h-9 px-4 rounded-xl flex items-center gap-2 shadow transition-all"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.5"
+              d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"
+            />
+          </svg>
+          KẾT NỐI VÍ
+        </button>
+      } @else if (!stateService.currentUser()) {
+        <div
+          class="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-xl border border-white/10"
+        >
+          <span class="animate-pulse w-2 h-2 rounded-full bg-yellow-300 shrink-0"></span>
+          <span class="text-sm font-bold">Đang xác thực...</span>
+        </div>
+      } @else {
+        <button
+          (click)="showRegisterModal.set(true)"
+          class="bg-white/15 hover:bg-white/25 border border-white/20 text-white font-bold text-xs h-9 px-4 rounded-xl flex items-center gap-1.5 transition-all"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.5"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          Đăng ký Doanh nghiệp
+        </button>
+      }
+    </div>
+
+    <!-- BG decoration -->
+    <div
+      class="absolute -right-8 -top-8 w-36 h-36 bg-white/5 rounded-full pointer-events-none"
+    ></div>
+    <div
+      class="absolute -right-2 -bottom-10 w-24 h-24 bg-white/5 rounded-full pointer-events-none"
+    ></div>
+  </div>
+
+  <!-- ====================================================
+       KHI ĐÃ CHỌN CÔNG TY: 3 cột dashboard
+  ===================================================== -->
+  @if (stateService.currentUser() && stateService.currentCompany()) {
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <!-- PANEL TRÁI: Thông tin công ty + Contracts -->
+      <div
+        class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-5 shadow-sm space-y-4"
+      >
+        <!-- Company header -->
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 shrink-0 rounded-xl bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-violet-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <h2
+              class="text-sm font-extrabold text-slate-800 dark:text-white truncate leading-tight"
+            >
+              {{ stateService.currentCompany().name }}
+            </h2>
+            <span class="text-sm font-bold text-violet-500 uppercase tracking-wider">
+              {{ stateService.currentCompany().code }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3 space-y-0.5">
+            <span class="text-xs font-black text-slate-400 uppercase tracking-wider block"
+              >Định giá</span
+            >
+            <span class="text-xs font-black text-slate-800 dark:text-white">
+              ${{ stateService.currentCompany().valuation | number: '1.0-0' }}
+            </span>
+          </div>
+          <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3 space-y-0.5">
+            <span class="text-xs font-black text-slate-400 uppercase tracking-wider block"
+              >Trạng thái</span
+            >
+            <span class="text-sm font-black text-emerald-600 dark:text-emerald-400">
+              {{ stateService.currentCompany().status }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Contracts -->
+        <div class="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800/60">
+          <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest pt-1">
+            Smart Contracts
+          </h3>
+
+          @for (
+            contract of [
+              { label: 'Equity Token', key: 'token_address' },
+              { label: 'Board Governance', key: 'governance_address' },
+              { label: 'Treasury', key: 'treasury_address' },
+              { label: 'Marketplace', key: 'marketplace_address' },
+            ];
+            track contract.key
+          ) {
+            <div
+              class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-2.5 border border-slate-100 dark:border-slate-800/40"
+            >
+              <span class="text-xs font-black text-slate-400 uppercase block mb-0.5">{{
+                contract.label
+              }}</span>
+              <a
+                [href]="
+                  'https://testnet.bscscan.com/address/' +
+                  stateService.currentCompany()[contract.key]
+                "
+                target="_blank"
+                class="font-mono text-xs text-violet-500 hover:text-violet-700 hover:underline break-all leading-tight block truncate"
+              >
+                {{ stateService.currentCompany()[contract.key] || '—' }}
+              </a>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- PANEL PHẢI: Tabs -->
+      <div
+        class="lg:col-span-2 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] shadow-sm flex flex-col"
+      >
+        <!-- Tabs header -->
+        <div
+          class="flex items-center gap-1 px-5 pt-4 border-b border-slate-100 dark:border-slate-800/60"
+        >
+          <button
+            (click)="setTab('overview')"
+            class="px-4 py-2.5 text-sm font-black uppercase tracking-wider border-b-2 transition-all -mb-px"
+            [class.border-violet-500]="activeTab() === 'overview'"
+            [class.text-violet-600]="activeTab() === 'overview'"
+            [class.border-transparent]="activeTab() !== 'overview'"
+            [class.text-slate-400]="activeTab() !== 'overview'"
+          >
+            Tổng quan
+          </button>
+          @if (stateService.hasPermission('staffs.view')) {
+            <button
+              (click)="setTab('staffs')"
+              class="px-4 py-2.5 text-sm font-black uppercase tracking-wider border-b-2 transition-all -mb-px"
+              [class.border-violet-500]="activeTab() === 'staffs'"
+              [class.text-violet-600]="activeTab() === 'staffs'"
+              [class.border-transparent]="activeTab() !== 'staffs'"
+              [class.text-slate-400]="activeTab() !== 'staffs'"
+            >
+              Nhân sự
+            </button>
+          }
+        </div>
+
+        <!-- Tab: Overview -->
+        @if (activeTab() === 'overview') {
+          <div class="p-5 space-y-4 flex-1">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div
+                class="rounded-xl border border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/20 p-4 space-y-1"
+              >
+                <div class="flex items-center gap-2 mb-2">
+                  <div
+                    class="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center shrink-0"
+                  >
+                    <svg
+                      class="w-4 h-4 text-violet-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                      />
+                    </svg>
+                  </div>
+                  <span class="text-sm font-black text-slate-500 uppercase tracking-wider"
+                    >Cơ cấu Biểu quyết</span
+                  >
+                </div>
+                <p class="text-sm font-extrabold text-slate-800 dark:text-white">
+                  Multisig Board Governance
+                </p>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                  Yêu cầu chữ ký đồng thuận của đa số thành viên HĐQT để thực thi giao dịch.
+                </p>
+              </div>
+
+              <div
+                class="rounded-xl border border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/20 p-4 space-y-1"
+              >
+                <div class="flex items-center gap-2 mb-2">
+                  <div
+                    class="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center shrink-0"
+                  >
+                    <svg
+                      class="w-4 h-4 text-emerald-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                  <span class="text-sm font-black text-slate-500 uppercase tracking-wider"
+                    >Cơ chế Cổ tức</span
+                  >
+                </div>
+                <p class="text-sm font-extrabold text-slate-800 dark:text-white">
+                  Pull Claim Dividends
+                </p>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                  Cổ tức theo snapshot số dư checkpoints, cổ đông tự rút về ví cá nhân an toàn.
+                </p>
+              </div>
+            </div>
+
+            <div
+              class="bg-violet-50 dark:bg-violet-950/20 p-4 rounded-xl border border-violet-100 dark:border-violet-900/30 flex gap-3"
+            >
+              <div
+                class="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0 mt-0.5"
+              >
+                <svg
+                  class="w-4 h-4 text-violet-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h4 class="text-xs font-black text-violet-700 dark:text-violet-400 mb-1">
+                  Tuân thủ Pháp lý & KYC Compliance
+                </h4>
+                <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Equity Token ERC20 tích hợp Whitelist bắt buộc. Chỉ nhà đầu tư đã KYC mới được sở
+                  hữu, nhận và giao dịch cổ phần trên Marketplace.
+                </p>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Tab: Staffs -->
+        @if (activeTab() === 'staffs') {
+          <div class="p-5 flex flex-col flex-1">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-black text-slate-700 dark:text-slate-200">
+                Thành viên nội bộ
+              </h3>
+              @if (stateService.hasPermission('staffs.create')) {
+                <button
+                  (click)="showAddStaffModal.set(true)"
+                  class="bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold h-8 px-3.5 rounded-xl flex items-center gap-1.5 transition-colors"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2.5"
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Thêm nhân viên
+                </button>
+              }
+            </div>
+
+            <div
+              class="overflow-x-auto border border-slate-100 dark:border-slate-800/60 rounded-xl flex-1"
+            >
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr
+                    class="bg-slate-50 dark:bg-slate-900/50 text-slate-400 font-extrabold uppercase text-xs tracking-wider"
+                  >
+                    <th class="px-4 py-3">Họ tên / Ví</th>
+                    <th class="px-4 py-3">Vai trò</th>
+                    <th class="px-4 py-3">Trạng thái</th>
+                    @if (stateService.hasPermission('staffs.edit')) {
+                      <th class="px-4 py-3 text-right">Thao tác</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (staff of staffsList(); track staff.id) {
+                    <tr
+                      class="border-t border-slate-100 dark:border-slate-800/40 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors"
+                    >
+                      <td class="px-4 py-3">
+                        <div class="flex flex-col gap-0.5">
+                          <span class="font-extrabold text-slate-700 dark:text-slate-200">{{
+                            staff.name
+                          }}</span>
+                          <span class="text-xs font-mono text-slate-400 truncate max-w-[160px]">{{
+                            staff.wallet_address
+                          }}</span>
+                        </div>
+                      </td>
+                      <td class="px-4 py-3">
+                        <span
+                          class="px-2 py-0.5 rounded-full text-sm font-bold bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400"
+                        >
+                          {{ staff.role_name }}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3">
+                        <span
+                          class="font-extrabold text-sm"
+                          [class.text-emerald-500]="staff.status === 'ACTIVE'"
+                          [class.text-slate-400]="staff.status !== 'ACTIVE'"
+                        >
+                          {{ staff.status === 'ACTIVE' ? '● Kích hoạt' : '○ Dừng' }}
+                        </span>
+                      </td>
+                      @if (stateService.hasPermission('staffs.edit')) {
+                        <td class="px-4 py-3 text-right">
+                          @if (
+                            staff.role_name !== 'Chủ quán' &&
+                            staff.user_id !== stateService.currentUser().id
+                          ) {
+                            <button
+                              (click)="handleDeactivateStaff(staff.id)"
+                              class="text-red-500 hover:text-red-700 font-bold text-sm transition-colors"
+                            >
+                              Vô hiệu
+                            </button>
+                          } @else {
+                            <span class="text-slate-300 dark:text-slate-700">—</span>
+                          }
+                        </td>
+                      }
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="4" class="px-4 py-8 text-center text-sm text-slate-400">
+                        Chưa có thành viên nào. Nhấn "Thêm nhân viên" để bắt đầu.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ====================================================
+       KHI ĐÃ ĐĂNG NHẬP NHƯNG CHƯA CÓ CÔNG TY
+  ===================================================== -->
+  } @else if (stateService.currentUser()) {
+    <div class="w-full">
+      <div
+        class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] shadow-sm overflow-hidden"
+      >
+        <!-- Form header -->
+        <div
+          class="px-8 py-6 border-b border-slate-100 dark:border-slate-800/60 flex items-center gap-4"
+        >
+          <div
+            class="w-11 h-11 rounded-2xl bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center shrink-0"
+          >
+            <svg
+              class="w-6 h-6 text-violet-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-base font-black text-slate-800 dark:text-white">
+              Thiết lập doanh nghiệp của bạn
+            </h2>
+            <p class="text-sm text-slate-400 mt-0.5">
+              Điền thông tin để đăng ký và liên kết với 8 Smart Contracts đã deploy trên blockchain.
+            </p>
+          </div>
+        </div>
+
+        <!-- Form body — 2 cột -->
+        <div
+          class="grid grid-cols-1 lg:grid-cols-5 gap-0 divide-y lg:divide-y-0 lg:divide-x divide-slate-100 dark:divide-slate-800/60"
+        >
+          <!-- CỘT TRÁI: Input fields (3/5) -->
+          <div class="lg:col-span-3 p-8 space-y-5">
+            <!-- Row 1: Tên & Mã -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="sm:col-span-2 space-y-1.5">
+                <label class="text-[12px] font-black text-slate-400 uppercase tracking-wider block"
+                  >Tên công ty / Doanh nghiệp</label
+                >
+                <input
+                  type="text"
+                  [(ngModel)]="newCompany.name"
+                  placeholder="Tên đầy đủ..."
+                  class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-[12px] font-black text-slate-400 uppercase tracking-wider block"
+                  >Mã cổ phần</label
+                >
+                <input
+                  type="text"
+                  [(ngModel)]="newCompany.code"
+                  placeholder="VD: PTT"
+                  class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-bold text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all uppercase tracking-widest"
+                />
+              </div>
+            </div>
+
+            <!-- Row 2: Định giá -->
+            <div class="space-y-1.5">
+              <label class="text-[12px] font-black text-slate-400 uppercase tracking-wider block"
+                >Định giá công ty ($ USD)</label
+              >
+              <input
+                type="number"
+                [(ngModel)]="newCompany.valuation"
+                class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all"
+              />
+            </div>
+
+            <!-- Ví đang kết nối -->
+            <div class="flex items-center gap-2 pt-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+              <span class="text-sm text-slate-400"
+                >Ví kết nối:
+                <span class="font-mono text-slate-500 dark:text-slate-300">{{
+                  stateService.currentUser().wallet_address
+                }}</span></span
+              >
+            </div>
+          </div>
+
+          <!-- CỘT PHẢI: Info + CTA (2/5) -->
+          <div class="lg:col-span-2 p-8 flex flex-col gap-5 bg-slate-50/40 dark:bg-slate-900/20">
+            <!-- Info box -->
+            <div
+              class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/30 rounded-xl p-4 flex gap-3"
+            >
+              <svg
+                class="w-4 h-4 text-amber-500 mt-0.5 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <p class="text-sm text-amber-700 dark:text-amber-400 leading-relaxed">
+                Địa chỉ Smart Contracts sẽ được tự động liên kết từ hệ thống. Bạn có thể cập nhật
+                sau trong phần cài đặt nâng cao.
+              </p>
+            </div>
+
+            <!-- Checklist -->
+            <div class="space-y-2.5">
+              @for (
+                item of [
+                  '8 Smart Contracts đã deploy trên BSC Testnet',
+                  'EquityToken ERC20 + KYC Whitelist',
+                  'BoardGovernance Multisig on-chain',
+                  'Marketplace + Cổ tức Pull Claim',
+                ];
+                track item
+              ) {
+                <div class="flex items-center gap-2.5">
+                  <div
+                    class="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center shrink-0"
+                  >
+                    <svg
+                      class="w-2.5 h-2.5 text-emerald-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="3"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </div>
+                  <span class="text-sm text-slate-500 dark:text-slate-400">{{ item }}</span>
+                </div>
+              }
+            </div>
+
+            <!-- Nút CTA -->
+            <div class="mt-auto pt-2">
+              <button
+                (click)="handleRegisterCompany()"
+                class="w-full bg-violet-600 hover:bg-violet-700 active:scale-[0.98] text-white font-extrabold text-sm h-12 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-violet-500/25 transition-all"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+                Đăng ký &amp; Liên kết Blockchain
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ====================================================
+       MODALS
+  ===================================================== -->
+  <!-- MODAL: ĐĂNG KÝ CÔNG TY (khi đã có công ty, muốn thêm mới) -->
+  @if (showRegisterModal()) {
+    <div
+      class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
+    >
+      <div
+        class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-6 max-w-lg w-full shadow-2xl"
+      >
+        <div class="flex justify-between items-center mb-5">
+          <h3 class="text-base font-black text-slate-800 dark:text-white">
+            Đăng ký doanh nghiệp mới
+          </h3>
+          <button
+            (click)="showRegisterModal.set(false)"
+            class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div class="space-y-3 max-h-[450px] overflow-y-auto">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1.5">
+              <label class="text-xs font-black text-slate-400 uppercase tracking-wider block"
+                >Tên công ty</label
+              >
+              <input
+                type="text"
+                [(ngModel)]="newCompany.name"
+                class="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-semibold outline-none focus:border-violet-500 transition-all"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-black text-slate-400 uppercase tracking-wider block"
+                >Mã cổ phần</label
+              >
+              <input
+                type="text"
+                [(ngModel)]="newCompany.code"
+                class="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-semibold outline-none focus:border-violet-500 transition-all"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-black text-slate-400 uppercase tracking-wider block"
+              >CompanyRegistry Address</label
+            >
+            <input
+              type="text"
+              [(ngModel)]="newCompany.registry_address"
+              class="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 font-mono text-sm outline-none focus:border-violet-500 transition-all"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-black text-slate-400 uppercase tracking-wider block"
+              >EquityToken Address</label
+            >
+            <input
+              type="text"
+              [(ngModel)]="newCompany.token_address"
+              class="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 font-mono text-sm outline-none focus:border-violet-500 transition-all"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-black text-slate-400 uppercase tracking-wider block"
+              >BoardGovernance Address</label
+            >
+            <input
+              type="text"
+              [(ngModel)]="newCompany.governance_address"
+              class="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 font-mono text-sm outline-none focus:border-violet-500 transition-all"
+            />
+          </div>
+        </div>
+
+        <div
+          class="flex justify-end gap-2.5 mt-5 pt-4 border-t border-slate-100 dark:border-slate-800/60"
+        >
+          <button
+            (click)="showRegisterModal.set(false)"
+            class="h-9 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+          >
+            Hủy
+          </button>
+          <button
+            (click)="handleRegisterCompany()"
+            class="h-9 px-5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-extrabold transition-colors"
+          >
+            Đăng ký
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: THÊM NHÂN VIÊN -->
+  @if (showAddStaffModal()) {
+    <div
+      class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
+    >
+      <div
+        class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-6 max-w-md w-full shadow-2xl"
+      >
+        <div class="flex justify-between items-center mb-5">
+          <h3 class="text-base font-black text-slate-800 dark:text-white">
+            Thêm thành viên nội bộ
+          </h3>
+          <button
+            (click)="showAddStaffModal.set(false)"
+            class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <div class="space-y-1.5">
+            <label class="text-xs font-black text-slate-400 uppercase tracking-wider block"
+              >Địa chỉ ví (Wallet Address)</label
+            >
+            <input
+              type="text"
+              [(ngModel)]="newStaffWallet"
+              placeholder="0x..."
+              class="w-full h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 font-mono text-xs outline-none focus:border-violet-500 transition-all"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-black text-slate-400 uppercase tracking-wider block"
+              >Vai trò</label
+            >
+            <select
+              [(ngModel)]="newStaffRoleId"
+              class="w-full h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-semibold outline-none focus:border-violet-500 transition-all"
+            >
+              <option value="" disabled selected>Chọn vai trò...</option>
+              @for (role of rolesList(); track role.id) {
+                @if (role.name !== 'Chủ quán') {
+                  <option [value]="role.id">{{ role.name }}</option>
+                }
+              }
+            </select>
+          </div>
+        </div>
+
+        <div
+          class="flex justify-end gap-2.5 mt-5 pt-4 border-t border-slate-100 dark:border-slate-800/60"
+        >
+          <button
+            (click)="showAddStaffModal.set(false)"
+            class="h-9 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+          >
+            Hủy
+          </button>
+          <button
+            (click)="handleAddStaff()"
+            class="h-9 px-5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-extrabold transition-colors"
+          >
+            Thêm mới
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

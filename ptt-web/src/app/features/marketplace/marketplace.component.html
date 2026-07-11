@@ -1,0 +1,286 @@
+<div class="w-full px-4 sm:px-6 py-5 space-y-5 select-none">
+  <!-- TITLE HEADER -->
+  <div
+    class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/50 dark:border-slate-900/50 pb-5"
+  >
+    <div>
+      <h1 class="text-xl sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">
+        Sàn giao dịch Cổ phần
+      </h1>
+      <p class="text-xs text-slate-400">
+        Đặt lệnh mua/bán cổ phần doanh nghiệp off-chain và thực thi Settlement on-chain an toàn.
+      </p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <!-- PANEL TRÁI: ĐẶT LỆNH GIAO DỊCH -->
+    <div
+      class="xl:col-span-1 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm space-y-6 h-fit"
+    >
+      <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300">Đặt lệnh mới</h2>
+
+      <div class="space-y-4">
+        <!-- Side Selector -->
+        <div
+          class="flex bg-slate-50 dark:bg-slate-900 p-1 rounded-xl border border-slate-100 dark:border-slate-900/50"
+        >
+          <button
+            (click)="orderForm.side = 'BUY'"
+            [class.bg-white]="orderForm.side === 'BUY'"
+            [class.dark:bg-slate-950]="orderForm.side === 'BUY'"
+            [class.text-emerald-500]="orderForm.side === 'BUY'"
+            [class.shadow-sm]="orderForm.side === 'BUY'"
+            class="flex-1 py-2.5 rounded-lg text-xs font-black uppercase text-slate-400 transition-all"
+          >
+            MUA (BUY)
+          </button>
+          <button
+            (click)="orderForm.side = 'SELL'"
+            [class.bg-white]="orderForm.side === 'SELL'"
+            [class.dark:bg-slate-950]="orderForm.side === 'SELL'"
+            [class.text-red-500]="orderForm.side === 'SELL'"
+            [class.shadow-sm]="orderForm.side === 'SELL'"
+            class="flex-1 py-2.5 rounded-lg text-xs font-black uppercase text-slate-400 transition-all"
+          >
+            BÁN (SELL)
+          </button>
+        </div>
+
+        <!-- Price -->
+        <div class="space-y-1">
+          <label class="text-[12px] font-black text-slate-400 uppercase tracking-wider"
+            >Giá cổ phần ($ USD / Share)</label
+          >
+          <input
+            type="number"
+            [(ngModel)]="orderForm.price"
+            placeholder="VD: 12.5"
+            class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-primary"
+          />
+        </div>
+
+        <!-- Amount -->
+        <div class="space-y-1">
+          <label class="text-[12px] font-black text-slate-400 uppercase tracking-wider"
+            >Số lượng cổ phần (Shares)</label
+          >
+          <input
+            type="number"
+            [(ngModel)]="orderForm.amount"
+            placeholder="VD: 100"
+            class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-primary"
+          />
+        </div>
+
+        <button
+          app-button
+          variant="primary"
+          (click)="handlePlaceOrder()"
+          [class.!bg-emerald-500]="orderForm.side === 'BUY'"
+          [class.hover:!bg-emerald-600]="orderForm.side === 'BUY'"
+          [class.!bg-red-500]="orderForm.side === 'SELL'"
+          [class.hover:!bg-red-600]="orderForm.side === 'SELL'"
+          class="w-full h-12 rounded-xl font-extrabold flex items-center justify-center gap-2 border-0 text-white shadow-md"
+        >
+          <app-icon name="send" class="w-4 h-4" />
+          {{ orderForm.side === 'BUY' ? 'ĐẶT LỆNH MUA' : 'ĐẶT LỆNH BÁN' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- PANEL PHẢI: ORDER BOOK & TRADE HISTORY -->
+    <div class="xl:col-span-2 space-y-6">
+      <!-- BLOCK 1: ORDER BOOK -->
+      <div
+        class="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm space-y-4"
+      >
+        <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300">
+          Sổ lệnh hiện tại (Order Book)
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Cột mua -->
+          <div class="space-y-2.5">
+            <h3
+              class="text-xs font-extrabold text-emerald-500 uppercase tracking-wider flex items-center gap-1.5"
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              Lệnh mua (BUY)
+            </h3>
+
+            <div
+              class="overflow-x-auto border border-slate-100 dark:border-slate-900 rounded-xl max-h-60"
+            >
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr
+                    class="bg-slate-50 dark:bg-slate-900/30 text-slate-500 font-bold uppercase text-xs tracking-wider select-none"
+                  >
+                    <th class="p-2.5 pl-3">Giá</th>
+                    <th class="p-2.5">Số lượng</th>
+                    <th class="p-2.5 pr-3 text-right">Khớp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (order of buyOrders(); track order.id) {
+                    <tr
+                      class="border-t border-slate-100 dark:border-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-900/10"
+                    >
+                      <td class="p-2.5 pl-3 font-extrabold text-emerald-500">${{ order.price }}</td>
+                      <td class="p-2.5 font-semibold text-slate-700 dark:text-slate-300">
+                        {{ order.amount }}
+                      </td>
+                      <td class="p-2.5 pr-3 text-right font-mono text-slate-400">
+                        {{ order.filled_amount }}/{{ order.amount }}
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="3" class="p-6 text-center text-slate-400">
+                        Không có lệnh mua nào.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Cột bán -->
+          <div class="space-y-2.5">
+            <h3
+              class="text-xs font-extrabold text-red-500 uppercase tracking-wider flex items-center gap-1.5"
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+              Lệnh bán (SELL)
+            </h3>
+
+            <div
+              class="overflow-x-auto border border-slate-100 dark:border-slate-900 rounded-xl max-h-60"
+            >
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr
+                    class="bg-slate-50 dark:bg-slate-900/30 text-slate-500 font-bold uppercase text-xs tracking-wider select-none"
+                  >
+                    <th class="p-2.5 pl-3">Giá</th>
+                    <th class="p-2.5">Số lượng</th>
+                    <th class="p-2.5 pr-3 text-right">Khớp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (order of sellOrders(); track order.id) {
+                    <tr
+                      class="border-t border-slate-100 dark:border-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-900/10"
+                    >
+                      <td class="p-2.5 pl-3 font-extrabold text-red-500">${{ order.price }}</td>
+                      <td class="p-2.5 font-semibold text-slate-700 dark:text-slate-300">
+                        {{ order.amount }}
+                      </td>
+                      <td class="p-2.5 pr-3 text-right font-mono text-slate-400">
+                        {{ order.filled_amount }}/{{ order.amount }}
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="3" class="p-6 text-center text-slate-400">
+                        Không có lệnh bán nào.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BLOCK 2: TRADE HISTORY -->
+      <div
+        class="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm space-y-4"
+      >
+        <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300">Lịch sử giao dịch</h2>
+
+        <div class="overflow-x-auto border border-slate-100 dark:border-slate-900 rounded-xl">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr
+                class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 font-bold uppercase text-xs tracking-wider select-none"
+              >
+                <th class="p-3.5 pl-4">Người mua / bán</th>
+                <th class="p-3.5">Giá khớp</th>
+                <th class="p-3.5">Số lượng</th>
+                <th class="p-3.5">Trạng thái</th>
+                <th class="p-3.5 pr-4 text-right">Settlement</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (trade of tradesList(); track trade.id) {
+                <tr
+                  class="border-t border-slate-100 dark:border-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
+                >
+                  <td class="p-3.5 pl-4">
+                    <div class="flex flex-col">
+                      <span class="text-sm font-mono text-slate-500"
+                        >B: {{ trade.buyer_address }}</span
+                      >
+                      <span class="text-sm font-mono text-slate-500"
+                        >S: {{ trade.seller_address }}</span
+                      >
+                    </div>
+                  </td>
+                  <td class="p-3.5 font-extrabold text-slate-700 dark:text-slate-200">
+                    ${{ trade.price }}
+                  </td>
+                  <td class="p-3.5 font-bold text-slate-700 dark:text-slate-300">
+                    {{ trade.amount }}
+                  </td>
+                  <td class="p-3.5">
+                    @if (trade.tx_hash === 'MATCHED_PENDING_SETTLEMENT') {
+                      <span
+                        class="px-2 py-0.5 rounded-full text-xs font-black bg-yellow-100 text-yellow-600 uppercase"
+                      >
+                        Chờ Settle
+                      </span>
+                    } @else {
+                      <span
+                        class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-600 uppercase"
+                      >
+                        Hoàn tất
+                      </span>
+                    }
+                  </td>
+                  <td class="p-3.5 pr-4 text-right">
+                    @if (trade.tx_hash === 'MATCHED_PENDING_SETTLEMENT') {
+                      <button
+                        (click)="handleSettleTrade(trade)"
+                        class="px-3 py-1.5 rounded-lg text-sm font-black bg-primary text-white hover:bg-primary-hover shadow-sm select-none transition-colors"
+                      >
+                        SETTLE ON-CHAIN
+                      </button>
+                    } @else {
+                      <a
+                        [href]="'https://testnet.bscscan.com/tx/' + trade.tx_hash"
+                        target="_blank"
+                        class="text-primary hover:underline font-bold font-mono"
+                      >
+                        {{ trade.tx_hash.substring(0, 6) }}...
+                      </a>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="p-8 text-center text-slate-400">
+                    Chưa có giao dịch nào diễn ra.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

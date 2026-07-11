@@ -1,21 +1,26 @@
 import { Routes } from '@angular/router';
 
-/**
- * Cấu hình định tuyến của ứng dụng (Routing) áp dụng cơ chế Lazy Loading
- * tương tự như mẫu thiết kế định tuyến của cafe-blockchain.
- */
 export const routes: Routes = [
-  { path: '', redirectTo: 'home', pathMatch: 'full' },
+  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   {
-    path: 'home',
-    loadComponent: () => import('@features/home/home.component').then(m => m.HomeComponent)
+    path: 'dashboard',
+    loadComponent: () => import('@features/dashboard/dashboard.component').then(m => m.DashboardComponent)
   },
   {
-    path: 'about',
-    loadComponent: () => import('@features/about/about.component').then(m => m.AboutComponent)
+    path: 'governance',
+    loadComponent: () => import('@features/governance/governance.component').then(m => m.GovernanceComponent)
   },
   {
-    path: 'contact',
-    loadComponent: () => import('@features/contact/contact.component').then(m => m.ContactComponent)
-  }
+    path: 'marketplace',
+    loadComponent: () => import('@features/marketplace/marketplace.component').then(m => m.MarketplaceComponent)
+  },
+  {
+    path: 'funding',
+    loadComponent: () => import('@features/funding/funding.component').then(m => m.FundingComponent)
+  },
+  {
+    path: 'kyc',
+    loadComponent: () => import('@features/kyc/kyc.component').then(m => m.KycComponent)
+  },
+  { path: '**', redirectTo: 'dashboard' }
 ];

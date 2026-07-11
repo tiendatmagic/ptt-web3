@@ -50,16 +50,28 @@ export class HeaderComponent {
   // Trạng thái hiển thị dropdown chọn mạng nhanh
   public showNetworkDropdown = signal(false);
 
+  // Trạng thái hiển thị dropdown chọn doanh nghiệp
+  public showCompanyDropdown = signal(false);
+
   public toggleDropdown(event: Event) {
     event.stopPropagation();
     this.showDropdown.update((prev) => !prev);
     this.showNetworkDropdown.set(false);
+    this.showCompanyDropdown.set(false);
   }
 
   public toggleNetworkDropdown(event: Event) {
     event.stopPropagation();
     this.showNetworkDropdown.update((prev) => !prev);
     this.showDropdown.set(false);
+    this.showCompanyDropdown.set(false);
+  }
+
+  public toggleCompanyDropdown(event: Event) {
+    event.stopPropagation();
+    this.showCompanyDropdown.update((prev) => !prev);
+    this.showDropdown.set(false);
+    this.showNetworkDropdown.set(false);
   }
 
   public copyAddress(event: Event) {
@@ -94,6 +106,7 @@ export class HeaderComponent {
   public clickOut() {
     this.showDropdown.set(false);
     this.showNetworkDropdown.set(false);
+    this.showCompanyDropdown.set(false);
   }
 
   // Mở modal chi tiết ví và dừng nổi bọt sự kiện

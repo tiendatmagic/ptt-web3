@@ -1,0 +1,156 @@
+<div class="w-full px-4 sm:px-6 py-5 space-y-5 select-none">
+  <!-- TITLE HEADER -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/50 dark:border-slate-900/50 pb-5">
+    <div>
+      <h1 class="text-xl sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">Gọi vốn & Cổ tức</h1>
+      <p class="text-xs text-slate-400">Tham gia mua cổ phần trực tiếp từ doanh nghiệp và nhận chia sẻ lợi nhuận cổ tức on-chain.</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- PANEL TRÁI: CÁC VÒNG GỌI VỐN (FUNDING) -->
+    <div class="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm space-y-5 flex flex-col min-h-[500px]">
+      <div class="flex justify-between items-center select-none">
+        <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300">Vòng gọi vốn doanh nghiệp</h2>
+        @if (stateService.hasPermission('funding.view')) {
+          <!-- Cho phép board member tạo vòng mới -->
+          <button app-button variant="primary" (click)="showCreateRoundModal.set(true)" class="h-9 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5">
+            <app-icon name="plus" class="w-3.5 h-3.5" />
+            Tạo vòng gọi vốn
+          </button>
+        }
+      </div>
+
+      <div class="flex-1 overflow-y-auto space-y-4 pr-1">
+        @for (round of roundsList(); track round.id) {
+          <div class="p-5 rounded-xl border border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-900/10 space-y-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="text-xs font-black text-slate-800 dark:text-white">{{ round.name }}</h3>
+                <span class="text-sm font-bold text-slate-400">Giá cổ phần: ${{ round.share_price }}/Share</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-xs font-black uppercase"
+                [class.bg-yellow-100]="round.status === 'DRAFT'" [class.text-yellow-600]="round.status === 'DRAFT'"
+                [class.bg-emerald-100]="round.status === 'ACTIVE'" [class.text-emerald-600]="round.status === 'ACTIVE'"
+                [class.bg-blue-100]="round.status === 'COMPLETED'" [class.text-blue-600]="round.status === 'COMPLETED'">
+                {{ round.status }}
+              </span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="space-y-1">
+              <div class="flex justify-between items-center text-sm font-bold text-slate-400">
+                <span>Tiến độ huy động</span>
+                <span>{{ (round.raised_amount / round.target_amount * 100) | number:'1.0-1' }}% (${{ round.raised_amount }} / ${{ round.target_amount }})</span>
+              </div>
+              <div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div [style.width.%]="(round.raised_amount / round.target_amount * 100)" class="h-full bg-primary rounded-full"></div>
+              </div>
+            </div>
+
+            <!-- Purchase Input / Action -->
+            @if (round.status === 'ACTIVE') {
+              <div class="flex gap-2 pt-2 select-none">
+                <input type="number" [(ngModel)]="purchaseAmount" placeholder="Số BNB muốn mua..." class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold bg-white dark:bg-slate-950" />
+                <button app-button variant="primary" (click)="handlePurchaseShares(round)" class="h-10 px-4 rounded-xl text-xs font-extrabold shrink-0">
+                  MUA CỔ PHẦN
+                </button>
+              </div>
+            }
+          </div>
+        } @empty {
+          <div class="text-center py-12 space-y-2">
+            <app-icon name="send" class="w-10 h-10 mx-auto text-slate-300" />
+            <p class="text-xs text-slate-400">Chưa có vòng gọi vốn nào.</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- PANEL PHẢI: CHIA CỔ TỨC (DIVIDENDS) -->
+    <div class="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm space-y-5 flex flex-col min-h-[500px]">
+      <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300">Lịch sử chia cổ tức</h2>
+
+      <div class="flex-1 overflow-y-auto space-y-4 pr-1">
+        @for (div of dividendsList(); track div.id) {
+          <div class="p-5 rounded-xl border border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-900/10 space-y-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="text-xs font-black text-slate-800 dark:text-white">Đợt chia cổ tức #{{ div.id }}</h3>
+                <span class="text-sm font-bold text-slate-400">Tổng cổ tức: ${{ div.total_amount | number }} USD</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-xs font-black uppercase"
+                [class.bg-emerald-100]="div.status === 'ACTIVE' || div.status === 'FINISHED'" [class.text-emerald-600]="div.status === 'ACTIVE' || div.status === 'FINISHED'">
+                {{ div.status }}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 text-sm text-slate-500 font-bold border-t border-slate-100 dark:border-slate-900/50 pt-3">
+              <div class="flex flex-col gap-0.5">
+                <span>Snapshot Block:</span>
+                <span class="font-mono text-slate-700 dark:text-slate-300">#{{ div.snapshot_block }}</span>
+              </div>
+              <div class="flex flex-col gap-0.5">
+                <span>Ngày chia:</span>
+                <span>{{ div.created_at | date:'dd/MM/yyyy' }}</span>
+              </div>
+            </div>
+
+            @if (div.status === 'ACTIVE' || div.status === 'APPROVED') {
+              <div class="pt-2 flex justify-end select-none">
+                <button app-button variant="secondary" (click)="handleClaimDividend(div)" class="h-10 px-4 rounded-xl text-xs font-black flex items-center gap-1.5 border border-primary/20 hover:bg-primary/5">
+                  <app-icon name="plus" class="w-3.5 h-3.5" />
+                  RÚT CỔ TỨC (CLAIM)
+                </button>
+              </div>
+            }
+          </div>
+        } @empty {
+          <div class="text-center py-12 space-y-2">
+            <app-icon name="send" class="w-10 h-10 mx-auto text-slate-300" />
+            <p class="text-xs text-slate-400">Chưa có đợt chia cổ tức nào.</p>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <!-- MODAL: CREATE FUNDING ROUND -->
+  @if (showCreateRoundModal()) {
+    <div class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
+      <div class="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 max-w-md w-full shadow-xl space-y-6">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-900/60">
+          <h3 class="text-base font-black text-slate-800 dark:text-white">Tạo vòng gọi vốn mới</h3>
+          <button (click)="showCreateRoundModal.set(false)" class="text-slate-400 hover:text-slate-600">
+            <app-icon name="close" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <div class="space-y-4">
+          <div class="space-y-1">
+            <label class="text-xs font-black text-slate-400 uppercase">Tên vòng gọi vốn</label>
+            <input type="text" [(ngModel)]="newRound.name" class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold outline-none" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="text-xs font-black text-slate-400 uppercase">Giá cổ phần (USD)</label>
+              <input type="number" [(ngModel)]="newRound.share_price" class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold outline-none" />
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs font-black text-slate-400 uppercase">Mục tiêu gọi vốn (USD)</label>
+              <input type="number" [(ngModel)]="newRound.target_amount" class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold outline-none" />
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-900/60 flex justify-end gap-3">
+          <button app-button variant="cancel" (click)="showCreateRoundModal.set(false)" class="h-10 px-4 rounded-xl font-bold">Hủy</button>
+          <button app-button variant="primary" (click)="handleCreateRound()" class="h-10 px-5 rounded-xl font-extrabold">Tạo mới</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+

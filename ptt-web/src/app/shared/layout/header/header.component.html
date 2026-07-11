@@ -2,7 +2,7 @@
   class="w-full bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-900/50 sticky top-0 z-50 md:z-30 transition-all duration-300 md:pl-72"
 >
   <div
-    class="max-w-[1530px] mx-auto w-full px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between"
+    class="w-full px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between"
   >
     <!-- PHẦN BÊN TRÁI: NÚT HAMBURGER (MOBILE) + LOGO & THƯƠNG HIỆU -->
     <div class="flex md:hidden items-center gap-2 sm:gap-3">
@@ -29,7 +29,7 @@
             <span class="text-secondary">Web3</span>
           </span>
           <span
-            class="hidden sm:inline-block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mt-1 select-none"
+            class="hidden sm:inline-block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mt-1 select-none"
           >
             Web3 Template
           </span>
@@ -37,8 +37,9 @@
       </div>
     </div>
 
-    <!-- PHẦN Ở GIỮA: TRẠNG THÁI MẠNG LƯỚI (CHỈ DESKTOP) -->
-    <div class="hidden md:block">
+    <!-- PHẦN Ở GIỮA: TRẠNG THÁI MẠNG LƯỚI & CHỌN DOANH NGHIỆP (CHỈ DESKTOP) -->
+    <div class="hidden md:flex items-center gap-4">
+      <!-- Trạng thái mạng lưới -->
       @if (stateService.isConnected()) {
         <div
           [class.bg-primary/10]="!stateService.isWrongChain()"
@@ -53,6 +54,56 @@
             class="w-1.5 h-1.5 rounded-full inline-block"
           ></span>
           {{ stateService.isWrongChain() ? 'Sai mạng lưới' : stateService.networkName() }}
+        </div>
+      }
+
+      <!-- Chọn doanh nghiệp (Dropdown) -->
+      @if (stateService.currentUser()) {
+        <div class="relative">
+          <button
+            app-button
+            variant="cancel"
+            (click)="toggleCompanyDropdown($event)"
+            class="h-10 px-4 rounded-xl flex items-center gap-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900"
+          >
+            <app-icon name="home" class="w-4 h-4 text-primary" />
+            <span class="text-sm font-bold text-slate-700 dark:text-slate-200">
+              {{
+                stateService.currentCompany()
+                  ? stateService.currentCompany().name
+                  : 'Chọn Doanh Nghiệp'
+              }}
+            </span>
+            <app-icon name="chevron-down" class="w-3.5 h-3.5 text-slate-400" />
+          </button>
+
+          @if (showCompanyDropdown()) {
+            <div
+              class="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-lg z-[200] overflow-hidden py-2"
+            >
+              <div
+                class="px-3 py-1.5 mb-1 border-b border-slate-100 dark:border-slate-800/60 select-none"
+              >
+                <span
+                  class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block"
+                >
+                  Danh sách doanh nghiệp
+                </span>
+              </div>
+              <div class="max-h-60 overflow-y-auto px-1.5">
+                @for (company of stateService.companiesList(); track company.id) {
+                  <button
+                    (click)="stateService.selectCompany(company); showCompanyDropdown.set(false)"
+                    [class.bg-primary/10]="stateService.currentCompany()?.id === company.id"
+                    class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-left"
+                  >
+                    <span>{{ company.name }}</span>
+                    <span class="text-sm font-mono text-slate-400">#{{ company.code }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
         </div>
       }
     </div>
@@ -79,7 +130,7 @@
               class="px-4 pb-1.5 mb-1 border-b border-slate-100 dark:border-slate-800/60 select-none"
             >
               <span
-                class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block text-center"
+                class="text-[12px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block text-center"
               >
                 -- Chọn nhanh mạng phổ biến nhất --
               </span>
@@ -105,9 +156,7 @@
                       {{ chain.name.replace(' Mainnet', '') }}
                     </span>
                   </div>
-                  <span
-                    class="text-[10px] font-mono font-semibold text-slate-400 dark:text-slate-500"
-                  >
+                  <span class="text-sm font-mono font-semibold text-slate-400 dark:text-slate-500">
                     {{ chain.chainId }}
                   </span>
                 </button>
@@ -138,7 +187,7 @@
               >
                 {{ stateService.address() | appShortAddress }}
               </span>
-              <span class="text-[10px] font-black text-primary tracking-wider">
+              <span class="text-[12px] font-black text-primary tracking-wider">
                 {{ stateService.balance() }} {{ stateService.chainSymbol() }}
               </span>
             </div>
@@ -158,7 +207,7 @@
                 class="px-4 py-2 border-b border-slate-100 dark:border-slate-800/50 mb-1 select-none"
               >
                 <span
-                  class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1"
+                  class="text-[12px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1"
                   >Ví đang kết nối</span
                 >
                 <p
@@ -274,49 +323,71 @@
       <app-logo class="w-11 h-11 shrink-0" />
       <div class="flex flex-col select-none">
         <span class="text-base font-black tracking-tight leading-none mb-1.5">
-          <span class="text-primary">Angular</span>
-          <span class="text-secondary">Web3</span>
+          <span class="text-primary">PTT</span>
+          <span class="text-secondary">Dapp</span>
         </span>
         <span
-          class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none"
+          class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none"
         >
-          Web3 Template
+          Tokenized Equity SaaS
         </span>
       </div>
     </div>
 
     <!-- Nav Links -->
     <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      <!-- Doanh nghiệp (Dashboard) -->
       <a
-        routerLink="/home"
+        routerLink="/dashboard"
         routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
         [routerLinkActiveOptions]="{ exact: true }"
         (click)="stateService.showMobileMenu.set(false)"
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
       >
         <app-icon name="home" class="w-5 h-5 flex-shrink-0" />
-        <span>Trang chủ</span>
+        <span>Doanh nghiệp</span>
       </a>
 
-      <a
-        routerLink="/about"
-        routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
-        (click)="stateService.showMobileMenu.set(false)"
-        class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
-      >
-        <app-icon name="info" class="w-5 h-5 flex-shrink-0" />
-        <span>Giới thiệu</span>
-      </a>
+      <!-- Hội đồng Quản trị (Governance) -->
+      @if (stateService.hasPermission('proposals.view')) {
+        <a
+          routerLink="/governance"
+          routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
+          (click)="stateService.showMobileMenu.set(false)"
+          class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
+        >
+          <app-icon name="shield" class="w-5 h-5 flex-shrink-0" />
+          <span>Hội đồng Quản trị</span>
+        </a>
+      }
 
-      <a
-        routerLink="/contact"
-        routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
-        (click)="stateService.showMobileMenu.set(false)"
-        class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
-      >
-        <app-icon name="send" class="w-5 h-5 flex-shrink-0" />
-        <span>Liên hệ</span>
-      </a>
+      <!-- Sàn giao dịch (Marketplace) -->
+      @if (stateService.hasPermission('marketplace.view')) {
+        <a
+          routerLink="/marketplace"
+          routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
+          (click)="stateService.showMobileMenu.set(false)"
+          class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
+        >
+          <app-icon name="refresh" class="w-5 h-5 flex-shrink-0" />
+          <span>Sàn giao dịch</span>
+        </a>
+      }
+
+      <!-- Gọi vốn & Cổ tức (Funding) -->
+      @if (
+        stateService.hasPermission('funding.view') || stateService.hasPermission('dividends.view')
+      ) {
+        <a
+          routerLink="/funding"
+          routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
+          (click)="stateService.showMobileMenu.set(false)"
+          class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
+        >
+          <app-icon name="send" class="w-5 h-5 flex-shrink-0" />
+          <span>Gọi vốn & Cổ tức</span>
+        </a>
+      }
     </nav>
 
     <!-- Bottom Controls -->

@@ -631,7 +631,7 @@ Relationships
 FRONTEND
 =========================================================
 
-Next.js
+Angular
 
 TypeScript
 

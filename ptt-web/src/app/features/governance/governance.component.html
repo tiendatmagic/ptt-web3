@@ -1,0 +1,339 @@
+<div class="w-full px-4 sm:px-6 py-5 space-y-5 select-none">
+  <!-- TITLE HEADER -->
+  <div
+    class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/50 dark:border-slate-900/50 pb-5"
+  >
+    <div>
+      <h1 class="text-xl sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">
+        Hội đồng Quản trị
+      </h1>
+      <p class="text-xs text-slate-400">
+        Tạo đề xuất, thu thập chữ ký phê duyệt đa chữ ký (Multisig) và thực thi giao dịch doanh
+        nghiệp.
+      </p>
+    </div>
+    @if (stateService.hasPermission('proposals.create')) {
+      <button
+        app-button
+        variant="primary"
+        (click)="showCreateModal.set(true)"
+        class="h-11 px-5 rounded-xl font-bold flex items-center gap-2 shadow-sm"
+      >
+        <app-icon name="plus" class="w-4 h-4" />
+        TẠO ĐỀ XUẤT MỚI
+      </button>
+    }
+  </div>
+
+  <!-- MAIN GOVERNANCE PANEL -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- PANEL TRÁI: DANH SÁCH PROPOSALS -->
+    <div
+      class="lg:col-span-1 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-5 shadow-sm space-y-4 flex flex-col max-h-[650px]"
+    >
+      <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300">Danh sách Đề xuất</h2>
+
+      <div class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+        @for (proposal of proposalsList(); track proposal.id) {
+          <div
+            (click)="selectProposal(proposal)"
+            [class.border-primary]="selectedProposal()?.id === proposal.id"
+            [class.bg-slate-50]="selectedProposal()?.id === proposal.id"
+            [class.dark:bg-slate-900/40]="selectedProposal()?.id === proposal.id"
+            class="p-4 rounded-xl border border-slate-100 dark:border-slate-900/80 hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-all cursor-pointer space-y-2"
+          >
+            <div class="flex justify-between items-start gap-2">
+              <span
+                class="px-2 py-0.5 rounded-full text-xs font-black uppercase"
+                [class.bg-yellow-100]="proposal.status === 'PENDING'"
+                [class.text-yellow-600]="proposal.status === 'PENDING'"
+                [class.bg-blue-100]="proposal.status === 'APPROVED'"
+                [class.text-blue-600]="proposal.status === 'APPROVED'"
+                [class.bg-emerald-100]="proposal.status === 'EXECUTED'"
+                [class.text-emerald-600]="proposal.status === 'EXECUTED'"
+              >
+                {{ proposal.status }}
+              </span>
+              <span class="text-sm font-bold text-slate-400">#{{ proposal.id }}</span>
+            </div>
+
+            <h3 class="text-xs font-black text-slate-700 dark:text-slate-200 line-clamp-1">
+              {{ proposal.title }}
+            </h3>
+
+            <div
+              class="flex justify-between items-center text-sm text-slate-400 pt-1 border-t border-slate-100/50 dark:border-slate-900/30"
+            >
+              <span class="font-bold">Loại: {{ proposal.type }}</span>
+              <span>{{ proposal.created_at | date: 'dd/MM/yyyy' }}</span>
+            </div>
+          </div>
+        } @empty {
+          <div class="text-center py-10 space-y-2">
+            <app-icon name="shield" class="w-10 h-10 mx-auto text-slate-300" />
+            <p class="text-xs text-slate-400">Chưa có đề xuất nào được tạo.</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- PANEL PHẢI: CHI TIẾT PROPOSAL SELECTED -->
+    <div
+      class="lg:col-span-2 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm flex flex-col min-h-[500px]"
+    >
+      @if (selectedProposal()) {
+        <div class="flex-1 flex flex-col justify-between space-y-6">
+          <div class="space-y-5">
+            <!-- Title & Status -->
+            <div
+              class="flex justify-between items-start gap-4 pb-4 border-b border-slate-100 dark:border-slate-900/60"
+            >
+              <div class="space-y-1">
+                <span class="text-xs font-black text-primary uppercase tracking-widest"
+                  >Chi tiết đề xuất #{{ selectedProposal().id }}</span
+                >
+                <h2 class="text-base font-extrabold text-slate-800 dark:text-white leading-tight">
+                  {{ selectedProposal().title }}
+                </h2>
+              </div>
+              <span
+                class="px-2.5 py-1 rounded-full text-xs font-black uppercase"
+                [class.bg-yellow-100]="selectedProposal().status === 'PENDING'"
+                [class.text-yellow-600]="selectedProposal().status === 'PENDING'"
+                [class.bg-blue-100]="selectedProposal().status === 'APPROVED'"
+                [class.text-blue-600]="selectedProposal().status === 'APPROVED'"
+                [class.bg-emerald-100]="selectedProposal().status === 'EXECUTED'"
+                [class.text-emerald-600]="selectedProposal().status === 'EXECUTED'"
+              >
+                {{ selectedProposal().status }}
+              </span>
+            </div>
+
+            <!-- Description -->
+            <div class="space-y-1">
+              <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
+                Mô tả chi tiết
+              </h4>
+              <p
+                class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20"
+              >
+                {{ selectedProposal().description || 'Không có mô tả.' }}
+              </p>
+            </div>
+
+            <!-- Parameters -->
+            <div class="space-y-1">
+              <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
+                Tham số thực thi (On-chain params)
+              </h4>
+              <div
+                class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20 text-xs"
+              >
+                <div class="flex flex-col gap-0.5">
+                  <span class="font-bold text-slate-400">Target contract / Address:</span>
+                  <span
+                    class="font-mono text-sm font-semibold break-all text-slate-700 dark:text-slate-200"
+                  >
+                    {{
+                      selectedProposal().params?.target ||
+                        '0x0000000000000000000000000000000000000000'
+                    }}
+                  </span>
+                </div>
+                <div class="flex flex-col gap-0.5">
+                  <span class="font-bold text-slate-400">Value (Wei):</span>
+                  <span class="font-mono font-semibold text-slate-700 dark:text-slate-200">
+                    {{ selectedProposal().params?.value || '0' }} WEI
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Signatures list -->
+            <div class="space-y-2">
+              <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
+                Chữ ký biểu quyết đã ký ({{ proposalSignatures().length }} thành viên)
+              </h4>
+              <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                @for (sig of proposalSignatures(); track sig.id) {
+                  <div
+                    class="flex justify-between items-center bg-slate-50 dark:bg-slate-900/25 p-3 rounded-xl border border-slate-100 dark:border-slate-900/10 text-xs"
+                  >
+                    <div class="flex flex-col">
+                      <span class="font-extrabold text-slate-700 dark:text-slate-300"
+                        >Biểu quyết bởi:</span
+                      >
+                      <span class="font-mono text-sm text-slate-400">{{ sig.wallet_address }}</span>
+                    </div>
+                    <span
+                      class="text-sm font-black text-emerald-500 uppercase flex items-center gap-1"
+                    >
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      Đã ký (SIGNED)
+                    </span>
+                  </div>
+                } @empty {
+                  <p class="text-xs text-slate-400">
+                    Chưa có thành viên nào ký biểu quyết cho đề xuất này.
+                  </p>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Action Buttons -->
+          <div
+            class="pt-4 border-t border-slate-100 dark:border-slate-900/60 flex justify-end gap-3 select-none"
+          >
+            @if (
+              selectedProposal().status === 'PENDING' &&
+              stateService.hasPermission('proposals.sign')
+            ) {
+              <button
+                app-button
+                variant="primary"
+                (click)="handleSignProposal(selectedProposal())"
+                class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2"
+              >
+                <app-icon name="shield" class="w-4 h-4" />
+                KÝ BIỂU QUYẾT (APPROVE)
+              </button>
+            }
+
+            @if (
+              selectedProposal().status === 'APPROVED' &&
+              stateService.hasPermission('proposals.execute')
+            ) {
+              <button
+                app-button
+                variant="primary"
+                (click)="handleExecuteProposal(selectedProposal())"
+                class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 !text-white shadow-md border-0"
+              >
+                <app-icon name="send" class="w-4 h-4" />
+                THỰC THI ON-CHAIN (EXECUTE)
+              </button>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-3">
+          <app-icon name="shield" class="w-16 h-16 text-slate-200 dark:text-slate-800" />
+          <h3 class="text-sm font-extrabold text-slate-500">Chọn một đề xuất để xem chi tiết</h3>
+          <p class="text-xs text-slate-400 max-w-xs">
+            Thông tin biểu quyết, chữ ký mật mã EIP-712 và các nút hành động sẽ hiển thị tại đây.
+          </p>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <!-- MODAL: CREATE PROPOSAL -->
+  @if (showCreateModal()) {
+    <div
+      class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150"
+    >
+      <div
+        class="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 max-w-lg w-full shadow-xl space-y-6"
+      >
+        <div
+          class="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-900/60"
+        >
+          <h3 class="text-base font-black text-slate-800 dark:text-white">Tạo đề xuất mới</h3>
+          <button (click)="showCreateModal.set(false)" class="text-slate-400 hover:text-slate-600">
+            <app-icon name="close" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <div class="space-y-4 max-h-[450px] overflow-y-auto pr-1">
+          <div class="space-y-1">
+            <label class="text-xs font-black text-slate-400 uppercase">Tiêu đề đề xuất</label>
+            <input
+              type="text"
+              [(ngModel)]="newProposal.title"
+              placeholder="VD: Rút quỹ Treasury chi tiêu vận hành..."
+              class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold"
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-black text-slate-400 uppercase">Mô tả</label>
+            <textarea
+              [(ngModel)]="newProposal.description"
+              rows="3"
+              placeholder="Mô tả mục đích và phân tích tài chính..."
+              class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs outline-none focus:border-primary"
+            ></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="text-xs font-black text-slate-400 uppercase">Loại đề xuất</label>
+              <select
+                [(ngModel)]="newProposal.type"
+                class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-semibold"
+              >
+                <option value="WITHDRAW">WITHDRAW (Rút quỹ)</option>
+                <option value="MINT">MINT (Phát hành thêm)</option>
+                <option value="CONFIG">CONFIG (Cấu hình hệ thống)</option>
+              </select>
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs font-black text-slate-400 uppercase"
+                >Hạn biểu quyết (Ngày)</label
+              >
+              <input
+                type="number"
+                [(ngModel)]="newProposal.expiration_days"
+                class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-black text-slate-400 uppercase"
+              >Địa chỉ ví thụ hưởng (Target)</label
+            >
+            <input
+              type="text"
+              [(ngModel)]="newProposal.params.target"
+              placeholder="0x..."
+              class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 font-mono text-xs"
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-black text-slate-400 uppercase"
+              >Số lượng BNB rút (Value in WEI)</label
+            >
+            <input
+              type="text"
+              [(ngModel)]="newProposal.params.value"
+              class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 font-mono text-xs"
+            />
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-900/60 flex justify-end gap-3">
+          <button
+            app-button
+            variant="cancel"
+            (click)="showCreateModal.set(false)"
+            class="h-10 px-4 rounded-xl font-bold"
+          >
+            Hủy
+          </button>
+          <button
+            app-button
+            variant="primary"
+            (click)="handleCreateProposal()"
+            class="h-10 px-5 rounded-xl font-extrabold"
+          >
+            Tạo đề xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

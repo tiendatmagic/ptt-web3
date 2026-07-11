@@ -13,49 +13,77 @@
       <span
         class="text-base font-black tracking-tight leading-none text-slate-800 dark:text-white mb-1.5"
       >
-        <span class="text-primary">Angular</span>
-        <span class="text-secondary">Web3</span>
+        <span class="text-primary">PTT</span>
+        <span class="text-secondary">Dapp</span>
       </span>
       <span
-        class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none"
+        class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none"
       >
-        Web3 Template
+        Tokenized Equity SaaS
       </span>
     </div>
   </div>
 
   <!-- MENU LINKS -->
   <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
-    <!-- Trang chủ -->
+    <!-- Doanh nghiệp (Dashboard) -->
     <a
-      routerLink="/home"
+      routerLink="/dashboard"
       routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
       [routerLinkActiveOptions]="{ exact: true }"
       class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
     >
       <app-icon name="home" class="w-5 h-5 flex-shrink-0" />
-      <span>Trang chủ</span>
+      <span>Doanh nghiệp</span>
     </a>
 
-    <!-- Giới thiệu -->
-    <a
-      routerLink="/about"
-      routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
-      class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
-    >
-      <app-icon name="info" class="w-5 h-5 flex-shrink-0" />
-      <span>Giới thiệu</span>
-    </a>
+    <!-- Quản trị & Biểu quyết (Governance) -->
+    @if (stateService.hasPermission('proposals.view')) {
+      <a
+        routerLink="/governance"
+        routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
+      >
+        <app-icon name="shield" class="w-5 h-5 flex-shrink-0" />
+        <span>Hội đồng Quản trị</span>
+      </a>
+    }
 
-    <!-- Liên hệ -->
-    <a
-      routerLink="/contact"
-      routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
-      class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
-    >
-      <app-icon name="send" class="w-5 h-5 flex-shrink-0" />
-      <span>Liên hệ</span>
-    </a>
+    <!-- Sổ lệnh & Giao dịch (Marketplace) -->
+    @if (stateService.hasPermission('marketplace.view')) {
+      <a
+        routerLink="/marketplace"
+        routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
+      >
+        <app-icon name="refresh" class="w-5 h-5 flex-shrink-0" />
+        <span>Sàn giao dịch</span>
+      </a>
+    }
+
+    <!-- Gọi vốn & Cổ tức (Funding & Dividends) -->
+    @if (stateService.hasPermission('funding.view') || stateService.hasPermission('dividends.view')) {
+      <a
+        routerLink="/funding"
+        routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
+      >
+        <app-icon name="send" class="w-5 h-5 flex-shrink-0" />
+        <span>Gọi vốn & Cổ tức</span>
+      </a>
+    }
+
+    <!-- Quản lý KYC (Admin) -->
+    @if (stateService.hasPermission('kyc.view')) {
+      <a
+        routerLink="/kyc"
+        routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
+      >
+        <app-icon name="info" class="w-5 h-5 flex-shrink-0" />
+        <span>Xét duyệt KYC</span>
+      </a>
+    }
   </nav>
 
   <!-- BOTTOM CONTROLS -->
@@ -64,6 +92,6 @@
   >
     <app-tx-speed-selector />
     <app-theme-switcher />
-
   </div>
 </aside>
+
