@@ -1,0 +1,64 @@
+<!-- DESKTOP SIDEBAR (chỉ hiện >= md) -->
+<app-sidebar></app-sidebar>
+
+<!-- HEADER MENU -->
+<app-header></app-header>
+
+<div class="md:pl-72 min-h-screen transition-all duration-300">
+  <router-outlet></router-outlet>
+</div>
+
+<!-- TOAST NOTIFICATION CONTAINER -->
+<app-toast></app-toast>
+
+<!-- MODAL CẢNH BÁO SAI MẠNG CỦA DAPP -->
+<app-modal
+  [isOpen]="stateService.showWrongChainModal()"
+  [title]="'Chuyển mạng lưới'"
+  (close)="stateService.showWrongChainModal.set(false)"
+  size="md"
+>
+  <div class="space-y-5 text-center">
+    <!-- Icon Warning lớn -->
+    <div class="w-12 h-12 bg-red-50 dark:bg-red-950/30 rounded-full flex items-center justify-center mx-auto text-red-500 border border-red-500/10">
+      <app-icon name="warning" class="w-6 h-6" strokeWidth="2" />
+    </div>
+
+    <div class="space-y-2">
+      <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed px-2">
+        Ứng dụng không hỗ trợ mạng hiện tại của bạn. Vui lòng chuyển sang một trong các mạng khả dụng dưới đây để tiếp tục.
+      </p>
+    </div>
+
+    <!-- Danh sách các mạng hỗ trợ của DApp -->
+    <div class="space-y-2.5 max-h-[250px] overflow-y-auto no-scrollbar px-1">
+      @for (chain of stateService.POPULAR_CHAINS; track chain.chainId) {
+        <button
+          (click)="switchNetwork(+chain.chainId)"
+          class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all cursor-pointer group text-left"
+        >
+          <span
+            [style.backgroundColor]="chain.color || '#94a3b8'"
+            class="w-3.5 h-3.5 rounded-full inline-block shadow-sm flex-shrink-0"
+          ></span>
+          <span class="font-bold text-sm text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors">
+            {{ chain.name.replace(' Mainnet', '') }}
+          </span>
+        </button>
+      }
+    </div>
+
+    <!-- Nút ngắt kết nối ví -->
+    <div class="pt-4 border-t border-slate-100 dark:border-slate-800/60 flex justify-center">
+      <button
+        app-button
+        variant="cancel"
+        class="w-full justify-center !text-red-500 hover:!bg-red-500/10 !border-red-500/10"
+        (click)="disconnectWallet()"
+      >
+        <app-icon name="logout" class="w-4.5 h-4.5" />
+        Ngắt kết nối ví
+      </button>
+    </div>
+  </div>
+</app-modal>

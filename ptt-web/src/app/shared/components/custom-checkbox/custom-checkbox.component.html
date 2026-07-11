@@ -1,0 +1,55 @@
+<label
+  class="group flex items-start gap-3 cursor-pointer select-none"
+  [class.opacity-50]="disabled"
+  [class.pointer-events-none]="disabled"
+>
+  <!-- Ô vuông checkbox -->
+  <div
+    class="relative shrink-0 h-5 w-5 rounded-[6px] border-2 transition-all duration-200 flex items-center justify-center"
+    [ngClass]="
+      checked()
+        ? 'border-[var(--color-primary)] bg-[var(--color-primary)] shadow-sm shadow-[var(--color-primary)]/15'
+        : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800/80 group-hover:border-slate-300 dark:group-hover:border-slate-700'
+    "
+  >
+    <!-- Icon Checkmark vẽ bằng SVG -->
+    <svg
+      class="w-3 h-3 text-white transition-all duration-150 ease-out"
+      [class.scale-0]="!checked()"
+      [class.scale-100]="checked()"
+      [class.opacity-0]="!checked()"
+      [class.opacity-100]="checked()"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="3"
+      viewBox="0 0 24 24"
+    >
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+  </div>
+
+  <input
+    type="checkbox"
+    [checked]="checked()"
+    (change)="toggleChecked()"
+    [disabled]="disabled"
+    class="sr-only"
+  />
+
+  @if (label || description) {
+    <div class="text-xs sm:text-sm pt-0.5">
+      @if (label) {
+        <p class="font-semibold text-slate-700 dark:text-slate-300 leading-tight">
+          {{ label }}
+        </p>
+      }
+      @if (description) {
+        <p class="text-[10px] text-slate-400 mt-0.5 leading-normal">{{ description }}</p>
+      }
+    </div>
+  } @else {
+    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300 pt-0.5">
+      <ng-content></ng-content>
+    </span>
+  }
+</label>

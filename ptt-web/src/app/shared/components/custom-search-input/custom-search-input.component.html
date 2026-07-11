@@ -1,0 +1,38 @@
+<div class="relative {{ containerClass }}">
+  <!-- Icon Search -->
+  <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+    <app-icon
+      name="search"
+      class="h-4 w-4 text-slate-400 dark:text-slate-500"
+      strokeWidth="2.5"
+    ></app-icon>
+  </div>
+
+  <!-- Input field -->
+  <input
+    type="text"
+    [value]="val()"
+    (input)="onInput($event)"
+    [placeholder]="placeholder"
+    [disabled]="disabled"
+    [class]="inputClass"
+    [style]="loading || (clearable && val()) ? 'padding-right: 2.5rem !important;' : null"
+  />
+
+  <!-- Loading spinner -->
+  @if (loading) {
+    <div class="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
+      <span class="w-3.5 h-3.5 rounded-full border-2 border-slate-200 border-t-[var(--color-primary)] dark:border-slate-700 dark:border-t-[var(--color-primary)] animate-spin"></span>
+    </div>
+  } @else if (clearable && val()) {
+    <!-- Clear button -->
+    <button
+      type="button"
+      (click)="onClear()"
+      class="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer rounded-lg hover:bg-slate-100/80 dark:hover:bg-slate-800/80 flex items-center justify-center"
+      title="Xóa tìm kiếm"
+    >
+      <app-icon name="close" class="h-3.5 w-3.5" strokeWidth="2.5"></app-icon>
+    </button>
+  }
+</div>

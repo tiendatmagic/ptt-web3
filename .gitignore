@@ -1,0 +1,87 @@
+# ==========================================
+# 1. Hệ thống & Hệ điều hành (OS & System files)
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ==========================================
+# 2. Trình soạn thảo & IDE (IDEs & Editors)
+# ==========================================
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/mcp.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.history/
+
+# ==========================================
+# 3. AI Agents & IDE Assistants (Gemini, Cursor...)
+# ==========================================
+# Giữ thư mục nguyên tắc .agent/ nhưng bỏ qua file nhật ký phát triển AGENTS.md
+.agent/AGENTS.md
+.agents/
+.gemini/
+.cursor/
+.copilot/
+
+# ==========================================
+# 4. Node & Frontend (Angular / Web)
+# ==========================================
+node_modules/
+/dist
+/tmp
+/out-tsc
+/bazel-out
+.angular/
+.sass-cache/
+/connect.lock
+/coverage
+/typings
+__screenshots__/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==========================================
+# 5. Backend (Laravel / PHP)
+# ==========================================
+vendor/
+.phpunit.result.cache
+.phpunit.cache/
+.phpactor.json
+Homestead.json
+Homestead.yaml
+_ide_helper.php
+.env
+.env.backup
+.env.production
+.env.local
+.env.*.local
+*.log
+
+# ==========================================
+# 6. Web3 & Smart Contracts (Hardhat / Foundry)
+# ==========================================
+artifacts/
+cache/
+out/
+typechain/
+typechain-types/
+.openzeppelin/
+cache_hardhat/
+hardhat-typechain/
+flattened.sol

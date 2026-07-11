@@ -1,0 +1,47 @@
+<label
+  class="group flex items-center gap-3 cursor-pointer select-none"
+  [class.opacity-50]="disabled"
+  [class.pointer-events-none]="disabled"
+>
+  <!-- Vòng tròn radio button -->
+  <div
+    class="relative shrink-0 h-5 w-5 rounded-full border-2 transition-all duration-200 flex items-center justify-center"
+    [ngClass]="
+      checked()
+        ? 'border-[var(--color-primary)] bg-white dark:bg-slate-900 shadow-sm shadow-[var(--color-primary)]/15'
+        : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 group-hover:border-slate-400 dark:group-hover:border-slate-500'
+    "
+  >
+    <!-- Chấm tròn trung tâm khi được chọn -->
+    @if (checked()) {
+      <div class="h-2.5 w-2.5 rounded-full bg-[var(--color-primary)] animate-scale-up"></div>
+    }
+  </div>
+
+  <input
+    type="radio"
+    [name]="name"
+    [value]="value"
+    [checked]="checked()"
+    (change)="onSelect()"
+    [disabled]="disabled"
+    class="sr-only"
+  />
+
+  @if (label || description) {
+    <div class="text-xs sm:text-sm">
+      @if (label) {
+        <p class="font-semibold text-slate-700 dark:text-slate-300 leading-tight">
+          {{ label }}
+        </p>
+      }
+      @if (description) {
+        <p class="text-[10px] text-slate-400 mt-0.5 leading-normal">{{ description }}</p>
+      }
+    </div>
+  } @else {
+    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">
+      <ng-content></ng-content>
+    </span>
+  }
+</label>

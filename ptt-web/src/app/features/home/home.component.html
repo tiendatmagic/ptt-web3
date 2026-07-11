@@ -1,0 +1,829 @@
+<main class="max-w-[1530px] mx-auto w-full px-4 sm:px-6 py-6 md:py-10 space-y-6 md:space-y-8">
+  <!-- BANNER CHƯA KẾT NỐI VÍ -->
+  @if (!stateService.isConnected()) {
+    <div app-card class="text-center max-w-2xl mx-auto">
+      <div
+        class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 text-primary border border-primary/20"
+      >
+        <app-icon name="link-chain" class="w-8 h-8" strokeWidth="1.5" />
+      </div>
+      <h2 class="text-2xl md:text-3xl font-black text-slate-800 dark:text-white mb-4">
+        Khung ứng dụng Web3 cao cấp
+      </h2>
+      <p
+        class="text-slate-500 dark:text-slate-400 text-sm sm:text-base mb-8 max-w-md mx-auto leading-relaxed"
+      >
+        Để bắt đầu trải nghiệm các tính năng tương tác blockchain, vui lòng kết nối ví của bạn.
+      </p>
+      <button app-button variant="primary" size="md" (click)="stateService.connectWallet()">
+        <app-icon name="wallet" class="w-5 h-5" strokeWidth="2" />
+        Kết nối ví của bạn
+      </button>
+    </div>
+  }
+
+  <!-- DASHBOARD HOẠT ĐỘNG KHI ĐÃ KẾT NỐI -->
+  @if (stateService.isConnected()) {
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 items-start">
+      <!-- CỘT TRÁI: THÔNG TIN VÍ & MẠNG LƯỚI (5/12 cột) -->
+      <div class="lg:col-span-5 space-y-5 md:space-y-6">
+        <!-- CARD TRẠNG THÁI VÍ -->
+        <div app-card>
+          <h3
+            class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4"
+          >
+            Trạng thái tài khoản
+          </h3>
+
+          <div class="space-y-4">
+            <!-- Số dư lớn -->
+            <div class="flex flex-col py-1">
+              <span class="text-xs font-bold text-slate-400 dark:text-slate-500"
+                >Số dư hiện tại</span
+              >
+              <span
+                class="text-3xl sm:text-4xl font-black text-transparent bg-gradient-to-r from-secondary to-primary bg-clip-text mt-0.5"
+              >
+                {{ stateService.balance() }} {{ stateService.chainSymbol() }}
+              </span>
+            </div>
+
+            <!-- Địa chỉ ví -->
+            <div class="form-field">
+              <label>Địa chỉ ví của bạn</label>
+              <div
+                class="form-input flex items-center justify-between !pl-4 !pr-1.5 py-0"
+              >
+                <span
+                  class="font-mono text-xs font-bold text-slate-600 dark:text-slate-300 min-w-0 flex-1 truncate"
+                >
+                  {{ stateService.address() }}
+                </span>
+                <button
+                  (click)="copyAddress($event)"
+                  class="w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer flex-shrink-0 outline-none focus:outline-none text-slate-400 hover:text-primary hover:bg-primary/10 focus:text-slate-400 focus:bg-transparent"
+                  title="Sao chép địa chỉ"
+                >
+                  <app-icon name="copy" class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Mạng & Chain ID -->
+            <div
+              class="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800/40 pt-4"
+            >
+              <div class="flex flex-col">
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Mạng kết nối</span>
+                <span class="text-sm font-extrabold text-slate-700 dark:text-slate-200 truncate">
+                  {{ stateService.networkName() }}
+                </span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Chain ID</span>
+                <span class="text-sm font-mono font-bold text-slate-700 dark:text-slate-200">
+                  {{ stateService.chainId() }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD CHUYỂN MẠNG NHANH -->
+        <div app-card>
+          <h3
+            class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4"
+          >
+            Chuyển nhanh mạng lưới
+          </h3>
+
+          <!-- Cảnh báo sai mạng -->
+          @if (stateService.isWrongChain()) {
+            <div
+              class="bg-red-500/10 border border-red-500/25 rounded-xl p-3 mb-4 text-xs font-bold text-red-500 flex items-start gap-2"
+            >
+              <app-icon name="warning" class="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span>Bạn đang ở mạng không được hỗ trợ. Vui lòng chuyển sang mạng dưới đây.</span>
+            </div>
+          }
+
+          <div class="grid grid-cols-2 gap-3">
+            @for (chain of stateService.POPULAR_CHAINS; track chain.chainId) {
+              <button
+                [class.!border-primary]="stateService.chainId() === +chain.chainId"
+                [class.!text-primary]="stateService.chainId() === +chain.chainId"
+                (click)="stateService.switchNetwork(+chain.chainId)"
+                class="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800/60 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-all cursor-pointer"
+              >
+                <span
+                  [style.backgroundColor]="chain.color || '#94a3b8'"
+                  class="w-2 h-2 rounded-full flex-shrink-0"
+                ></span>
+                {{ chain.name.replace(' Mainnet', '') }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- CỘT PHẢI: CÁC HOẠT ĐỘNG GIAO DỊCH DEMO (7/12 cột) -->
+      <div class="lg:col-span-7 space-y-6">
+        <!-- THỰC HIỆN GỬI GIAO DỊCH DEMO -->
+        <div app-card>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary border border-primary/10"
+            >
+              <app-icon name="send" class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="text-base font-black text-slate-800 dark:text-white">
+                Gửi giao dịch Demo
+              </h3>
+              <p class="text-xs text-slate-400 dark:text-slate-500">
+                Thử nghiệm chuyển {{ stateService.chainSymbol() }} tới ví khác
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Địa chỉ nhận -->
+            <div class="form-field">
+              <label>Địa chỉ ví nhận</label>
+              <app-custom-input
+                type="text"
+                placeholder="0x..."
+                [(ngModel)]="toAddress"
+                customClass="font-mono"
+              />
+            </div>
+
+            <!-- Số lượng gửi -->
+            <div class="form-field">
+              <label>Số lượng {{ stateService.chainSymbol() }} gửi</label>
+              <app-custom-input
+                type="number"
+                placeholder="0.01"
+                step="0.001"
+                min="0"
+                [(ngModel)]="amount"
+              />
+            </div>
+
+            <!-- Nút gửi -->
+            <button
+              app-button
+              variant="primary"
+              class="w-full py-3.5 text-sm font-bold shadow-md cursor-pointer mt-2"
+              [disabled]="txLoading()"
+              (click)="sendTransaction()"
+            >
+              @if (txLoading()) {
+                <app-icon name="loading" class="w-4 h-4 animate-spin" />
+                Đang xử lý giao dịch...
+              } @else {
+                <app-icon name="send" class="w-4 h-4" />
+                Xác nhận gửi {{ stateService.chainSymbol() }}
+              }
+            </button>
+
+            <!-- Kết quả giao dịch -->
+            @if (txHash()) {
+              <div
+                class="bg-emerald-500/10 border border-emerald-500/25 rounded-xl p-4 space-y-2 mt-4"
+              >
+                <div class="flex items-center gap-2 text-emerald-500 text-xs font-bold">
+                  <app-icon name="check-circle" class="w-4 h-4" />
+                  <span>Giao dịch thành công</span>
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                  <span
+                    class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider"
+                    >Transaction Hash</span
+                  >
+                  <a
+                    [href]="'https://sepolia.arbiscan.io/tx/' + txHash()"
+                    target="_blank"
+                    class="text-xs font-mono text-primary hover:text-primary/80 truncate underline cursor-pointer"
+                  >
+                    {{ txHash() }}
+                  </a>
+                </div>
+              </div>
+            }
+
+            <!-- Lỗi giao dịch -->
+            @if (txError()) {
+              <div
+                class="bg-red-500/10 border border-red-500/25 rounded-xl p-4 text-xs font-bold text-red-500 flex items-start gap-2"
+              >
+                <app-icon name="warning" class="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span class="break-words min-w-0">Lỗi: {{ txError() }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- KÝ TIN NHẮN DEMO BẢO MẬT -->
+        <div app-card>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary border border-primary/10"
+            >
+              <app-icon name="pen" class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="text-base font-black text-slate-800 dark:text-white">Demo Ký tin nhắn</h3>
+              <p class="text-xs text-slate-400 dark:text-slate-500">
+                Xác thực thông điệp không mất phí gas
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Nội dung tin nhắn -->
+            <div class="form-field">
+              <label>Nội dung thông điệp</label>
+              <textarea
+                rows="2"
+                [(ngModel)]="messageToSign"
+                class="form-textarea"
+              ></textarea>
+            </div>
+
+            <!-- Nút ký -->
+            <button
+              app-button
+              variant="primary"
+              class="w-full py-3.5 text-sm font-bold shadow-md cursor-pointer mt-2"
+              [disabled]="signLoading()"
+              (click)="signMessage()"
+            >
+              @if (signLoading()) {
+                <app-icon name="loading" class="w-4 h-4 animate-spin" />
+                Đang xử lý chữ ký...
+              } @else {
+                <app-icon name="pen" class="w-4 h-4" />
+                Ký thông điệp này
+              }
+            </button>
+
+            <!-- Kết quả chữ ký -->
+            @if (signature()) {
+              <div
+                class="bg-primary/10 border border-primary/20 rounded-xl p-4 space-y-2 mt-4"
+              >
+                <div
+                  class="flex items-center justify-between text-primary text-xs font-bold"
+                >
+                  <div class="flex items-center gap-2">
+                    <app-icon name="pen" class="w-4 h-4" />
+                    <span>Đã tạo chữ ký số</span>
+                  </div>
+                </div>
+                <div
+                  class="flex gap-2 items-start bg-white/50 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-200/20 dark:border-slate-800/40"
+                >
+                  <span
+                    class="text-xs font-mono break-all text-slate-600 dark:text-slate-300 min-w-0 flex-1 leading-relaxed"
+                  >
+                    {{ signature() }}
+                  </span>
+                  <button
+                    (click)="copySignature()"
+                    class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500 hover:text-primary flex-shrink-0 cursor-pointer transition-all mt-0.5"
+                    title="Sao chép chữ ký"
+                  >
+                    <app-icon name="copy" class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            }
+
+            <!-- Lỗi ký -->
+            @if (signError()) {
+              <div
+                class="bg-red-500/10 border border-red-500/25 rounded-xl p-4 text-xs font-bold text-red-500 flex items-start gap-2"
+              >
+                <app-icon name="warning" class="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span class="break-words min-w-0">Lỗi: {{ signError() }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- UI COMPONENTS SHOWCASE - Demo các component mới       -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="space-y-4">
+    <!-- Tiêu đề section -->
+    <div class="flex items-center gap-3">
+      <div
+        class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary border border-primary/10"
+      >
+        <app-icon name="bolt" class="w-5 h-5" [solid]="true" viewBox="0 0 20 20" />
+      </div>
+      <div>
+        <h3 class="text-base font-black text-slate-800 dark:text-white">UI Components Showcase</h3>
+        <p class="text-xs text-slate-400 dark:text-slate-500">
+          Demo tất cả các shared components đã được xây dựng
+        </p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- CARD 1: Custom Switch -->
+      <div app-card>
+        <h4
+          class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"
+        >
+          <app-icon
+            name="bolt"
+            class="w-3.5 h-3.5 text-primary"
+            [solid]="true"
+            viewBox="0 0 20 20"
+          />
+          Custom Switch
+        </h4>
+        <div class="space-y-4">
+          <!-- Compact mode -->
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-slate-600 dark:text-slate-300"
+              >Compact toggle</span
+            >
+            <app-custom-switch
+              [checked]="demoSwitchChecked()"
+              (checkedChange)="demoSwitchChecked.set($event)"
+              label="Bật thông báo"
+            />
+          </div>
+          <!-- Full mode panel -->
+          <app-custom-switch
+            type="full"
+            label="Xác nhận giao dịch"
+            description="Hiển thị popup xác nhận trước khi gửi {{ stateService.chainSymbol() }}"
+            [checked]="demoSwitchFull()"
+            (checkedChange)="demoSwitchFull.set($event)"
+          />
+          <div
+            class="text-xs font-mono text-slate-400 bg-slate-50 dark:bg-slate-950/40 rounded-lg px-3 py-2"
+          >
+            compact={{ demoSwitchChecked() }} &nbsp;|&nbsp; full={{ demoSwitchFull() }}
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2: Custom Radio -->
+      <div app-card>
+        <h4
+          class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"
+        >
+          <app-icon
+            name="bolt"
+            class="w-3.5 h-3.5 text-primary"
+            [solid]="true"
+            viewBox="0 0 20 20"
+          />
+          Custom Radio
+        </h4>
+        <div class="space-y-3">
+          @for (opt of demoRadioOptions; track opt.value) {
+            <app-custom-radio
+              name="demoChain"
+              [value]="opt.value"
+              [label]="opt.label"
+              [description]="opt.description"
+              [checked]="demoRadioValue() === opt.value"
+              (select)="demoRadioValue.set($event)"
+            />
+          }
+          <div
+            class="text-xs font-mono text-slate-400 bg-slate-50 dark:bg-slate-950/40 rounded-lg px-3 py-2"
+          >
+            selected={{ demoRadioValue() }}
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 3: Custom Checkbox -->
+      <div app-card>
+        <h4
+          class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"
+        >
+          <app-icon name="shield-check" class="w-3.5 h-3.5 text-primary" strokeWidth="2.5" />
+          Custom Checkbox
+        </h4>
+        <div class="space-y-4">
+          <app-custom-checkbox
+            [ngModel]="demoCheckboxValue()"
+            (ngModelChange)="demoCheckboxValue.set($event)"
+            label="Chấp nhận điều khoản dịch vụ"
+            description="Tôi đồng ý với các điều khoản và cam kết bảo mật thông tin ví dApp này."
+          />
+          <div
+            class="text-xs font-mono text-slate-400 bg-slate-50 dark:bg-slate-950/40 rounded-lg px-3 py-2"
+          >
+            checked={{ demoCheckboxValue() }}
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 4: Custom Search Input -->
+      <div app-card>
+        <h4
+          class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"
+        >
+          <app-icon name="search" class="w-3.5 h-3.5 text-blue-500" strokeWidth="2.5" />
+          Custom Search Input
+        </h4>
+        <div class="space-y-3">
+          <app-custom-search-input
+            placeholder="Tìm kiếm địa chỉ ví..."
+            [debounce]="300"
+            [clearable]="true"
+            [ngModel]="demoSearchQuery()"
+            (valueChange)="demoSearchQuery.set($event)"
+          />
+          <div
+            class="text-xs font-mono text-slate-400 bg-slate-50 dark:bg-slate-950/40 rounded-lg px-3 py-2"
+          >
+            query="{{ demoSearchQuery() || '(trống)' }}"
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 5: Custom Select -->
+      <div app-card>
+        <h4
+          class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"
+        >
+          <app-icon name="chevron-down" class="w-3.5 h-3.5 text-emerald-500" strokeWidth="2.5" />
+          Custom Select
+        </h4>
+        <div class="space-y-3">
+          <app-custom-select
+            label="Chọn mạng lưới"
+            placeholder="-- Chọn mạng lưới --"
+            [options]="demoChainOptions"
+            valueKey="value"
+            labelKey="label"
+            [showSearch]="true"
+            placement="auto"
+            [value]="demoSelectValue()"
+            (valueChange)="demoSelectValue.set($event)"
+          />
+          <div
+            class="text-xs font-mono text-slate-400 bg-slate-50 dark:bg-slate-950/40 rounded-lg px-3 py-2"
+          >
+            selected={{ demoSelectValue() ?? '(chưa chọn)' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 6: Custom Date Picker -->
+      <div app-card>
+        <h4
+          class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"
+        >
+          <app-icon name="calendar" class="w-3.5 h-3.5 text-amber-500" strokeWidth="2.5" />
+          Custom Date Picker
+        </h4>
+        <div class="flex flex-col gap-3.5">
+          <!-- Bảng cấu hình mốc giới hạn minDate & Presets -->
+          <div class="flex flex-col gap-2.5 p-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/40 dark:border-slate-800/40 rounded-xl space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Giới hạn ngày tối thiểu (minDate)</span>
+              <app-custom-switch
+                [checked]="limitDatePicker()"
+                (checkedChange)="limitDatePicker.set($event)"
+              />
+            </div>
+            
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Hiển thị gợi ý chọn nhanh (presets)</span>
+              <app-custom-switch
+                [checked]="demoDatePickerShowPresets()"
+                (checkedChange)="demoDatePickerShowPresets.set($event)"
+              />
+            </div>
+
+            @if (limitDatePicker()) {
+              <div class="form-field pt-1 border-t border-slate-200/30 dark:border-slate-800/30 animate-in fade-in duration-200">
+                <label>Mốc ngày tối thiểu (YYYY-MM-DD)</label>
+                <input
+                  type="text"
+                  [ngModel]="demoDatePickerMinDate()"
+                  (ngModelChange)="demoDatePickerMinDate.set($event)"
+                  placeholder="2026-07-20"
+                  class="form-input"
+                />
+              </div>
+            }
+          </div>
+
+          <app-custom-date-picker
+            label="Ngày giao dịch"
+            placeholder="Chọn ngày..."
+            [minDate]="limitDatePicker() ? demoDatePickerMinDate() : ''"
+            [showPresets]="demoDatePickerShowPresets()"
+            [ngModel]="demoDatePickerValue()"
+            (ngModelChange)="demoDatePickerValue.set($event)"
+          />
+          <div
+            class="text-xs font-mono text-slate-400 bg-slate-50 dark:bg-slate-950/40 rounded-lg px-3 py-2"
+          >
+            selected={{ demoDatePickerValue() || '(chưa chọn)' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 7: Custom Accordion -->
+      <div app-card>
+        <h4
+          class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"
+        >
+          <app-icon name="chevron-down" class="w-3.5 h-3.5 text-primary" strokeWidth="2.5" />
+          Custom Accordion
+        </h4>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800/40">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Cho phép mở nhiều mục cùng lúc</span>
+            <app-custom-switch
+              [checked]="demoAccordionMultiple()"
+              (checkedChange)="demoAccordionMultiple.set($event)"
+            />
+          </div>
+
+          <app-accordion [multiple]="demoAccordionMultiple()">
+            <app-accordion-item title="Làm thế nào để kết nối ví?" subtitle="Hướng dẫn kết nối nhanh Web3">
+              Bạn có thể kết nối ví bằng cách nhấn nút &quot;Kết nối ví của bạn&quot; ở đầu trang. Hệ thống hỗ trợ nhiều loại ví thông qua Reown AppKit như MetaMask, Trust Wallet, Coinbase Wallet và các ví WalletConnect khác.
+            </app-accordion-item>
+            <app-accordion-item title="Tại sao cần chuyển đúng mạng lưới?" subtitle="Giải thích cơ chế EVM">
+              Mỗi hợp đồng thông minh được triển khai trên các chuỗi khối (blockchain) khác nhau. Để thực hiện giao dịch đúng địa chỉ và đúng loại token, ví của bạn cần được thiết lập đúng mạng lưới (ví dụ: Arbitrum Sepolia).
+            </app-accordion-item>
+            <app-accordion-item title="Có mất phí gas khi ký tin nhắn không?" subtitle="Bảo mật và chi phí">
+              Không. Việc ký tin nhắn (Message Signing) chỉ là thao tác mã hóa cục bộ bằng khóa riêng của ví để xác thực quyền sở hữu địa chỉ ví, hoàn toàn không gửi giao dịch lên blockchain nên **không tốn bất kỳ chi phí gas nào**.
+            </app-accordion-item>
+          </app-accordion>
+        </div>
+      </div>
+
+      <!-- CARD 8: Badge, Kbd & Tooltip -->
+      <div app-card>
+        <h4
+          class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"
+        >
+          <app-icon name="shield-check" class="w-3.5 h-3.5 text-primary" strokeWidth="2.5" />
+          Badge, Kbd & Tooltip
+        </h4>
+        
+        <div class="space-y-5">
+          <!-- Tooltip placements demo -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider select-none">Tooltip Placement (Hover me)</label>
+            <div class="flex flex-wrap gap-2.5 pt-1">
+              <button app-button variant="cancel" size="sm" appTooltip="Tooltip hiển thị phía trên 🚀" tooltipPlacement="top">
+                Top
+              </button>
+              <button app-button variant="cancel" size="sm" appTooltip="Tooltip hiển thị phía dưới ✨" tooltipPlacement="bottom">
+                Bottom
+              </button>
+              <button app-button variant="cancel" size="sm" appTooltip="Tooltip hiển thị bên trái 👈" tooltipPlacement="left">
+                Left
+              </button>
+              <button app-button variant="cancel" size="sm" appTooltip="Tooltip hiển thị bên phải 👉" tooltipPlacement="right">
+                Right
+              </button>
+            </div>
+          </div>
+
+          <!-- Kbd keys demo -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider select-none">Keyboard Shortcuts (Kbd)</label>
+            <div class="flex items-center gap-1.5 pt-1 text-sm font-semibold text-slate-600 dark:text-slate-350">
+              <span>Nhấn</span>
+              <kbd app-kbd appTooltip="Phím Command / Windows" tooltipPlacement="top">⌘</kbd>
+              <span>+</span>
+              <kbd app-kbd appTooltip="Phím K" tooltipPlacement="top">K</kbd>
+              <span>để mở nhanh thanh tìm kiếm dApp.</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300">
+              <span>Sử dụng phím</span>
+              <kbd app-kbd appTooltip="Phím mũi tên lên">↑</kbd>
+              <kbd app-kbd appTooltip="Phím mũi tên xuống">↓</kbd>
+              <span>để duyệt qua danh sách mạng lưới.</span>
+            </div>
+          </div>
+
+          <!-- Badge variants demo -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider select-none">Badge Variants</label>
+            <div class="flex flex-wrap gap-2 pt-1">
+              <app-badge variant="primary">Primary</app-badge>
+              <app-badge variant="secondary">Secondary</app-badge>
+              <app-badge variant="success" [pulse]="true">Success</app-badge>
+              <app-badge variant="warning">Warning</app-badge>
+              <app-badge variant="danger">Danger</app-badge>
+              <app-badge variant="info">Info</app-badge>
+              <app-badge variant="neutral">Neutral</app-badge>
+              <app-badge variant="ultra" [interactive]="true">Ultra</app-badge>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 9: Custom Tab Group -->
+      <div app-card>
+        <h4
+          class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"
+        >
+          <app-icon name="link-chain" class="w-3.5 h-3.5 text-primary" strokeWidth="2.5" />
+          Custom Tab Group
+        </h4>
+        
+        <div class="space-y-4">
+          <app-tab-group
+            [options]="demoTabOptions"
+            [activeValue]="demoTabValue()"
+            (valueChange)="demoTabValue.set($event)"
+          ></app-tab-group>
+          
+          <div
+            class="text-xs font-mono text-slate-400 bg-slate-50 dark:bg-slate-950/40 rounded-lg px-3 py-2.5"
+          >
+            activeTab = "{{ demoTabValue() }}"
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 10: Custom Slider -->
+      <div app-card>
+        <h4
+          class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"
+        >
+          <app-icon name="bolt" class="w-3.5 h-3.5 text-emerald-500" strokeWidth="2.5" />
+          Custom Slider
+        </h4>
+        
+        <div class="space-y-4">
+          <!-- Primary color slider with marks -->
+          <div class="form-field">
+            <label>Mức độ ưu tiên Gas (Primary / Marks)</label>
+            <app-custom-slider
+              [min]="0"
+              [max]="10"
+              [step]="1"
+              [marks]="true"
+              color="primary"
+              [ngModel]="demoSliderVal1()"
+              (ngModelChange)="demoSliderVal1.set($event)"
+            ></app-custom-slider>
+          </div>
+          <div
+            class="text-xs font-mono text-slate-400 bg-slate-50 dark:bg-slate-950/40 rounded-lg px-3 py-2"
+          >
+            priorityVal = {{ demoSliderVal1() }} (min: 0, max: 10, step: 1)
+          </div>
+
+          <!-- Neutral color slider without marks -->
+          <div class="form-field">
+            <label>Khối lượng Token gửi (Neutral / No Marks)</label>
+            <app-custom-slider
+              [min]="0"
+              [max]="100"
+              [step]="5"
+              [marks]="false"
+              color="neutral"
+              [ngModel]="demoSliderVal2()"
+              (ngModelChange)="demoSliderVal2.set($event)"
+            ></app-custom-slider>
+          </div>
+          <div
+            class="text-xs font-mono text-slate-400 bg-slate-50 dark:bg-slate-950/40 rounded-lg px-3 py-2"
+          >
+            tokenVal = {{ demoSliderVal2() }}% (min: 0, max: 100, step: 5)
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 11: Demo Form Components -->
+      <div app-card>
+        <h4
+          class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"
+        >
+          <app-icon name="bolt" class="w-3.5 h-3.5 text-primary" strokeWidth="2.5" />
+          Demo Form Components
+        </h4>
+
+        <div class="space-y-4">
+          <!-- Hàng 1: Ngày sinh + Giới tính -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Ngày sinh -->
+            <div class="form-field">
+              <label>Ngày sinh</label>
+              <app-custom-date-picker
+                placeholder="Chọn ngày sinh"
+                [showPresets]="false"
+                [ngModel]="demoProfileBirthday()"
+                (ngModelChange)="demoProfileBirthday.set($event)"
+              />
+            </div>
+
+            <!-- Giới tính -->
+            <div class="form-field">
+              <label>Giới tính</label>
+              <app-tab-group
+                [options]="genderOptions"
+                [activeValue]="demoProfileGender()"
+                (valueChange)="demoProfileGender.set($event)"
+              />
+            </div>
+          </div>
+
+          <!-- Hàng 2: Địa chỉ ví Web3 (EVM) -->
+          <div class="form-field">
+            <label>Địa chỉ ví Web3 (EVM)</label>
+            <app-custom-input
+              placeholder="0x..."
+              [ngModel]="demoProfileWallet()"
+              (ngModelChange)="demoProfileWallet.set($event)"
+            />
+          </div>
+
+          <!-- Output debug nhỏ -->
+          <div
+            class="text-xs font-mono text-slate-400 bg-slate-50 dark:bg-slate-950/40 rounded-lg px-3 py-2.5 space-y-0.5"
+          >
+            <div>birthday = "{{ demoProfileBirthday() || '(chưa chọn)' }}"</div>
+            <div>gender = "{{ demoProfileGender() }}"</div>
+            <div>wallet = "{{ demoProfileWallet() || '(chưa nhập)' }}"</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 12: Custom Date Time Range Picker -->
+      <div app-card>
+        <h4
+          class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"
+        >
+          <app-icon name="calendar" class="w-3.5 h-3.5 text-primary" strokeWidth="2.5" />
+          Custom Date Time Range Picker
+        </h4>
+
+        <div class="space-y-4">
+          <!-- Demo 1: Chọn khoảng ngày thông thường -->
+          <div class="form-field">
+            <label>Khoảng ngày giao dịch (Mặc định)</label>
+            <app-custom-date-time-range
+              placeholder="Chọn khoảng ngày..."
+              [ngModel]="demoRangeValue()"
+              (ngModelChange)="demoRangeValue.set($event)"
+            />
+          </div>
+
+          <!-- Demo 2: Chọn khoảng ngày có giờ phút -->
+          <div class="form-field">
+            <label>Khoảng thời gian chi tiết (Kèm Giờ & Phút)</label>
+            <app-custom-date-time-range
+              placeholder="Chọn khoảng ngày và giờ..."
+              [showTime]="true"
+              [ngModel]="demoRangeWithTimeValue()"
+              (ngModelChange)="demoRangeWithTimeValue.set($event)"
+            />
+          </div>
+
+          <!-- Demo 3: Chọn khoảng ngày giới hạn (Min/Max Date) -->
+          <div class="form-field">
+            <label>Khoảng ngày có giới hạn (Min: 2026-07-10, Max: 2026-07-20)</label>
+            <app-custom-date-time-range
+              placeholder="Chọn khoảng ngày giới hạn..."
+              minDate="2026-07-10"
+              maxDate="2026-07-20"
+              [ngModel]="demoRangeLimitValue()"
+              (ngModelChange)="demoRangeLimitValue.set($event)"
+            />
+          </div>
+
+          <!-- Output debug -->
+          <div
+            class="text-xs font-mono text-slate-400 bg-slate-50 dark:bg-slate-950/40 rounded-lg px-3 py-2.5 space-y-1"
+          >
+            <div>range = start: "{{ demoRangeValue().startDate || '(trống)' }}" | end: "{{ demoRangeValue().endDate || '(trống)' }}"</div>
+            <div>rangeWithTime = start: "{{ demoRangeWithTimeValue().startDate || '(trống)' }}" | end: "{{ demoRangeWithTimeValue().endDate || '(trống)' }}"</div>
+            <div>rangeLimit = start: "{{ demoRangeLimitValue().startDate || '(trống)' }}" | end: "{{ demoRangeLimitValue().endDate || '(trống)' }}"</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NÚT MỞ MODAL DEMO -->
+    <div class="flex items-center justify-center pt-2">
+      <button app-button variant="primary" size="md" (click)="openDemoModal()">
+        <app-icon name="bolt" class="w-4 h-4" [solid]="true" viewBox="0 0 20 20" />
+        Mở Modal Demo Form
+      </button>
+    </div>
+  </div>
+</main>

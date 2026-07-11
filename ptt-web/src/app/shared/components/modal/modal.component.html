@@ -1,0 +1,35 @@
+@if (isOpen) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <!-- Backdrop overlay tối nhẹ không blur -->
+    <div (click)="onClose()" class="fixed inset-0 bg-black/40"></div>
+
+    <!-- Modal Content -->
+    <div
+      [class]="
+        'relative bg-white dark:bg-slate-900 rounded-[15px] border border-slate-200 dark:border-slate-800 p-6 w-full shadow-2xl text-slate-800 dark:text-slate-200 flex flex-col max-h-[90vh] ' +
+        getSizeClass()
+      "
+    >
+      <!-- Header -->
+      <div
+        class="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800/60 shrink-0"
+      >
+        <h3 class="text-base font-extrabold text-slate-800 dark:text-white">
+          {{ title }}
+        </h3>
+        <button
+          type="button"
+          (click)="onClose()"
+          class="w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+        >
+          <app-icon name="close" class="h-4.5 w-4.5" strokeWidth="2.5" />
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="flex-1 overflow-y-auto pt-5 no-scrollbar min-h-0 text-left">
+        <ng-content></ng-content>
+      </div>
+    </div>
+  </div>
+}

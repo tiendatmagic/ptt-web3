@@ -1,0 +1,14 @@
+{
+  "name": "ptt",
+  "version": "1.0.0",
+  "description": "Thư mục gốc quản lý dự án PTT",
+  "scripts": {
+    "start": "npx concurrently --kill-others \"npm run be\" \"npm run fe\"",
+    "be": "cd ptt-api && php artisan serve",
+    "fe": "cd ptt-web && npm start",
+    "build": "cd ptt-web && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

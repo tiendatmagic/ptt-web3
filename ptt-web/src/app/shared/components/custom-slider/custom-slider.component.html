@@ -1,0 +1,37 @@
+<div class="relative w-full py-4 flex items-center select-none" [class.opacity-50]="disabled">
+  <!-- Track nền (Đường dẫn rỗng) -->
+  <div class="relative w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-visible">
+    <!-- Active Filled Track (Phần đường dẫn tích cực hiển thị màu thương hiệu) -->
+    <div class="absolute h-full left-0 top-0 rounded-full transition-all duration-75"
+         [style.width.%]="percentage()"
+         [class]="filledTrackClass">
+    </div>
+    
+    <!-- Marks (Dấu mốc nhỏ chia bước nhảy trên track) -->
+    @if (marks && markPositions().length > 0) {
+      @for (pos of markPositions(); track pos) {
+        <span class="absolute w-1 h-1 rounded-full top-1/2 -translate-y-1/2 -translate-x-1/2 transition-colors duration-150"
+              [style.left.%]="pos"
+              [class]="pos <= percentage() ? activeMarkClass : inactiveMarkClass">
+        </span>
+      }
+    }
+  </div>
+
+  <!-- Ô nhập range thật của trình duyệt (ẩn hoàn toàn, xử lý các sự kiện click, kéo thả và phím mũi tên) -->
+  <input type="range"
+         [min]="min"
+         [max]="max"
+         [step]="step"
+         [disabled]="disabled"
+         [value]="value()"
+         (input)="onInput($event)"
+         (change)="onChangeEvent($event)"
+         class="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10" />
+
+  <!-- Thumb giả (Nút tròn trượt) -->
+  <span class="absolute w-5 h-5 rounded-full shadow-md border-2 border-white dark:border-slate-900 pointer-events-none transition-all duration-75 -translate-x-1/2 top-1/2 -translate-y-1/2"
+        [style.left.%]="percentage()"
+        [class]="thumbClass">
+  </span>
+</div>

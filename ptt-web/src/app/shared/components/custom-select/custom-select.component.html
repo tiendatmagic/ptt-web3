@@ -1,0 +1,78 @@
+<div class="{{ containerClass }}" [class.opacity-60]="disabled">
+  <!-- Nút kích hoạt Dropdown -->
+  <button
+    type="button"
+    #triggerBtn
+    (click)="toggleOpen()"
+    [disabled]="disabled"
+    class="{{
+      triggerClass
+    }} flex items-center justify-between px-4 text-left transition-all relative"
+    [class.border-[var(--color-primary)]]="isOpen()"
+    [class.cursor-not-allowed]="disabled"
+  >
+    <span
+      class="font-semibold truncate"
+      [class.text-slate-400]="value === null || value === undefined || value === '' || value === 0"
+    >
+      {{ selectedLabel || placeholder }}
+    </span>
+    <app-icon
+      name="chevron-down"
+      class="h-4 w-4 text-slate-400 transition-transform duration-200 shrink-0 ml-2"
+      [class.rotate-180]="isOpen()"
+      strokeWidth="2.5"
+    />
+  </button>
+
+  <!-- Dropdown Menu (fixed positioning - thoát khỏi overflow container) -->
+  @if (isOpen()) {
+    <div
+      [ngStyle]="dropdownStyle"
+      class="bg-white dark:bg-slate-900 border border-slate-200/85 dark:border-slate-800/85 rounded-xl shadow-lg flex flex-col overflow-hidden"
+    >
+      <!-- Ô tìm kiếm nhanh trong dropdown -->
+      @if (showSearch) {
+        <div
+          class="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2.5 shrink-0 bg-slate-50/50 dark:bg-slate-950/40"
+        >
+          <app-icon name="search" class="h-3.5 w-3.5 text-slate-400 shrink-0" strokeWidth="2.5" />
+          <input
+            type="text"
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+            placeholder="Tìm kiếm..."
+            class="w-full bg-transparent text-xs border-0 p-1 outline-none text-slate-800 dark:text-white"
+          />
+        </div>
+      }
+
+      <!-- Danh sách Options -->
+      <div class="overflow-y-auto no-scrollbar flex-1 py-1">
+        @if (filteredOptions().length === 0) {
+          <div class="px-4 py-3 text-center text-xs text-slate-400 italic">
+            Không tìm thấy tùy chọn nào
+          </div>
+        }
+        @for (opt of filteredOptions(); track getOptionValue(opt)) {
+          <button
+            type="button"
+            (click)="selectOption(opt)"
+            class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs font-semibold text-slate-700 dark:text-slate-300 text-left transition-colors"
+          >
+            <span class="truncate">{{ getOptionLabel(opt) }}</span>
+
+            <!-- Checkmark khi đã chọn -->
+            @if (compareValues(getOptionValue(opt), value)) {
+              <app-icon
+                name="check"
+                class="h-4 w-4 text-[var(--color-primary)] shrink-0 ml-2"
+                strokeWidth="3"
+              />
+            }
+          </button>
+        }
+      </div>
+    </div>
+  }
+</div>

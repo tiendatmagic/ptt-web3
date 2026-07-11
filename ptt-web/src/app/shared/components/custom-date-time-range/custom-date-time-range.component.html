@@ -1,0 +1,356 @@
+<div class="relative w-full">
+  <!-- Trigger Input -->
+  <div
+    #triggerDiv
+    (click)="toggleOpen()"
+    class="form-input flex items-center justify-between !py-0 cursor-pointer select-none"
+    [class.opacity-50]="disabled"
+    [class.pointer-events-none]="disabled"
+    [class.border-[var(--color-primary)]]="isOpen()"
+    [class.ring-1]="isOpen()"
+    [class.ring-[var(--color-primary)]/20]="isOpen()"
+  >
+    <span
+      [class.text-slate-400]="!value().startDate"
+      class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200"
+    >
+      {{ value().startDate ? displayValue() : placeholder }}
+    </span>
+
+    <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+      <!-- Nút xóa nhanh nếu đã có giá trị -->
+      @if (value().startDate && !disabled) {
+        <button
+          type="button"
+          (click)="clear($event)"
+          class="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+          title="Xóa khoảng thời gian"
+        >
+          <div class="w-3.5 h-3.5">
+            <app-icon name="close" />
+          </div>
+        </button>
+      }
+
+      <!-- Icon lịch -->
+      <div class="w-4 h-4 text-slate-400 dark:text-slate-500">
+        <app-icon name="calendar" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Popover Lịch & Cấu hình -->
+  @if (isOpen()) {
+    <div
+      [ngStyle]="popoverStyle"
+      class="date-time-range-popover bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800/50 shadow-lg shadow-[var(--color-primary)]/20 rounded-xl p-4 flex flex-col gap-4"
+      (click)="$event.stopPropagation()"
+    >
+      <!-- Quick Presets -->
+      @if (showPresets) {
+        <div
+          class="flex flex-wrap gap-1.5 pb-3.5 border-b border-slate-100 dark:border-slate-800/60 select-none"
+        >
+          @for (p of presets; track p.id) {
+            <button
+              type="button"
+              (click)="selectPreset(p.id, $event)"
+              class="text-[11px] font-bold text-slate-650 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/40 dark:border-slate-800/40 px-2.5 py-1 rounded-lg hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 hover:border-[var(--color-primary)]/20 transition-all cursor-pointer"
+            >
+              {{ p.label }}
+            </button>
+          }
+        </div>
+      }
+
+      <!-- Bộ Lịch -->
+      <div class="flex flex-col">
+        <!-- Header chuyển tháng -->
+        <div class="flex items-center justify-between mb-4 select-none">
+          <button
+            type="button"
+            (click)="prevMonth($event)"
+            class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg text-slate-500 hover:text-[var(--color-primary)] active:scale-90 transition-all cursor-pointer"
+          >
+            <div class="w-4 h-4">
+              <app-icon name="chevron-left" />
+            </div>
+          </button>
+          <span class="text-sm font-extrabold text-slate-800 dark:text-slate-200 tracking-wide">
+            {{ currentMonthName() }}, {{ currentYear() }}
+          </span>
+          <button
+            type="button"
+            (click)="nextMonth($event)"
+            class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg text-slate-500 hover:text-[var(--color-primary)] active:scale-90 transition-all cursor-pointer"
+          >
+            <div class="w-4 h-4">
+              <app-icon name="chevron-right" />
+            </div>
+          </button>
+        </div>
+
+        <!-- Thứ trong tuần -->
+        <div class="grid grid-cols-7 gap-0.5 text-center mb-2 select-none">
+          @for (day of weekdays; track day) {
+            <span class="text-xs font-bold text-[var(--color-primary)]/70 py-1">
+              {{ day }}
+            </span>
+          }
+        </div>
+
+        <!-- Grid ngày với dải highlight liền mạch -->
+        <div class="grid grid-cols-7 gap-y-1 gap-x-0">
+          @for (day of calendarDays(); track day.getTime()) {
+            <div class="relative w-full aspect-square flex items-center justify-center">
+              <!-- Nền highlight capsule thông minh -->
+              @if (getHighlightClass(day) !== 'hidden') {
+                <div
+                  class="absolute inset-y-1 bg-[var(--color-primary)]/10 z-0"
+                  [ngClass]="getHighlightClass(day)"
+                ></div>
+              }
+
+              <!-- 4. Nút bấm ngày chính (đồng dạng 100% với custom-date-picker) -->
+              <button
+                type="button"
+                (click)="selectDate(day, $event)"
+                (mouseenter)="onDateHover(day)"
+                [disabled]="isDateDisabled(day)"
+                class="relative z-10 w-full h-full flex items-center justify-center text-sm font-bold rounded-full transition-all"
+                /* Text color cho các ngày ngoài tháng */
+                [class.text-slate-300]="
+                  !isCurrentMonth(day) && !isStart(day) && !isEnd(day) && !isDateDisabled(day)
+                "
+                [class.dark:text-slate-600]="
+                  !isCurrentMonth(day) && !isStart(day) && !isEnd(day) && !isDateDisabled(day)
+                "
+                /* Text color cho các ngày trong tháng */
+                [class.text-slate-700]="
+                  isCurrentMonth(day) &&
+                  !isStart(day) &&
+                  !isEnd(day) &&
+                  !isToday(day) &&
+                  !isDateDisabled(day)
+                "
+                [class.dark:text-slate-300]="
+                  isCurrentMonth(day) &&
+                  !isStart(day) &&
+                  !isEnd(day) &&
+                  !isToday(day) &&
+                  !isDateDisabled(day)
+                "
+                /* Hover style cho các ngày bình thường */
+                [class.hover:bg-slate-50]="
+                  !isStart(day) &&
+                  !isEnd(day) &&
+                  !isToday(day) &&
+                  !isInRange(day) &&
+                  !isHoverRange(day) &&
+                  !isDateDisabled(day)
+                "
+                [class.dark:hover:bg-slate-800]="
+                  !isStart(day) &&
+                  !isEnd(day) &&
+                  !isToday(day) &&
+                  !isInRange(day) &&
+                  !isHoverRange(day) &&
+                  !isDateDisabled(day)
+                "
+                [class.cursor-pointer]="!isDateDisabled(day)"
+                /* Today style */
+                [class.bg-[var(--color-primary)]/15]="
+                  isToday(day) &&
+                  !isStart(day) &&
+                  !isEnd(day) &&
+                  !isInRange(day) &&
+                  !isHoverRange(day)
+                "
+                [class.!text-[var(--color-primary)]]="isToday(day) && !isStart(day) && !isEnd(day)"
+                /* Range/Hover text color */
+                [class.!text-[var(--color-primary)]]="
+                  (isInRange(day) || isHoverRange(day)) && !isStart(day) && !isEnd(day)
+                "
+                /* Selected Start/End đặc trưng */
+                [class.bg-[var(--color-primary)]]="isStart(day) || isEnd(day)"
+                [class.!text-white]="isStart(day) || isEnd(day)"
+                [class.shadow-md]="isStart(day) || isEnd(day)"
+                [class.shadow-[var(--color-primary)]/30]="isStart(day) || isEnd(day)"
+                [class.font-extrabold]="isStart(day) || isEnd(day) || isToday(day)"
+                /* Disabled state */
+                [class.opacity-30]="isDateDisabled(day)"
+                [class.cursor-not-allowed]="isDateDisabled(day)"
+                [class.pointer-events-none]="isDateDisabled(day)"
+              >
+                {{ day.getDate() }}
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Time Selection (Chỉ hiện khi bật showTime) -->
+      @if (showTime && tempStartDate()) {
+        <div
+          class="flex flex-col gap-2 pt-3.5 border-t border-slate-100 dark:border-slate-800/60 select-none"
+        >
+          <span
+            class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider"
+          >
+            Cấu hình giờ phút
+          </span>
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Giờ bắt đầu -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase"
+                >Giờ bắt đầu</label
+              >
+              <div class="flex items-center gap-1.5 relative">
+                <!-- Custom Hour select -->
+                <div class="relative flex-1">
+                  <div
+                    (click)="toggleDropdown('startHour', $event)"
+                    class="bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-xl p-2 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer h-[38px] flex items-center justify-center hover:border-[var(--color-primary)] transition-all select-none"
+                  >
+                    {{ startHour() }}
+                  </div>
+                  @if (showStartHourDropdown()) {
+                    <div
+                      class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-16 max-h-[220px] overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-xl shadow-lg z-50 p-1.5 custom-scrollbar"
+                    >
+                      @for (h of hoursArray; track h) {
+                        <div
+                          (click)="selectTimeValue('startHour', h, $event)"
+                          class="p-2 hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer text-center rounded-lg transition-colors"
+                          [class.bg-[var(--color-primary)]/5]="startHour() === h"
+                          [class.text-[var(--color-primary)]]="startHour() === h"
+                        >
+                          {{ h }}
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <span class="text-xs font-bold text-slate-400 dark:text-slate-500">:</span>
+
+                <!-- Custom Minute select -->
+                <div class="relative flex-1">
+                  <div
+                    (click)="toggleDropdown('startMinute', $event)"
+                    class="bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-xl p-2 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer h-[38px] flex items-center justify-center hover:border-[var(--color-primary)] transition-all select-none"
+                  >
+                    {{ startMinute() }}
+                  </div>
+                  @if (showStartMinuteDropdown()) {
+                    <div
+                      class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-16 max-h-[220px] overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-xl shadow-lg z-50 p-1.5 custom-scrollbar"
+                    >
+                      @for (m of minutesArray; track m) {
+                        <div
+                          (click)="selectTimeValue('startMinute', m, $event)"
+                          class="p-2 hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer text-center rounded-lg transition-colors"
+                          [class.bg-[var(--color-primary)]/5]="startMinute() === m"
+                          [class.text-[var(--color-primary)]]="startMinute() === m"
+                        >
+                          {{ m }}
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Giờ kết thúc -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase"
+                >Giờ kết thúc</label
+              >
+              <div class="flex items-center gap-1.5 relative">
+                <!-- Custom Hour select -->
+                <div class="relative flex-1">
+                  <div
+                    [class.opacity-50]="!tempEndDate()"
+                    [class.pointer-events-none]="!tempEndDate()"
+                    (click)="toggleDropdown('endHour', $event)"
+                    class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-xl p-2 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer h-[38px] flex items-center justify-center hover:border-[var(--color-primary)] transition-all select-none"
+                  >
+                    {{ endHour() }}
+                  </div>
+                  @if (showEndHourDropdown() && tempEndDate()) {
+                    <div
+                      class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-16 max-h-[220px] overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-xl shadow-lg z-50 p-1.5 custom-scrollbar"
+                    >
+                      @for (h of hoursArray; track h) {
+                        <div
+                          (click)="selectTimeValue('endHour', h, $event)"
+                          class="p-2 hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer text-center rounded-lg transition-colors"
+                          [class.bg-[var(--color-primary)]/5]="endHour() === h"
+                          [class.text-[var(--color-primary)]]="endHour() === h"
+                        >
+                          {{ h }}
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <span class="text-xs font-bold text-slate-400 dark:text-slate-500">:</span>
+
+                <!-- Custom Minute select -->
+                <div class="relative flex-1">
+                  <div
+                    [class.opacity-50]="!tempEndDate()"
+                    [class.pointer-events-none]="!tempEndDate()"
+                    (click)="toggleDropdown('endMinute', $event)"
+                    class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-xl p-2 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer h-[38px] flex items-center justify-center hover:border-[var(--color-primary)] transition-all select-none"
+                  >
+                    {{ endMinute() }}
+                  </div>
+                  @if (showEndMinuteDropdown() && tempEndDate()) {
+                    <div
+                      class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-16 max-h-[220px] overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-xl shadow-lg z-50 p-1.5 custom-scrollbar"
+                    >
+                      @for (m of minutesArray; track m) {
+                        <div
+                          (click)="selectTimeValue('endMinute', m, $event)"
+                          class="p-2 hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer text-center rounded-lg transition-colors"
+                          [class.bg-[var(--color-primary)]/5]="endMinute() === m"
+                          [class.text-[var(--color-primary)]]="endMinute() === m"
+                        >
+                          {{ m }}
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Popover Footer -->
+      <div
+        class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800/60 select-none"
+      >
+        <button
+          type="button"
+          (click)="cancel($event)"
+          class="px-3 py-1.5 rounded-lg border border-slate-200/60 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 text-xs font-bold cursor-pointer transition-colors active:scale-95"
+        >
+          Hủy
+        </button>
+        <button
+          type="button"
+          (click)="apply($event)"
+          [disabled]="!tempStartDate()"
+          class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] text-white text-xs font-extrabold cursor-pointer transition-all shadow-sm shadow-[var(--color-primary)]/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed"
+        >
+          Áp dụng
+        </button>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,132 @@
+<!-- TOAST SYSTEM (RICH AESTHETICS - SLIDE IN WITH DYNAMIC PROGRESS BAR) -->
+<div
+  class="fixed bottom-5 left-1/2 -translate-x-1/2 sm:left-auto sm:right-5 sm:translate-x-0 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full px-4 sm:px-0"
+>
+  @for (toast of toastService.toasts(); track toast.id) {
+    <!-- Success Toast (Thành công - Màu xanh lá cây thuần) -->
+    @if (toast.type === 'success') {
+      <div
+        class="toast-animate pointer-events-auto relative flex items-start gap-3 bg-white/98 dark:bg-slate-950/98 text-slate-800 dark:text-slate-100 px-4 py-3.5 rounded-2xl shadow-lg border border-slate-100/80 dark:border-slate-900/80 backdrop-blur-md overflow-hidden w-full group transition-all duration-300"
+      >
+        <!-- Icon Check tròn xanh dùng app-icon -->
+        <div
+          class="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20"
+        >
+          <app-icon name="check" class="w-3.5 h-3.5" strokeWidth="3" />
+        </div>
+
+        <!-- Nội dung -->
+        <div class="flex-1 pr-6 pt-0.5">
+          <p
+            class="text-xs sm:text-sm font-bold leading-snug tracking-tight text-slate-800 dark:text-slate-200"
+          >
+            {{ toast.message }}
+          </p>
+        </div>
+
+        <!-- Nút đóng dùng app-icon -->
+        <button
+          (click)="toastService.removeToast(toast.id)"
+          class="absolute top-3.5 right-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-0.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer"
+        >
+          <app-icon name="close" class="w-3.5 h-3.5" strokeWidth="2.5" />
+        </button>
+
+        <!-- Thanh tiến trình tự chạy lùi (Xanh lá cây thuần, khít viền dưới) -->
+        <div
+          class="absolute bottom-0 left-0 right-0 h-[3px] bg-transparent overflow-hidden rounded-b-2xl"
+        >
+          <div
+            class="h-full bg-emerald-500 rounded-r-full"
+            style="animation: toastProgress linear forwards"
+            [style.animationDuration.ms]="toast.duration"
+          ></div>
+        </div>
+      </div>
+    }
+
+    <!-- Error Toast (Lỗi - Màu đỏ thuần) -->
+    @if (toast.type === 'error') {
+      <div
+        class="toast-animate pointer-events-auto relative flex items-start gap-3 bg-white/98 dark:bg-slate-950/98 text-slate-800 dark:text-slate-100 px-4 py-3.5 rounded-2xl shadow-lg border border-slate-100/80 dark:border-slate-900/80 backdrop-blur-md overflow-hidden w-full group transition-all duration-300"
+      >
+        <!-- Icon Close tròn đỏ dùng app-icon -->
+        <div
+          class="flex-shrink-0 w-6 h-6 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-md shadow-rose-500/20"
+        >
+          <app-icon name="close" class="w-3.5 h-3.5" strokeWidth="3" />
+        </div>
+
+        <!-- Nội dung -->
+        <div class="flex-1 pr-6 pt-0.5">
+          <p
+            class="text-xs sm:text-sm font-bold leading-snug tracking-tight text-slate-800 dark:text-slate-200"
+          >
+            {{ toast.message }}
+          </p>
+        </div>
+
+        <!-- Nút đóng dùng app-icon -->
+        <button
+          (click)="toastService.removeToast(toast.id)"
+          class="absolute top-3.5 right-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-0.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer"
+        >
+          <app-icon name="close" class="w-3.5 h-3.5" strokeWidth="2.5" />
+        </button>
+
+        <!-- Thanh tiến trình tự chạy lùi (Đỏ thuần, khít viền dưới) -->
+        <div
+          class="absolute bottom-0 left-0 right-0 h-[3px] bg-transparent overflow-hidden rounded-b-2xl"
+        >
+          <div
+            class="h-full bg-rose-500 rounded-r-full"
+            style="animation: toastProgress linear forwards"
+            [style.animationDuration.ms]="toast.duration"
+          ></div>
+        </div>
+      </div>
+    }
+
+    <!-- Warning Toast (Cảnh báo/Chờ đợi - Màu vàng/cam thuần) -->
+    @if (toast.type === 'warning') {
+      <div
+        class="toast-animate pointer-events-auto relative flex items-start gap-3 bg-white/98 dark:bg-slate-950/98 text-slate-800 dark:text-slate-100 px-4 py-3.5 rounded-2xl shadow-lg border border-slate-100/80 dark:border-slate-900/80 backdrop-blur-md overflow-hidden w-full group transition-all duration-300"
+      >
+        <!-- Icon Warning tròn vàng dùng app-icon -->
+        <div
+          class="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20"
+        >
+          <app-icon name="warning" class="w-3.5 h-3.5" strokeWidth="3" />
+        </div>
+
+        <!-- Nội dung -->
+        <div class="flex-1 pr-6 pt-0.5">
+          <p
+            class="text-xs sm:text-sm font-bold leading-snug tracking-tight text-slate-800 dark:text-slate-200"
+          >
+            {{ toast.message }}
+          </p>
+        </div>
+
+        <!-- Nút đóng dùng app-icon -->
+        <button
+          (click)="toastService.removeToast(toast.id)"
+          class="absolute top-3.5 right-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-0.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer"
+        >
+          <app-icon name="close" class="w-3.5 h-3.5" strokeWidth="2.5" />
+        </button>
+
+        <!-- Thanh tiến trình tự chạy lùi (Vàng/Cam thuần, khít viền dưới) -->
+        <div
+          class="absolute bottom-0 left-0 right-0 h-[3px] bg-transparent overflow-hidden rounded-b-2xl"
+        >
+          <div
+            class="h-full bg-amber-500 rounded-r-full"
+            style="animation: toastProgress linear forwards"
+            [style.animationDuration.ms]="toast.duration"
+          ></div>
+        </div>
+      </div>
+    }
+  }
+</div>

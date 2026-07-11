@@ -1,0 +1,60 @@
+<main class="max-w-[1530px] mx-auto w-full px-4 sm:px-6 py-6 md:py-10 space-y-6 md:space-y-8">
+  <div app-card>
+    <div class="flex items-center gap-3.5 mb-6">
+      <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
+        <app-icon name="send" class="w-5 h-5" />
+      </div>
+      <div>
+        <h2 class="text-xl font-black text-slate-800 dark:text-white">Liên hệ với chúng tôi</h2>
+        <p class="text-xs font-semibold text-slate-400 dark:text-slate-500 mt-0.5">Gửi phản hồi và kết nối với dự án</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div class="space-y-4">
+        <h3 class="text-base font-black text-slate-800 dark:text-white">Thông tin hỗ trợ</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          Nếu bạn gặp bất kỳ sự cố nào liên quan đến giao dịch, kết nối ví, hoặc có ý tưởng đóng góp cho Angular Web3, vui lòng liên hệ với đội ngũ kỹ thuật thông qua các kênh chính thức của chúng tôi.
+        </p>
+        <div class="space-y-3 pt-2">
+          <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-300">
+            <app-icon name="wallet" class="w-4 h-4 text-primary" />
+            <span>Hỗ trợ kỹ thuật</span>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-300">
+            <app-icon name="link-chain" class="w-4 h-4 text-primary" />
+            <span>Mạng lưới chính: Arbitrum One (Chain ID 42161)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200/40 dark:border-slate-850 rounded-2xl p-6 space-y-4">
+        <h3 class="text-sm font-black text-slate-800 dark:text-white">Gửi lời nhắn nhanh</h3>
+        <div class="space-y-4">
+          <div class="form-field">
+            <label>Email của bạn</label>
+            <app-custom-input
+              type="email"
+              placeholder="name&#64;example.com"
+            />
+          </div>
+          <div class="form-field">
+            <label>Nội dung tin nhắn</label>
+            <app-custom-input
+              type="textarea"
+              [rows]="3"
+              placeholder="Nhập nội dung lời nhắn..."
+            />
+          </div>
+          <button
+            app-button
+            variant="primary"
+            class="w-full py-2.5 text-xs font-bold"
+          >
+            Gửi phản hồi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

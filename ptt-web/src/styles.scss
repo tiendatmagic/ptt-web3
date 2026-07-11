@@ -1,0 +1,251 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700;800;900&display=swap');
+@import 'tailwindcss' source('.');
+
+/* Kích hoạt cơ chế Class-based Dark Mode cho Tailwind v4 */
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans:
+    'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-display:
+    'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  --color-primary: var(--dynamic-primary, #ff00dd);
+  --color-secondary: var(--dynamic-secondary, #8000ff);
+
+  --radius-xl: 15px;
+  --radius-2xl: 15px;
+  --radius-3xl: 15px;
+  --radius-4xl: 15px;
+}
+
+:root {
+  --dynamic-primary: #ff00dd;
+  --dynamic-secondary: #8000ff;
+}
+
+html {
+  background-color: #f8fafc;
+  transition: background-color 0.3s;
+}
+
+html.dark {
+  background-color: #030712;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #f8fafc;
+  color: #0f172a;
+  min-height: 100vh;
+  margin: 0;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+}
+
+/* Thêm Class-based Dark Mode hỗ trợ */
+html.dark body,
+body.dark {
+  background-color: #030712;
+  color: #f8fafc;
+}
+
+/* Hiệu ứng chuyển động mượt */
+.transition-all-300 {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Scrollbar tinh tế */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb,
+body.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ==================== HỆ THỐNG TOAST THÔNG BÁO ==================== */
+@keyframes toastProgress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.toast-progress-success {
+  animation: toastProgress 3000ms linear forwards;
+  background: linear-gradient(to right, var(--dynamic-primary), var(--dynamic-secondary));
+}
+
+.toast-progress-error {
+  animation: toastProgress 4000ms linear forwards;
+}
+
+@keyframes toastSlideIn {
+  from {
+    transform: translateY(20px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.toast-animate {
+  animation: toastSlideIn 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==================== HỆ THỐNG NÚT BẤM DÙNG CHUNG (BUTTON SYSTEM) ==================== */
+.btn {
+  @apply inline-flex items-center justify-center gap-1.5 font-bold text-sm rounded-xl transition-all duration-200 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed px-4 py-2.5;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-1.5 font-bold text-sm rounded-xl transition-all duration-200 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed px-4 py-2.5 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] hover:opacity-90 text-white shadow-md shadow-[var(--color-primary)]/15 hover:shadow-[var(--color-primary)]/25;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-1.5 font-bold text-sm rounded-xl transition-all duration-200 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed px-4 py-2.5;
+  background-color: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+  color: var(--color-primary);
+}
+.btn-secondary:hover {
+  background-color: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+.dark .btn-secondary,
+body.dark .btn-secondary {
+  background-color: color-mix(in srgb, var(--color-secondary) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-secondary) 30%, transparent);
+  color: var(--color-secondary);
+}
+.dark .btn-secondary:hover,
+body.dark .btn-secondary:hover {
+  background-color: color-mix(in srgb, var(--color-secondary) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-secondary) 45%, transparent);
+}
+
+.btn-danger {
+  @apply inline-flex items-center justify-center gap-1.5 font-bold text-sm rounded-xl transition-all duration-200 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed px-4 py-2.5 bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-500/15 hover:shadow-rose-500/25;
+}
+
+.btn-danger-light {
+  @apply inline-flex items-center justify-center gap-1.5 font-bold text-sm rounded-xl transition-all duration-200 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed px-4 py-2.5;
+  background-color: rgba(244, 63, 94, 0.08);
+  color: rgb(244, 63, 94);
+}
+.btn-danger-light:hover {
+  background-color: rgba(244, 63, 94, 0.15);
+}
+.dark .btn-danger-light,
+body.dark .btn-danger-light {
+  background-color: rgba(251, 113, 133, 0.15);
+  color: rgb(251, 113, 133);
+}
+.dark .btn-danger-light:hover,
+body.dark .btn-danger-light:hover {
+  background-color: rgba(251, 113, 133, 0.25);
+}
+
+.btn-cancel {
+  @apply inline-flex items-center justify-center gap-1.5 font-bold text-sm rounded-xl transition-all duration-200 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300;
+}
+
+.btn-success {
+  @apply inline-flex items-center justify-center gap-1.5 font-bold text-sm rounded-xl transition-all duration-200 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/15 hover:shadow-emerald-500/25;
+}
+
+.btn-info {
+  @apply inline-flex items-center justify-center gap-1.5 font-bold text-sm rounded-xl transition-all duration-200 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/15 hover:shadow-blue-600/25;
+}
+
+.btn-sm {
+  @apply px-3 py-1.5 text-xs rounded-lg gap-1;
+}
+.btn-md {
+  @apply px-4 py-2.5 text-sm rounded-xl gap-1.5;
+}
+.btn-lg {
+  @apply px-6 py-3.5 text-base rounded-[12px] gap-2 font-extrabold;
+}
+.btn-full {
+  @apply w-full justify-center;
+}
+
+/* ==================== HỆ THỐNG Ô NHẬP LIỆU DÙNG CHUNG ==================== */
+.form-input {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  @apply h-[42px] w-full text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-200/40 dark:border-slate-800/40 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]/20 transition-all duration-200;
+}
+
+.form-textarea {
+  padding: 0.75rem 1rem !important;
+  @apply w-full text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-200/40 dark:border-slate-800/40 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]/20 transition-all duration-200 resize-none;
+}
+
+.form-field {
+  @apply flex flex-col gap-2 w-full;
+}
+
+.form-field > label {
+  @apply block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider select-none;
+}
+
+.search-input {
+  padding-left: 2.25rem !important;
+  padding-right: 1rem !important;
+  @apply h-[42px] w-full text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-200/40 dark:border-slate-800/40 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]/20 transition-all duration-200;
+}
+
+/* ==================== HỆ THỐNG TAB GROUP DÙNG CHUNG ==================== */
+.tab-group {
+  @apply h-[42px] flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/40 dark:border-slate-800/40 overflow-x-auto flex-nowrap shrink-0 max-w-full;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.tab-group::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-item {
+  @apply h-8 px-4 rounded-lg text-xs font-semibold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 whitespace-nowrap shrink-0;
+}
+.tab-item.active {
+  @apply bg-white dark:bg-slate-900 text-[var(--color-primary)] dark:text-[var(--color-secondary)] shadow-sm font-bold;
+}
+
+/* ==================== HỆ THỐNG CARD DÙNG CHUNG ==================== */
+.app-card,
+.app-card-interactive {
+  @apply bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/30 rounded-[15px] p-6;
+}
+
+.app-card-interactive {
+  @apply transition-all duration-300 hover:shadow-lg hover:shadow-[var(--color-primary)]/10 hover:border-[var(--color-primary)]/30 hover:scale-[1.01] cursor-pointer;
+}
+
+/* ==================== TIỆN ÍCH BỔ SUNG ==================== */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

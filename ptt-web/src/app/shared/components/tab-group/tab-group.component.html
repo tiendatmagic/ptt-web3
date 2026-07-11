@@ -1,0 +1,64 @@
+<div
+  #containerEl
+  [class]="
+    'relative tab-group flex items-center p-1 w-full overflow-x-auto no-scrollbar flex-nowrap shrink-0 ' +
+    containerClass
+  "
+>
+  <!-- Sliding Background Slider -->
+  @if (options.length > 0 && activeIndex !== -1) {
+    <div
+      class="absolute top-1 bottom-1 bg-white dark:bg-slate-900 rounded-lg shadow-sm transition-all duration-300 ease-out z-0"
+      [style.width]="sliderStyle().width"
+      [style.left]="sliderStyle().left"
+    ></div>
+  }
+
+  <!-- Tab Buttons -->
+  @for (opt of options; track opt.value; let idx = $index) {
+    <button
+      #tabBtn
+      type="button"
+      (click)="onSelect(opt.value)"
+      [class.text-[var(--color-primary)]]="activeValue === opt.value"
+      [class.dark:text-[var(--color-secondary)]]="activeValue === opt.value"
+      [class.font-black]="activeValue === opt.value"
+      [class.text-slate-500]="activeValue !== opt.value"
+      [class.flex-1]="flex"
+      [class]="'tab-item relative z-10 transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 ' + buttonClass"
+    >
+      <!-- Chấm tròn trạng thái nếu có cấu hình -->
+      @if (opt.dotClass) {
+        <span [class]="'w-1.5 h-1.5 rounded-full shrink-0 ' + opt.dotClass"></span>
+      }
+
+      <!-- Icon của tab nếu có cấu hình -->
+      @if (opt.icon) {
+        <app-icon
+          [name]="opt.icon"
+          class="h-4 w-4 shrink-0 transition-colors duration-300"
+          [class.text-[var(--color-primary)]]="activeValue === opt.value"
+          [class.dark:text-[var(--color-secondary)]]="activeValue === opt.value"
+          [class.text-slate-400]="activeValue !== opt.value"
+          [strokeWidth]="activeValue === opt.value ? '2.5' : '2'"
+        ></app-icon>
+      }
+
+      <span [class]="labelClass">{{ opt.label }}</span>
+
+      <!-- Badge số lượng bên cạnh nếu có cấu hình -->
+      @if (opt.badge !== undefined && opt.badge !== null && opt.badge !== '') {
+        <span
+          [class]="
+            activeValue === opt.value
+              ? 'text-[10px] font-black px-1.5 py-0.2 rounded-lg bg-[var(--color-primary)]/10 text-[var(--color-primary)] dark:bg-[var(--color-secondary)]/15 dark:text-[var(--color-secondary)]'
+              : 'text-[10px] font-black px-1.5 py-0.2 rounded-lg bg-slate-200/50 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+          "
+          class="transition-colors duration-300"
+        >
+          {{ opt.badge }}
+        </span>
+      }
+    </button>
+  }
+</div>

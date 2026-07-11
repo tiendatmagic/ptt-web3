@@ -1,0 +1,99 @@
+<div class="animate-pulse space-y-6">
+
+  <!-- 1. TABLE LAYOUT -->
+  @if (type === 'table') {
+    <!-- Search bar placeholder -->
+    @if (showHeader) {
+      <div class="flex items-center gap-3">
+        <div class="h-10 bg-slate-200 dark:bg-slate-800 rounded-xl flex-1"></div>
+        <div class="h-10 w-28 bg-slate-200 dark:bg-slate-800 rounded-xl shrink-0"></div>
+      </div>
+    }
+    <!-- Table header -->
+    <div class="flex gap-4 px-4">
+      @for (i of getArray(cols); track i) {
+        <div class="h-4 bg-slate-200 dark:bg-slate-800 rounded-md flex-1"></div>
+      }
+    </div>
+    <!-- Table rows -->
+    @for (r of getArray(rows); track r) {
+      <div class="flex gap-4 px-4 py-3 border border-slate-100 dark:border-slate-800 rounded-xl">
+        @for (i of getArray(cols); track i) {
+          <div class="h-4 bg-slate-100 dark:bg-slate-800/50 rounded-md flex-1"></div>
+        }
+      </div>
+    }
+  }
+
+  <!-- 2. DASHBOARD LAYOUT -->
+  @if (type === 'dashboard') {
+    <!-- Grid 4 thẻ thống kê -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      @for (i of getArray(4); track i) {
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex items-center justify-between">
+          <div class="space-y-3 w-2/3">
+            <div class="h-4 bg-slate-200 dark:bg-slate-800 rounded-md w-3/4"></div>
+            <div class="h-8 bg-slate-200 dark:bg-slate-800 rounded-xl w-full"></div>
+          </div>
+          <div class="w-12 h-12 bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
+        </div>
+      }
+    </div>
+    <!-- Big content blocks -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      @for (i of getArray(2); track i) {
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 h-[280px] space-y-4">
+          <div class="h-6 bg-slate-200 dark:bg-slate-800 rounded-md w-1/4"></div>
+          <div class="h-48 bg-slate-100 dark:bg-slate-800/40 rounded-xl"></div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- 3. CARD GRID LAYOUT -->
+  @if (type === 'card-grid') {
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
+      @for (i of getArray(cards); track i) {
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+          <div class="h-32 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
+          <div class="h-4 bg-slate-200 dark:bg-slate-800 rounded-md w-3/4"></div>
+          <div class="h-3 bg-slate-100 dark:bg-slate-800/60 rounded-md w-1/2"></div>
+          <div class="h-8 bg-slate-200 dark:bg-slate-800 rounded-xl w-full mt-2"></div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- 4. FORM LAYOUT -->
+  @if (type === 'form') {
+    <div class="space-y-5 max-w-lg">
+      @for (i of getArray(rows); track i) {
+        <div class="space-y-2">
+          <div class="h-3.5 bg-slate-200 dark:bg-slate-800 rounded-md w-1/4"></div>
+          <div class="h-10 bg-slate-100 dark:bg-slate-800/50 rounded-xl w-full"></div>
+        </div>
+      }
+      <div class="flex gap-3 pt-2">
+        <div class="h-10 bg-slate-200 dark:bg-slate-800 rounded-xl flex-1"></div>
+        <div class="h-10 bg-slate-300 dark:bg-slate-700 rounded-xl w-32"></div>
+      </div>
+    </div>
+  }
+
+  <!-- 5. LIST LAYOUT -->
+  @if (type === 'list') {
+    <div class="space-y-3">
+      @for (i of getArray(rows); track i) {
+        <div class="flex items-center gap-4 p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div class="w-10 h-10 bg-slate-200 dark:bg-slate-800 rounded-full shrink-0"></div>
+          <div class="flex-1 space-y-2">
+            <div class="h-4 bg-slate-200 dark:bg-slate-800 rounded-md w-2/3"></div>
+            <div class="h-3 bg-slate-100 dark:bg-slate-800/60 rounded-md w-1/3"></div>
+          </div>
+          <div class="h-6 w-16 bg-slate-200 dark:bg-slate-800 rounded-full shrink-0"></div>
+        </div>
+      }
+    </div>
+  }
+
+</div>

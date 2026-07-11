@@ -1,0 +1,47 @@
+:host {
+  display: block;
+}
+
+/* Loại bỏ mũi tên mặc định của select để trông sạch sẽ như ô input số */
+.time-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: none !important;
+  text-align: center;
+  text-align-last: center;
+  padding-right: 8px !important;
+  padding-left: 8px !important;
+}
+
+.time-select::-ms-expand {
+  display: none;
+}
+
+.time-select:focus {
+  box-shadow: 0 0 0 1px var(--color-primary) inset;
+}
+
+/* Custom scrollbar siêu mảnh và tinh tế cho các dropdown chọn giờ phút */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.35);
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.55);
+}
+
+/* Hỗ trợ Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.35) transparent;
+}

@@ -1,0 +1,23 @@
+Kiến trúc tổng thể:
+
+                    Admin Portal
+                         │
+                         │
+                ┌────────┴────────┐
+                │                 │
+          Company Backend     Matching Engine
+                │                 │
+                └────────┬────────┘
+                         │
+                    Smart Contracts
+                         │
+ ┌──────────┬────────────┼──────────────┬─────────────┐
+ │          │            │              │             │
+ ▼          ▼            ▼              ▼             ▼
+PTT Token  Treasury  Distribution  Price Oracle  P2P Exchange
+
+
+
+
+
+

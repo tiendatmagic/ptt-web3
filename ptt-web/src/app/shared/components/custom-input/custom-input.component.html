@@ -1,0 +1,26 @@
+<div class="relative w-full">
+  @if (type === 'textarea') {
+    <textarea
+      [name]="name"
+      [placeholder]="placeholder"
+      [disabled]="disabled"
+      [rows]="rows"
+      [value]="val()"
+      (input)="onInput($event)"
+      class="form-textarea {{ customClass }}"
+    ></textarea>
+  } @else {
+    <input
+      [type]="type"
+      [name]="name"
+      [placeholder]="placeholder"
+      [disabled]="disabled"
+      [min]="min"
+      [max]="max"
+      [step]="step"
+      [value]="val()"
+      (input)="onInput($event)"
+      class="form-input {{ customClass }}"
+    />
+  }
+</div>
