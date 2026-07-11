@@ -14,7 +14,7 @@
         <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300">Vòng gọi vốn doanh nghiệp</h2>
         @if (stateService.hasPermission('funding.view')) {
           <!-- Cho phép board member tạo vòng mới -->
-          <button app-button variant="primary" (click)="showCreateRoundModal.set(true)" class="h-9 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5">
+          <button app-button variant="primary" (click)="openCreateRoundModal()" class="h-9 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5">
             <app-icon name="plus" class="w-3.5 h-3.5" />
             Tạo vòng gọi vốn
           </button>
@@ -115,42 +115,5 @@
     </div>
   </div>
 
-  <!-- MODALS -->
-  <!-- MODAL: CREATE FUNDING ROUND -->
-  @if (showCreateRoundModal()) {
-    <div class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div class="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 max-w-md w-full shadow-xl space-y-6">
-        <div class="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-900/60">
-          <h3 class="text-base font-black text-slate-800 dark:text-white">Tạo vòng gọi vốn mới</h3>
-          <button (click)="showCreateRoundModal.set(false)" class="text-slate-400 hover:text-slate-600">
-            <app-icon name="close" class="w-5 h-5" />
-          </button>
-        </div>
-
-        <div class="space-y-4">
-          <div class="space-y-1">
-            <label class="text-xs font-black text-slate-400 uppercase">Tên vòng gọi vốn</label>
-            <input type="text" [(ngModel)]="newRound.name" class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold outline-none" />
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-1">
-              <label class="text-xs font-black text-slate-400 uppercase">Giá cổ phần (USD)</label>
-              <input type="number" [(ngModel)]="newRound.share_price" class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold outline-none" />
-            </div>
-            <div class="space-y-1">
-              <label class="text-xs font-black text-slate-400 uppercase">Mục tiêu gọi vốn (USD)</label>
-              <input type="number" [(ngModel)]="newRound.target_amount" class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold outline-none" />
-            </div>
-          </div>
-        </div>
-
-        <div class="pt-4 border-t border-slate-100 dark:border-slate-900/60 flex justify-end gap-3">
-          <button app-button variant="cancel" (click)="showCreateRoundModal.set(false)" class="h-10 px-4 rounded-xl font-bold">Hủy</button>
-          <button app-button variant="primary" (click)="handleCreateRound()" class="h-10 px-5 rounded-xl font-extrabold">Tạo mới</button>
-        </div>
-      </div>
-    </div>
-  }
 </div>
 

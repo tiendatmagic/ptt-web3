@@ -25,7 +25,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/', [CompanyController::class, 'index']);
         Route::get('{code}', [CompanyController::class, 'show']);
         Route::post('register', [CompanyController::class, 'register'])->middleware('auth:sanctum');
+        Route::post('{id}/contracts/deploy', [CompanyController::class, 'deployContract'])->middleware('auth:sanctum');
     });
+
+    Route::post('contracts/verify', [CompanyController::class, 'verifyContract'])->middleware('auth:sanctum');
 
     // Marketplace Public Routes
     Route::prefix('marketplace')->group(function () {

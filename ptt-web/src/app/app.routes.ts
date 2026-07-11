@@ -22,5 +22,9 @@ export const routes: Routes = [
     path: 'kyc',
     loadComponent: () => import('@features/kyc/kyc.component').then(m => m.KycComponent)
   },
+  {
+    path: 'invest',
+    loadComponent: () => import('@features/invest/invest.component').then(m => m.InvestComponent)
+  },
   { path: '**', redirectTo: 'dashboard' }
 ];

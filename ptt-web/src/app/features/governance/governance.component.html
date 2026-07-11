@@ -16,7 +16,7 @@
       <button
         app-button
         variant="primary"
-        (click)="showCreateModal.set(true)"
+        (click)="openCreateProposal()"
         class="h-11 px-5 rounded-xl font-bold flex items-center gap-2 shadow-sm"
       >
         <app-icon name="plus" class="w-4 h-4" />
@@ -228,112 +228,4 @@
     </div>
   </div>
 
-  <!-- MODALS -->
-  <!-- MODAL: CREATE PROPOSAL -->
-  @if (showCreateModal()) {
-    <div
-      class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150"
-    >
-      <div
-        class="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 max-w-lg w-full shadow-xl space-y-6"
-      >
-        <div
-          class="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-900/60"
-        >
-          <h3 class="text-base font-black text-slate-800 dark:text-white">Tạo đề xuất mới</h3>
-          <button (click)="showCreateModal.set(false)" class="text-slate-400 hover:text-slate-600">
-            <app-icon name="close" class="w-5 h-5" />
-          </button>
-        </div>
-
-        <div class="space-y-4 max-h-[450px] overflow-y-auto pr-1">
-          <div class="space-y-1">
-            <label class="text-xs font-black text-slate-400 uppercase">Tiêu đề đề xuất</label>
-            <input
-              type="text"
-              [(ngModel)]="newProposal.title"
-              placeholder="VD: Rút quỹ Treasury chi tiêu vận hành..."
-              class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold"
-            />
-          </div>
-
-          <div class="space-y-1">
-            <label class="text-xs font-black text-slate-400 uppercase">Mô tả</label>
-            <textarea
-              [(ngModel)]="newProposal.description"
-              rows="3"
-              placeholder="Mô tả mục đích và phân tích tài chính..."
-              class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs outline-none focus:border-primary"
-            ></textarea>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-1">
-              <label class="text-xs font-black text-slate-400 uppercase">Loại đề xuất</label>
-              <select
-                [(ngModel)]="newProposal.type"
-                class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-semibold"
-              >
-                <option value="WITHDRAW">WITHDRAW (Rút quỹ)</option>
-                <option value="MINT">MINT (Phát hành thêm)</option>
-                <option value="CONFIG">CONFIG (Cấu hình hệ thống)</option>
-              </select>
-            </div>
-            <div class="space-y-1">
-              <label class="text-xs font-black text-slate-400 uppercase"
-                >Hạn biểu quyết (Ngày)</label
-              >
-              <input
-                type="number"
-                [(ngModel)]="newProposal.expiration_days"
-                class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold"
-              />
-            </div>
-          </div>
-
-          <div class="space-y-1">
-            <label class="text-xs font-black text-slate-400 uppercase"
-              >Địa chỉ ví thụ hưởng (Target)</label
-            >
-            <input
-              type="text"
-              [(ngModel)]="newProposal.params.target"
-              placeholder="0x..."
-              class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 font-mono text-xs"
-            />
-          </div>
-
-          <div class="space-y-1">
-            <label class="text-xs font-black text-slate-400 uppercase"
-              >Số lượng BNB rút (Value in WEI)</label
-            >
-            <input
-              type="text"
-              [(ngModel)]="newProposal.params.value"
-              class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 font-mono text-xs"
-            />
-          </div>
-        </div>
-
-        <div class="pt-4 border-t border-slate-100 dark:border-slate-900/60 flex justify-end gap-3">
-          <button
-            app-button
-            variant="cancel"
-            (click)="showCreateModal.set(false)"
-            class="h-10 px-4 rounded-xl font-bold"
-          >
-            Hủy
-          </button>
-          <button
-            app-button
-            variant="primary"
-            (click)="handleCreateProposal()"
-            class="h-10 px-5 rounded-xl font-extrabold"
-          >
-            Tạo đề xuất
-          </button>
-        </div>
-      </div>
-    </div>
-  }
 </div>

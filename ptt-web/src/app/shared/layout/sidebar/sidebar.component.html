@@ -37,6 +37,16 @@
       <span>Doanh nghiệp</span>
     </a>
 
+    <!-- Sàn Đầu tư (Invest Portal) -->
+    <a
+      routerLink="/invest"
+      routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
+      class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer border border-emerald-500/10 dark:border-emerald-400/5 bg-emerald-50/10 dark:bg-emerald-950/10"
+    >
+      <app-icon name="blockchain" class="w-5 h-5 flex-shrink-0 text-emerald-500" />
+      <span class="text-emerald-600 dark:text-emerald-400">Sàn Đầu tư</span>
+    </a>
+
     <!-- Quản trị & Biểu quyết (Governance) -->
     @if (stateService.hasPermission('proposals.view')) {
       <a

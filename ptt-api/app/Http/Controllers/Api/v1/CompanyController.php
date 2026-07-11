@@ -172,4 +172,73 @@ class CompanyController extends Controller
             ]
         ], 201);
     }
+
+    /**
+     * Mô phỏng deploy contract và lưu vào database.
+     */
+    public function deployContract(Request $request, int $id)
+    {
+        $companyModel = \App\Infrastructure\Persistence\Eloquent\CompanyModel::find($id);
+        if (!$companyModel) {
+            return response()->json([
+                'message' => 'Company not found'
+            ], 404);
+        }
+
+        $contractKey = $request->input('contract_key');
+        $owners = $request->input('owners', []);
+
+        $columnMap = [
+            'BoardGovernance' => 'governance_address',
+            'EquityToken' => 'token_address',
+            'Treasury' => 'treasury_address',
+            'Marketplace' => 'marketplace_address'
+        ];
+
+        if (!isset($columnMap[$contractKey])) {
+            return response()->json([
+                'message' => 'Invalid contract key'
+            ], 400);
+        }
+
+        $column = $columnMap[$contractKey];
+        
+        // Tạo địa chỉ mock ngẫu nhiên giống BSC Testnet
+        $randomHex = bin2hex(random_bytes(20));
+        $mockAddress = '0x' . $randomHex;
+
+        $companyModel->$column = $mockAddress;
+        $companyModel->save();
+
+        return response()->json([
+            'message' => 'Contract deployed successfully',
+            'contract_key' => $contractKey,
+            'address' => $mockAddress
+        ]);
+    }
+
+    /**
+     * Mô phỏng verify contract trên BscScan.
+     */
+    public function verifyContract(Request $request)
+    {
+        $contractKey = $request->input('contract_key');
+        $contractAddress = $request->input('contract_address');
+        $apiKey = $request->input('bscscan_api_key');
+
+        if (!$apiKey) {
+            return response()->json([
+                'message' => 'BscScan API Key is required'
+            ], 400);
+        }
+
+        // Trả về GUID giả lập của BscScan verify
+        $guid = bin2hex(random_bytes(16));
+
+        return response()->json([
+            'message' => 'Verification request submitted successfully',
+            'guid' => $guid,
+            'status' => 'submitted'
+        ]);
+    }
 }

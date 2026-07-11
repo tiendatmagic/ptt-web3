@@ -8,6 +8,9 @@ import { ButtonComponent } from '@shared/components/button/button.component';
 import { firstValueFrom } from 'rxjs';
 import { Contract } from 'ethers';
 
+import { ModalService } from '@core/services/modal.service';
+import { CreateProposalModalComponent } from './modals/create-proposal-modal.component';
+
 // ABI rút gọn của BoardGovernance để thực thi executeProposal
 const BOARD_GOVERNANCE_ABI = [
   "function executeProposal(uint256 proposalId, bytes[] memory signatures) external payable",
@@ -23,24 +26,11 @@ const BOARD_GOVERNANCE_ABI = [
 export class GovernanceComponent implements OnInit {
   public stateService = inject(StateService);
   private apiService = inject(ApiService);
+  private modalService = inject(ModalService);
 
   public proposalsList = signal<any[]>([]);
   public selectedProposal = signal<any | null>(null);
   public proposalSignatures = signal<any[]>([]);
-
-  // Trạng thái modal tạo mới
-  public showCreateModal = signal<boolean>(false);
-  public newProposal = {
-    title: '',
-    description: '',
-    type: 'WITHDRAW', // WITHDRAW, MINT, CONFIG
-    params: {
-      target: '',
-      value: '0',
-      calldata: '0x'
-    },
-    expiration_days: 7
-  };
 
   ngOnInit() {
     this.loadProposals();
@@ -71,42 +61,17 @@ export class GovernanceComponent implements OnInit {
     }
   }
 
-  // Tạo Proposal mới
-  public async handleCreateProposal() {
-    if (!this.newProposal.title) {
-      this.stateService.showToast('Vui lòng nhập tiêu đề đề xuất', 'warning');
-      return;
-    }
-
-    const comp = this.stateService.currentCompany();
-    if (!comp) return;
-
-    try {
-      this.stateService.isLoading.set(true);
-      
-      // Tính ngày hết hạn
-      const expirationDate = new Date();
-      expirationDate.setDate(expirationDate.getDate() + this.newProposal.expiration_days);
-
-      await firstValueFrom(this.apiService.post<any>('proposals', {
-        title: this.newProposal.title,
-        description: this.newProposal.description,
-        type: this.newProposal.type,
-        params: this.newProposal.params,
-        expiration_date: expirationDate.toISOString()
-      }, comp.id));
-
-      this.stateService.showToast('Tạo đề xuất thành công!', 'success');
-      this.showCreateModal.set(false);
-      this.newProposal.title = '';
-      this.newProposal.description = '';
-      
-      await this.loadProposals();
-    } catch (e: any) {
-      this.stateService.showToast(e.error?.message || 'Lỗi khi tạo đề xuất!', 'error');
-    } finally {
-      this.stateService.isLoading.set(false);
-    }
+  // Tạo Proposal mới qua ModalService
+  public openCreateProposal() {
+    const ref = this.modalService.open(CreateProposalModalComponent, {
+      title: 'Tạo đề xuất mới',
+      size: 'lg'
+    });
+    ref.afterClosed$.subscribe(success => {
+      if (success) {
+        this.loadProposals();
+      }
+    });
   }
 
   // Ký Biểu quyết (EIP-712/personal_sign)

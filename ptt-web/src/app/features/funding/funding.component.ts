@@ -8,6 +8,9 @@ import { ButtonComponent } from '@shared/components/button/button.component';
 import { firstValueFrom } from 'rxjs';
 import { Contract, parseEther } from 'ethers';
 
+import { ModalService } from '@core/services/modal.service';
+import { CreateRoundModalComponent } from './modals/create-round-modal.component';
+
 // ABI rút gọn của FundingManager để purchaseShares
 const FUNDING_MANAGER_ABI = [
   "function purchaseShares() external payable",
@@ -30,18 +33,10 @@ const DISTRIBUTION_MANAGER_ABI = [
 export class FundingComponent implements OnInit {
   public stateService = inject(StateService);
   private apiService = inject(ApiService);
+  private modalService = inject(ModalService);
 
   // Gọi vốn
   public roundsList = signal<any[]>([]);
-  public showCreateRoundModal = signal<boolean>(false);
-  public newRound = {
-    name: 'Series A',
-    share_price: '1.0',
-    target_amount: '100000',
-    start_date: '',
-    end_date: ''
-  };
-
   public purchaseAmount = '';
 
   // Cổ tức
@@ -127,40 +122,17 @@ export class FundingComponent implements OnInit {
     }
   }
 
-  // Đăng ký vòng gọi vốn mới
-  public async handleCreateRound() {
-    if (!this.newRound.name || !this.newRound.share_price || !this.newRound.target_amount) {
-      this.stateService.showToast('Vui lòng điền đầy đủ thông tin vòng gọi vốn', 'warning');
-      return;
-    }
-
-    const comp = this.stateService.currentCompany();
-    if (!comp) return;
-
-    try {
-      this.stateService.isLoading.set(true);
-      
-      const price = parseFloat(this.newRound.share_price);
-      const target = parseFloat(this.newRound.target_amount);
-
-      await firstValueFrom(this.apiService.post<any>('funding', {
-        name: this.newRound.name,
-        share_price: price,
-        target_amount: target,
-        start_date: this.newRound.start_date || null,
-        end_date: this.newRound.end_date || null
-      }, comp.id));
-
-      this.stateService.showToast('Tạo vòng gọi vốn thành công! Vòng gọi vốn sẽ được tự động kích hoạt sau khi được HĐQT phê duyệt.', 'success');
-      this.showCreateRoundModal.set(false);
-      this.newRound.name = '';
-      
-      await this.loadFundingData();
-    } catch (e: any) {
-      this.stateService.showToast(e.error?.message || 'Có lỗi xảy ra!', 'error');
-    } finally {
-      this.stateService.isLoading.set(false);
-    }
+  // Đăng ký vòng gọi vốn mới qua ModalService
+  public openCreateRoundModal() {
+    const ref = this.modalService.open(CreateRoundModalComponent, {
+      title: 'Tạo vòng gọi vốn mới',
+      size: 'md'
+    });
+    ref.afterClosed$.subscribe(success => {
+      if (success) {
+        this.loadFundingData();
+      }
+    });
   }
 
   // Rút cổ tức (Claim Dividend)
