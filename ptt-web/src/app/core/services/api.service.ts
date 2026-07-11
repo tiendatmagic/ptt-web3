@@ -59,6 +59,13 @@ export class ApiService {
     });
   }
 
+  public put<T>(path: string, body: any, companyId?: string | number): Observable<T> {
+    return this.http.put<T>(`${this.baseUrl}/${path}`, body, {
+      headers: this.getHeaders(companyId),
+      withCredentials: true
+    });
+  }
+
   public delete<T>(path: string, companyId?: string | number): Observable<T> {
     return this.http.delete<T>(`${this.baseUrl}/${path}`, {
       headers: this.getHeaders(companyId),

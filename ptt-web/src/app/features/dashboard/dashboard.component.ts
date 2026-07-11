@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '@core/services/state.service';
@@ -46,15 +46,47 @@ export class DashboardComponent implements OnInit {
     name: 'PTT Group Corporation',
     logo: '',
     valuation: 10000000,
-    registry_address: '0xb7b937410377F054258Bea7F319618C504088aA4',
-    governance_address: '0x1e9566aA637437783A7975CA83106C11dD6ceB43',
-    token_address: '0x94F60B66256311A234277f4062dA7E96eA9c201F',
-    treasury_address: '0xcB4A894C7B9C4fb7b761e51144b8A4A2b8a1bb35',
-    funding_address: '0xF990F64C6c5fe91F2B154679Fa60eFebaDD8c4aA',
-    distribution_address: '0x5C02BA4A164646a62a2F32922d3724B417a9F6DA',
-    marketplace_address: '0x3Eb99DD69C321AC54a450023EaEFbDb5644CEf3c',
-    oracle_address: '0x9251a65fd04922277EF3408846e3322Cc6358a5b'
+    registry_address: '',
+    governance_address: '',
+    token_address: '',
+    treasury_address: '',
+    funding_address: '',
+    distribution_address: '',
+    marketplace_address: '',
+    oracle_address: ''
   };
+
+  // Dữ liệu chỉnh sửa các địa chỉ contract thủ công
+  public editingContracts: Record<string, string> = {
+    registry_address: '',
+    governance_address: '',
+    token_address: '',
+    treasury_address: '',
+    funding_address: '',
+    distribution_address: '',
+    marketplace_address: '',
+    oracle_address: ''
+  };
+
+  public saveContractsLoading = signal(false);
+
+  constructor() {
+    effect(() => {
+      const comp = this.stateService.currentCompany();
+      if (comp) {
+        this.editingContracts = {
+          registry_address: comp.registry_address || '',
+          governance_address: comp.governance_address || '',
+          token_address: comp.token_address || '',
+          treasury_address: comp.treasury_address || '',
+          funding_address: comp.funding_address || '',
+          distribution_address: comp.distribution_address || '',
+          marketplace_address: comp.marketplace_address || '',
+          oracle_address: comp.oracle_address || ''
+        };
+      }
+    });
+  }
 
   ngOnInit() {
     // Tự động load dữ liệu khi công ty hiện tại thay đổi
@@ -124,25 +156,22 @@ export class DashboardComponent implements OnInit {
     this.contractOwners.update(list => list.filter(a => a !== addr));
   }
 
-  // Deploy contract gọi Backend API (backend dùng private key deployer)
-  public async handleDeploy(contractKey: string) {
+  // Cập nhật địa chỉ các Smart Contracts thủ công lên Backend
+  public async handleSaveContracts() {
     const comp = this.stateService.currentCompany();
     if (!comp) return;
 
-    this.deployLoading.update(s => ({ ...s, [contractKey]: true }));
+    this.saveContractsLoading.set(true);
     try {
       await firstValueFrom(
-        this.apiService.post<any>(`companies/${comp.id}/contracts/deploy`, {
-          contract_key: contractKey,
-          owners: this.contractOwners()
-        })
+        this.apiService.put<any>(`companies/${comp.id}/contracts`, this.editingContracts)
       );
-      this.stateService.showToast(`Deploy ${contractKey} thành công!`, 'success');
+      this.stateService.showToast('Cập nhật địa chỉ Smart Contracts thành công!', 'success');
       await this.stateService.loadCompanies();
     } catch (e: any) {
-      this.stateService.showToast(e.error?.message || 'Deploy thất bại!', 'error');
+      this.stateService.showToast(e.error?.message || 'Cập nhật địa chỉ thất bại!', 'error');
     } finally {
-      this.deployLoading.update(s => ({ ...s, [contractKey]: false }));
+      this.saveContractsLoading.set(false);
     }
   }
 

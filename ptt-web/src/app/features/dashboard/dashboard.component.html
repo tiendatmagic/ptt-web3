@@ -485,7 +485,7 @@
               </div>
             </div>
 
-            <!-- Section 3: Deploy & Verify Contracts Status -->
+            <!-- Section 3: Smart Contracts Configuration -->
             <div class="space-y-3.5 pt-6 border-t border-slate-100 dark:border-slate-800/60">
               <div class="flex items-center gap-2">
                 <div class="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center shrink-0">
@@ -493,45 +493,34 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                   </svg>
                 </div>
-                <h3 class="text-sm font-black text-slate-700 dark:text-slate-200">Quản lý Deploy &amp; Verify Contracts</h3>
+                <h3 class="text-sm font-black text-slate-700 dark:text-slate-200">Liên kết địa chỉ Smart Contracts</h3>
               </div>
+              <p class="text-sm text-slate-400">
+                Nhập địa chỉ của các Smart Contracts mà doanh nghiệp của bạn đã triển khai lên mạng BSC Testnet.
+              </p>
 
-              <div class="space-y-3">
+              <div class="space-y-4">
                 @for (c of [
-                  { name: 'Board Governance (HĐQT Đa chữ ký)', key: 'governance_address', contractKey: 'BoardGovernance' },
-                  { name: 'Equity Token (Cổ phần Doanh nghiệp)', key: 'token_address', contractKey: 'EquityToken' },
-                  { name: 'Treasury (Quỹ Doanh nghiệp)', key: 'treasury_address', contractKey: 'Treasury' },
-                  { name: 'Marketplace (Sàn Giao dịch Cổ phần)', key: 'marketplace_address', contractKey: 'Marketplace' }
+                  { name: 'Company Registry (Đăng ký Doanh nghiệp)', key: 'registry_address', contractKey: 'CompanyRegistry', canVerify: false },
+                  { name: 'Board Governance (HĐQT Đa chữ ký)', key: 'governance_address', contractKey: 'BoardGovernance', canVerify: true },
+                  { name: 'Equity Token (Cổ phần Doanh nghiệp)', key: 'token_address', contractKey: 'EquityToken', canVerify: true },
+                  { name: 'Treasury (Quỹ Doanh nghiệp)', key: 'treasury_address', contractKey: 'Treasury', canVerify: true },
+                  { name: 'Funding Manager (Gọi vốn)', key: 'funding_address', contractKey: 'FundingManager', canVerify: false },
+                  { name: 'Distribution Manager (Chia cổ tức)', key: 'distribution_address', contractKey: 'DistributionManager', canVerify: false },
+                  { name: 'Marketplace (Sàn Giao dịch Cổ phần)', key: 'marketplace_address', contractKey: 'Marketplace', canVerify: true },
+                  { name: 'Oracle (Dữ liệu giá)', key: 'oracle_address', contractKey: 'Oracle', canVerify: false }
                 ]; track c.key) {
-                  <div class="bg-slate-50 dark:bg-slate-900/30 rounded-[15px] border border-slate-100 dark:border-slate-800/40 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div class="space-y-1 min-w-0">
+                  <div class="bg-slate-50 dark:bg-slate-900/30 rounded-[15px] border border-slate-100 dark:border-slate-800/40 p-4 space-y-3">
+                    <div class="flex items-center justify-between gap-4">
                       <span class="text-sm font-black text-slate-700 dark:text-slate-200">{{ c.name }}</span>
-                      <div class="flex items-center gap-2">
-                        <span class="text-xs text-slate-400">Địa chỉ:</span>
-                        <span class="font-mono text-xs text-slate-500 truncate max-w-[200px] sm:max-w-sm">
-                          {{ stateService.currentCompany()[c.key] || 'Chưa deploy' }}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div class="flex items-center gap-2.5 shrink-0">
-                      @if (!stateService.currentCompany()[c.key] || stateService.currentCompany()[c.key] === '—') {
-                        <button
-                          app-button
-                          variant="primary"
-                          size="sm"
-                          (click)="handleDeploy(c.contractKey)"
-                          [loading]="deployLoading()[c.contractKey]"
-                        >
-                          Deploy Contract
-                        </button>
-                      } @else {
+                      
+                      @if (c.canVerify && editingContracts[c.key]) {
                         <!-- Verify Action -->
                         <button
                           app-button
                           variant="secondary"
                           size="sm"
-                          (click)="handleVerify(c.contractKey, stateService.currentCompany()[c.key], c.name)"
+                          (click)="handleVerify(c.contractKey, editingContracts[c.key], c.name)"
                           [loading]="verifyLoading()[c.contractKey]"
                         >
                           @if (verifyStatus()[c.contractKey] === 'verified') {
@@ -544,8 +533,29 @@
                         </button>
                       }
                     </div>
+
+                    <div class="w-full">
+                      <input
+                        type="text"
+                        [(ngModel)]="editingContracts[c.key]"
+                        placeholder="Chưa liên kết địa chỉ hợp đồng (0x...)"
+                        class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-mono text-xs outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all text-slate-800 dark:text-slate-100"
+                      />
+                    </div>
                   </div>
                 }
+
+                <div class="pt-2 flex justify-end">
+                  <button
+                    app-button
+                    variant="primary"
+                    size="md"
+                    (click)="handleSaveContracts()"
+                    [loading]="saveContractsLoading()"
+                  >
+                    Lưu cấu hình Smart Contracts
+                  </button>
+                </div>
               </div>
             </div>
 

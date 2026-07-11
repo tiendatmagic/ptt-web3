@@ -174,9 +174,9 @@ class CompanyController extends Controller
     }
 
     /**
-     * Mô phỏng deploy contract và lưu vào database.
+     * Cập nhật địa chỉ các Smart Contracts thủ công.
      */
-    public function deployContract(Request $request, int $id)
+    public function updateContracts(Request $request, int $id)
     {
         $companyModel = \App\Infrastructure\Persistence\Eloquent\CompanyModel::find($id);
         if (!$companyModel) {
@@ -185,35 +185,37 @@ class CompanyController extends Controller
             ], 404);
         }
 
-        $contractKey = $request->input('contract_key');
-        $owners = $request->input('owners', []);
+        $validated = $request->validate([
+            'registry_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
+            'governance_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
+            'token_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
+            'treasury_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
+            'funding_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
+            'distribution_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
+            'marketplace_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
+            'oracle_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
+        ]);
 
-        $columnMap = [
-            'BoardGovernance' => 'governance_address',
-            'EquityToken' => 'token_address',
-            'Treasury' => 'treasury_address',
-            'Marketplace' => 'marketplace_address'
-        ];
-
-        if (!isset($columnMap[$contractKey])) {
-            return response()->json([
-                'message' => 'Invalid contract key'
-            ], 400);
+        foreach ($validated as $key => $value) {
+            $companyModel->$key = $value;
         }
-
-        $column = $columnMap[$contractKey];
-        
-        // Tạo địa chỉ mock ngẫu nhiên giống BSC Testnet
-        $randomHex = bin2hex(random_bytes(20));
-        $mockAddress = '0x' . $randomHex;
-
-        $companyModel->$column = $mockAddress;
         $companyModel->save();
 
         return response()->json([
-            'message' => 'Contract deployed successfully',
-            'contract_key' => $contractKey,
-            'address' => $mockAddress
+            'message' => 'Contract addresses updated successfully',
+            'company' => [
+                'id' => $companyModel->id,
+                'code' => $companyModel->code,
+                'name' => $companyModel->name,
+                'registry_address' => $companyModel->registry_address,
+                'governance_address' => $companyModel->governance_address,
+                'token_address' => $companyModel->token_address,
+                'treasury_address' => $companyModel->treasury_address,
+                'funding_address' => $companyModel->funding_address,
+                'distribution_address' => $companyModel->distribution_address,
+                'marketplace_address' => $companyModel->marketplace_address,
+                'oracle_address' => $companyModel->oracle_address,
+            ]
         ]);
     }
 
