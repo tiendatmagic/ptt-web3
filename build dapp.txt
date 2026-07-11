@@ -1,0 +1,1039 @@
+nhớ xóa các demo cũ của dapp đi
+
+tận dụng component có sẵn trong dapp, build lại dapp dùng cho token hóa cổ phần, tên là PTT Dapp
+
+
+Kiến trúc tổng thể:
+
+                    Admin Portal
+                         │
+                         │
+                ┌────────┴────────┐
+                │                 │
+          Company Backend     Matching Engine
+                │                 │
+                └────────┬────────┘
+                         │
+                    Smart Contracts
+                         │
+ ┌──────────┬────────────┼──────────────┬─────────────┐
+ │          │            │              │             │
+ ▼          ▼            ▼              ▼             ▼
+PTT Token  Treasury  Distribution  Price Oracle  P2P Exchange
+
+
+Bạn là một Blockchain Solution Architect, Enterprise Software Architect, Solidity Security Auditor và Technical Lead với hơn 15 năm kinh nghiệm.
+
+Nhiệm vụ của bạn là thiết kế toàn bộ hệ thống SaaS Token hóa cổ phần doanh nghiệp (Enterprise Equity Tokenization Platform) đạt tiêu chuẩn Enterprise, có thể triển khai thực tế.
+
+=========================================================
+MỤC TIÊU
+=========================================================
+
+Xây dựng một nền tảng cho phép nhiều doanh nghiệp phát hành cổ phần dưới dạng token trên blockchain.
+
+Đây KHÔNG phải là:
+
+- Meme Coin
+- DeFi
+- AMM
+- PancakeSwap
+- Uniswap
+
+Đây là nền tảng Enterprise quản lý cổ phần doanh nghiệp trên Blockchain.
+
+Sau này có thể mở rộng để nhiều doanh nghiệp cùng sử dụng (Multi Tenant SaaS).
+
+=========================================================
+MÔ HÌNH HOẠT ĐỘNG
+=========================================================
+
+Doanh nghiệp đăng ký
+
+↓
+
+Khởi tạo công ty trên hệ thống
+
+↓
+
+Deploy Smart Contract
+
+↓
+
+Phát hành Token Cổ Phần
+
+↓
+
+Mở vòng gọi vốn
+
+↓
+
+Nhà đầu tư mua Token Cổ Phần
+
+↓
+
+Quản lý cổ đông
+
+↓
+
+Chia cổ tức
+
+↓
+
+Mua bán cổ phần giữa các nhà đầu tư
+
+=========================================================
+YÊU CẦU KIẾN TRÚC
+=========================================================
+
+Thiết kế theo kiến trúc Module.
+
+Hệ thống phải hỗ trợ nhiều doanh nghiệp.
+
+Mỗi doanh nghiệp có hệ thống độc lập gồm:
+
+- Equity Token
+- Treasury
+- Funding
+- Dividend
+- Marketplace
+- Governance
+- Oracle
+
+Có Factory Contract để tự động tạo doanh nghiệp mới.
+
+=========================================================
+CÁC MODULE HỆ THỐNG
+=========================================================
+
+Thiết kế đầy đủ chức năng cho từng module:
+
+1. Authentication
+2. Company Management
+3. Company Factory
+4. Company Registry
+5. Shareholder Management
+6. Equity Token
+7. Treasury
+8. Funding Round
+9. Dividend Distribution
+10. Snapshot / Checkpoint
+11. Governance
+12. Marketplace
+13. Escrow
+14. Matching Engine
+15. Oracle
+16. KYC
+17. Compliance
+18. Notification
+19. Reports
+20. Explorer
+21. Audit Log
+
+=========================================================
+SMART CONTRACT
+=========================================================
+
+Thiết kế đầy đủ Smart Contract.
+
+Bao gồm:
+
+CompanyFactory
+
+CompanyRegistry
+
+EquityToken
+
+Treasury
+
+FundingManager
+
+DistributionManager
+
+SnapshotManager
+
+Marketplace
+
+Escrow
+
+Governance
+
+Oracle
+
+Giải thích nhiệm vụ của từng Contract.
+
+Giải thích Contract nào được phép gọi Contract nào.
+
+Giải thích Permission.
+
+Giải thích Ownership.
+
+Giải thích Upgrade.
+
+=========================================================
+EQUITY TOKEN
+=========================================================
+
+Token đại diện cổ phần doanh nghiệp.
+
+ERC20 Compatible.
+
+Hỗ trợ:
+
+Mint
+
+Burn
+
+Pause
+
+Transfer
+
+Approve
+
+Metadata
+
+Checkpoint
+
+Snapshot
+
+Reference Price
+
+Transfer Restriction
+
+Whitelist
+
+Blacklist
+
+Maximum Ownership
+
+Corporate Actions
+
+
+=========================================================
+TREASURY
+=========================================================
+
+Quản lý tài sản doanh nghiệp.
+
+Hỗ trợ:
+
+USDT
+
+USDC
+
+Native Coin
+
+ERC20
+
+Chức năng:
+
+Deposit
+
+Withdraw
+
+Issue Shares
+
+Burn Shares
+
+Funding Round
+
+Buy Shares
+
+Refund
+
+=========================================================
+FUNDING ROUND
+=========================================================
+
+Doanh nghiệp có thể tạo nhiều vòng gọi vốn.
+
+Ví dụ:
+
+Seed
+
+Private
+
+Series A
+
+Series B
+
+Public
+
+Mỗi vòng gồm:
+
+Tên vòng
+
+Giá
+
+Nguồn cung
+
+Ngày bắt đầu
+
+Ngày kết thúc
+
+Giới hạn mua
+
+Whitelist
+
+KYC
+
+=========================================================
+DIVIDEND
+=========================================================
+
+Hệ thống chia cổ tức.
+
+Có thể chia bằng:
+
+USDT
+
+USDC
+
+Native Coin
+
+Equity Token
+
+Bất kỳ ERC20
+
+Sử dụng kiến trúc Pull Claim.
+
+KHÔNG Push Token.
+
+KHÔNG Loop.
+
+KHÔNG phát tự động.
+
+=========================================================
+QUY TRÌNH CHIA CỔ TỨC
+=========================================================
+
+HĐQT tạo đợt chia cổ tức.
+
+↓
+
+Draft
+
+↓
+
+Review
+
+↓
+
+Multisig Approve
+
+↓
+
+Waiting Payment Date
+
+↓
+
+Đến ngày thanh toán
+
+↓
+
+Active
+
+↓
+
+Nhà đầu tư tự Claim
+
+↓
+
+Finished
+
+=========================================================
+DISTRIBUTION
+=========================================================
+
+Mỗi Distribution gồm:
+
+Distribution ID
+
+Reward Token
+
+Snapshot ID
+
+Total Amount
+
+Payment Date
+
+Status
+
+Status gồm:
+
+Draft
+
+Review
+
+Approved
+
+Waiting
+
+Active
+
+Finished
+
+Cancelled
+
+Cho phép:
+
+Create
+
+Update
+
+Approve
+
+Reject
+
+Cancel
+
+Activate
+
+Claim
+
+=========================================================
+SNAPSHOT
+=========================================================
+
+Không sử dụng ERC20Snapshot.
+
+Sử dụng Checkpoint giống ERC20Votes.
+
+Dùng cho:
+
+Dividend
+
+Voting
+
+Corporate Actions
+
+=========================================================
+MARKETPLACE
+=========================================================
+
+KHÔNG sử dụng AMM.
+
+KHÔNG Liquidity Pool.
+
+KHÔNG PancakeSwap.
+
+Marketplace hoạt động theo Order Book.
+
+Backend quản lý Order Book.
+
+Blockchain chỉ Settlement.
+
+Chức năng:
+
+Create Buy Order
+
+Create Sell Order
+
+Cancel Order
+
+Execute Trade
+
+Escrow
+
+Settlement
+
+=========================================================
+MATCHING ENGINE
+=========================================================
+
+Off-chain.
+
+WebSocket.
+
+Realtime.
+
+Order Matching.
+
+Market Depth.
+
+Trade History.
+
+=========================================================
+ORACLE
+=========================================================
+
+Oracle nội bộ.
+
+Backend lấy dữ liệu từ API.
+
+Cập nhật:
+
+Reference Price
+
+Timestamp
+
+Source
+
+Reference Price chỉ dùng cho:
+
+Dashboard
+
+Portfolio
+
+Company Valuation
+
+Reports
+
+KHÔNG dùng làm giá giao dịch.
+
+Giá giao dịch hoàn toàn do người mua và người bán tự thỏa thuận.
+
+=========================================================
+GOVERNANCE
+=========================================================
+
+Sử dụng Multisig.
+
+Ví dụ:
+
+5 thành viên HĐQT.
+
+Yêu cầu 3 chữ ký.
+
+Các chức năng cần Multisig:
+
+Mint
+
+Burn
+
+Dividend
+
+Funding Round
+
+Treasury Withdraw
+
+Upgrade
+
+Oracle
+
+Corporate Actions
+
+=========================================================
+CORPORATE ACTIONS
+=========================================================
+
+Thiết kế đầy đủ các nghiệp vụ doanh nghiệp.
+
+Bao gồm:
+
+Cash Dividend
+
+Stock Dividend
+
+Share Split
+
+Reverse Split
+
+Buyback
+
+Rights Offering
+
+New Share Issuance
+
+Share Cancellation
+
+Shareholder Voting
+
+=========================================================
+COMPANY DASHBOARD
+=========================================================
+
+Funding
+
+Treasury
+
+Cap Table
+
+Shareholders
+
+Dividend
+
+Marketplace
+
+Governance
+
+Reports
+
+Documents
+
+Transactions
+
+Corporate Actions
+
+=========================================================
+INVESTOR DASHBOARD
+=========================================================
+
+Portfolio
+
+My Shares
+
+Funding
+
+Dividend
+
+Claim
+
+Marketplace
+
+Trade History
+
+Voting
+
+Documents
+
+=========================================================
+BACKEND
+=========================================================
+
+NestJS
+
+REST API
+
+GraphQL
+
+WebSocket
+
+Cron Jobs
+
+Indexer
+
+Notification
+
+Oracle Service
+
+Matching Engine
+
+=========================================================
+DATABASE
+=========================================================
+
+PostgreSQL
+
+Redis
+
+Thiết kế đầy đủ:
+
+ERD
+
+Tables
+
+Indexes
+
+Relationships
+
+=========================================================
+FRONTEND
+=========================================================
+
+Next.js
+
+TypeScript
+
+TailwindCSS
+
+Material UI
+
+WalletConnect
+
+RainbowKit
+
+Responsive
+
+Dark Mode
+
+=========================================================
+BẢO MẬT
+=========================================================
+
+Phân tích:
+
+Reentrancy
+
+Replay Attack
+
+Front Running
+
+MEV
+
+Signature Verification
+
+RBAC
+
+Rate Limit
+
+Emergency Pause
+
+Upgrade Strategy
+
+Gas Optimization
+
+=========================================================
+KIẾN TRÚC HỆ THỐNG
+=========================================================
+
+Thiết kế đầy đủ:
+
+High Level Architecture
+
+System Architecture
+
+Microservices
+
+Folder Structure
+
+Smart Contract Structure
+
+Backend Structure
+
+Frontend Structure
+
+API Design
+
+Database Design
+
+UML
+
+Sequence Diagram
+
+Flow Diagram
+
+Deployment Diagram
+
+=========================================================
+LỘ TRÌNH PHÁT TRIỂN
+=========================================================
+
+Đề xuất Roadmap theo từng giai đoạn:
+
+Phase 1: MVP
+
+Phase 2: Beta
+
+Phase 3: Production
+
+Phase 4: Multi Company SaaS
+
+Phase 5: Public Platform
+
+=========================================================
+YÊU CẦU ĐẦU RA
+=========================================================
+
+Hãy thiết kế chi tiết như một Technical Design Document (TDD) hoàn chỉnh.
+
+Không chỉ liệt kê chức năng.
+
+Hãy giải thích:
+
+- Vì sao thiết kế như vậy.
+- Ưu điểm.
+- Nhược điểm.
+- Khả năng mở rộng.
+- Khả năng nâng cấp.
+- Bảo mật.
+- Khả năng triển khai thực tế.
+
+Mục tiêu cuối cùng là tạo ra một nền tảng Enterprise có thể phục vụ hàng nghìn doanh nghiệp token hóa cổ phần trên blockchain.
+
+
+
+
+
+
+=========================================================
+OWNERSHIP & ACCESS CONTROL
+=========================================================
+
+Toàn bộ Smart Contract KHÔNG được sử dụng ví cá nhân (EOA) làm Owner.
+
+Mỗi doanh nghiệp khi được khởi tạo sẽ phải tạo một Board Multisig Wallet đại diện cho Hội đồng Quản trị (Board of Directors).
+
+Board Multisig Wallet sẽ là Owner duy nhất của toàn bộ Smart Contract thuộc doanh nghiệp đó.
+
+Ví dụ:
+
+Doanh nghiệp A
+
+Board Members:
+
+- Member A
+- Member B
+- Member C
+- Member D
+- Member E
+
+Multisig Policy:
+
+- 3 / 5 signatures
+
+Board Multisig Wallet
+
+↓
+
+Owner của:
+
+- Equity Token
+- Treasury
+- Funding Manager
+- Distribution Manager
+- Marketplace
+- Oracle
+- Governance
+- Company Configuration
+
+=========================================================
+ROLE-BASED ACCESS CONTROL (RBAC)
+=========================================================
+
+Ngoài Owner (Multisig), hệ thống phải hỗ trợ Role-Based Access Control.
+
+Thiết kế các vai trò sau:
+
+Super Admin (Platform)
+
+Company Admin
+
+Board Member
+
+CEO
+
+CFO
+
+Accountant
+
+Auditor
+
+Compliance Officer
+
+Investor
+
+Guest
+
+Giải thích rõ quyền hạn của từng vai trò.
+
+=========================================================
+MULTISIG APPROVAL
+=========================================================
+
+Các chức năng sau bắt buộc phải được Multisig phê duyệt.
+
+Không được phép thực hiện bởi một cá nhân.
+
+Bao gồm:
+
+- Mint Equity Token
+- Burn Equity Token
+- Mở Funding Round
+- Đóng Funding Round
+- Thay đổi giá bán cổ phần
+- Rút tài sản Treasury
+- Chia cổ tức
+- Hủy đợt chia cổ tức (nếu chưa Active)
+- Kích hoạt đợt chia cổ tức
+- Corporate Actions
+- Buyback
+- Share Split
+- Reverse Split
+- Rights Offering
+- New Share Issuance
+- Oracle Configuration
+- Company Configuration
+- Thay đổi Board Members
+- Upgrade Smart Contract
+- Pause Contract
+- Unpause Contract
+- Chuyển Ownership
+
+=========================================================
+PROPOSAL SYSTEM
+=========================================================
+
+Mọi thao tác của Hội đồng Quản trị phải thông qua Proposal.
+
+Flow:
+
+Create Proposal
+
+↓
+
+Board Members Review
+
+↓
+
+Board Members Sign
+
+↓
+
+Đạt đủ số chữ ký
+
+↓
+
+Proposal Approved
+
+↓
+
+Nếu có Effective Date
+
+↓
+
+Waiting
+
+↓
+
+Đến thời gian hiệu lực
+
+↓
+
+Execute
+
+↓
+
+Completed
+
+Mỗi Proposal phải lưu:
+
+- Proposal ID
+- Proposal Type
+- Description
+- Created By
+- Created Time
+- Required Signatures
+- Current Signatures
+- Effective Date
+- Expiration Date
+- Status
+- Execution Transaction Hash
+
+=========================================================
+PROPOSAL STATUS
+=========================================================
+
+Draft
+
+Pending Review
+
+Approved
+
+Waiting Execution
+
+Executed
+
+Rejected
+
+Cancelled
+
+Expired
+
+=========================================================
+DIVIDEND APPROVAL FLOW
+=========================================================
+
+Ví dụ chia cổ tức.
+
+Ngày 01/09
+
+↓
+
+Board tạo Proposal
+
+↓
+
+Reward Token
+
+↓
+
+Snapshot
+
+↓
+
+Payment Date
+
+↓
+
+Board ký Multisig
+
+↓
+
+Approved
+
+↓
+
+Waiting Payment Date
+
+↓
+
+Đến ngày 15/09
+
+↓
+
+Contract tự động Active
+
+↓
+
+Nhà đầu tư Claim
+
+↓
+
+Finished
+
+Nếu Proposal chưa Active thì Board có quyền:
+
+- Update
+- Reject
+- Cancel
+
+Nếu đã Active thì KHÔNG được sửa.
+
+Nếu đã có người Claim thì KHÔNG được Cancel.
+
+Muốn điều chỉnh phải tạo Proposal mới.
+
+=========================================================
+AUDIT LOG
+=========================================================
+
+Toàn bộ Proposal và hành động của Board phải được lưu lịch sử.
+
+Lưu:
+
+Ai tạo
+
+Ai ký
+
+Ai từ chối
+
+Ai hủy
+
+Thời gian
+
+Transaction Hash
+
+Lý do
+
+IP (Backend)
+
+Wallet Address
+
+=========================================================
+SECURITY
+=========================================================
+
+Thiết kế hệ thống sao cho:
+
+Không có cá nhân nào có toàn quyền kiểm soát doanh nghiệp.
+
+Toàn bộ quyền quản trị phải thông qua Multisig.
+
+Thiết kế phù hợp cho doanh nghiệp thực tế, có khả năng kiểm toán và đáp ứng yêu cầu quản trị doanh nghiệp.
+
+Yêu cầu dapp là tiếng việt, hỗ trợ 2 chain BSC và BSC Testnet
+sau khi deploy contract, nhớ verify contract luôn
+api nằm trong file .env ETH_API_KEY
+
+
