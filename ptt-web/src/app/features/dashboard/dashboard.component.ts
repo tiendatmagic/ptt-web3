@@ -5,7 +5,6 @@ import { StateService } from '@core/services/state.service';
 import { ApiService } from '@core/services/api.service';
 import { firstValueFrom } from 'rxjs';
 import { ethers } from 'ethers';
-import { CONTRACTS_DATA } from '../../core/constants/contracts-data';
 
 import { ModalService } from '@core/services/modal.service';
 import { AddStaffModalComponent } from './modals/add-staff-modal.component';

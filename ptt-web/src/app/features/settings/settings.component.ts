@@ -8,7 +8,7 @@ import { StateService } from '@core/services/state.service';
 import { ApiService } from '@core/services/api.service';
 import { ModalService } from '@core/services/modal.service';
 import { ButtonComponent } from '@shared/components/button/button.component';
-import { CONTRACTS_DATA } from '../../core/constants/contracts-data';
+import { BoardGovernance, EquityToken, FinanceManager, Marketplace } from '../../core/constants/contracts';
 import { IconComponent } from '@shared/components/icon/icon.component';
 import { CustomSelectComponent } from '@shared/components/custom-select/custom-select.component';
 
@@ -163,8 +163,8 @@ export class SettingsComponent implements OnInit {
       // 1. Deploy BoardGovernance
       this.stateService.showToast('[1/4] Đang deploy Board Governance (HĐQT Multisig)...', 'warning');
       const govFactory = new ethers.ContractFactory(
-        CONTRACTS_DATA['BoardGovernance'].abi,
-        CONTRACTS_DATA['BoardGovernance'].bytecode,
+        BoardGovernance.abi,
+        BoardGovernance.bytecode,
         signer
       );
       // threshold lấy từ lựa chọn của người dùng
@@ -177,8 +177,8 @@ export class SettingsComponent implements OnInit {
       // 2. Deploy EquityToken
       this.stateService.showToast('[2/4] Đang deploy Equity Token (Cổ phần)...', 'warning');
       const tokenFactory = new ethers.ContractFactory(
-        CONTRACTS_DATA['EquityToken'].abi,
-        CONTRACTS_DATA['EquityToken'].bytecode,
+        EquityToken.abi,
+        EquityToken.bytecode,
         signer
       );
       const tokenContract = await tokenFactory.deploy(comp.name, comp.code, govAddr);
@@ -190,8 +190,8 @@ export class SettingsComponent implements OnInit {
       // 3. Deploy FinanceManager
       this.stateService.showToast('[3/4] Đang deploy Finance Manager (Gọi vốn & Cổ tức)...', 'warning');
       const financeFactory = new ethers.ContractFactory(
-        CONTRACTS_DATA['FinanceManager'].abi,
-        CONTRACTS_DATA['FinanceManager'].bytecode,
+        FinanceManager.abi,
+        FinanceManager.bytecode,
         signer
       );
       const financeContract = await financeFactory.deploy(govAddr);
@@ -203,8 +203,8 @@ export class SettingsComponent implements OnInit {
       // 4. Deploy Marketplace
       this.stateService.showToast('[4/4] Đang deploy Marketplace (Sàn giao dịch)...', 'warning');
       const marketplaceFactory = new ethers.ContractFactory(
-        CONTRACTS_DATA['Marketplace'].abi,
-        CONTRACTS_DATA['Marketplace'].bytecode,
+        Marketplace.abi,
+        Marketplace.bytecode,
         signer
       );
       const marketplaceContract = await marketplaceFactory.deploy(govAddr, govAddr);
@@ -214,6 +214,28 @@ export class SettingsComponent implements OnInit {
       this.stateService.showToast('✓ Deploy Marketplace thành công: ' + marketplaceAddr, 'success');
 
       this.stateService.showToast('Hoàn tất deploy 4 contracts! Vui lòng nhấn "Lưu cấu hình Smart Contracts" để hoàn tất liên kết vào hệ thống.', 'success');
+
+      // Tự động verify nếu đã cấu hình API Key từ trước
+      if (this.bscApiKey()) {
+        this.stateService.showToast('Đang chờ 15 giây để Blockchain đồng bộ trước khi tự động verify...', 'warning');
+        await new Promise(resolve => setTimeout(resolve, 15000));
+
+        const contractsToVerify = [
+          { key: 'BoardGovernance', address: govAddr, name: 'Board Governance' },
+          { key: 'EquityToken', address: tokenAddr, name: 'Equity Token' },
+          { key: 'FinanceManager', address: financeAddr, name: 'Finance Manager' },
+          { key: 'Marketplace', address: marketplaceAddr, name: 'Marketplace' }
+        ];
+
+        for (const item of contractsToVerify) {
+          try {
+            await this.handleVerify(item.key, item.address, item.name);
+          } catch (err) {
+            console.error(`Lỗi tự động verify ${item.name}:`, err);
+          }
+        }
+        this.stateService.showToast('✓ Hoàn thành tiến trình tự động verify!', 'success');
+      }
 
     } catch (e: any) {
       console.error(e);
@@ -364,7 +386,9 @@ Hãy lưu trữ cẩn thận và không chia sẻ khóa bảo mật (Private Key
     this.verifyLoading.update(s => ({ ...s, [contractKey]: true }));
     this.verifyStatus.update(s => ({ ...s, [contractKey]: 'checking' }));
     try {
-      const url = `https://api-testnet.bscscan.com/api?module=contract&action=getsourcecode&address=${contractAddress}&apikey=${apiKey}`;
+      // Sử dụng Etherscan API V2 thống nhất do API V1 của BscScan đã bị dừng hoạt động
+      const chainId = this.stateService.chainId() || 97;
+      const url = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=contract&action=getsourcecode&address=${contractAddress}&apikey=${apiKey}`;
       const res = await fetch(url);
       const data = await res.json();
       if (data.status === '1' && data.result[0]?.SourceCode) {

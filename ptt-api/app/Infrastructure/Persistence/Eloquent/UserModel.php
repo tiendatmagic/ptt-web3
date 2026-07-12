@@ -37,4 +37,9 @@ class UserModel extends Authenticatable
             'is_whitelisted' => 'boolean',
         ];
     }
+
+    protected static function newFactory()
+    {
+        return \Database\Factories\UserFactory::new();
+    }
 }
