@@ -383,27 +383,94 @@ Hãy lưu trữ cẩn thận và không chia sẻ khóa bảo mật (Private Key
       this.stateService.showToast('Contract chưa có địa chỉ!', 'warning');
       return;
     }
+
+    const comp = this.stateService.currentCompany();
+    if (!comp) {
+      this.stateService.showToast('Không tìm thấy thông tin công ty hiện tại!', 'error');
+      return;
+    }
+
     this.verifyLoading.update(s => ({ ...s, [contractKey]: true }));
     this.verifyStatus.update(s => ({ ...s, [contractKey]: 'checking' }));
     try {
-      // Sử dụng Etherscan API V2 thống nhất do API V1 của BscScan đã bị dừng hoạt động
+      // 1. Kiểm tra trạng thái verify hiện tại của hợp đồng
       const chainId = this.stateService.chainId() || 97;
-      const url = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=contract&action=getsourcecode&address=${contractAddress}&apikey=${apiKey}`;
-      const res = await fetch(url);
+      const requestUrl = `https://api.etherscan.io/v2/api?chainid=${chainId}`;
+      const checkSourceUrl = `${requestUrl}&module=contract&action=getsourcecode&address=${contractAddress}&apikey=${apiKey}`;
+      const res = await fetch(checkSourceUrl);
       const data = await res.json();
+      
       if (data.status === '1' && data.result[0]?.SourceCode) {
         this.verifyStatus.update(s => ({ ...s, [contractKey]: 'verified' }));
         this.stateService.showToast(`${contractName} đã được verify trên BscScan!`, 'success');
       } else {
-        const submitRes = await firstValueFrom(
-          this.apiService.post<any>('contracts/verify', {
-            contract_key: contractKey,
-            contract_address: contractAddress,
-            bscscan_api_key: apiKey
-          })
-        );
+        // 2. Nếu chưa verify, tải mã nguồn và tính toán constructor arguments gửi verify thực tế
+        const fileName = contractKey.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+        const sourceRes = await fetch(`/assets/contracts/${fileName}.flat.sol`);
+        if (!sourceRes.ok) {
+          throw new Error(`Không tìm thấy tệp mã nguồn của hợp đồng ${contractName} trong Assets!`);
+        }
+        const sourceCode = await sourceRes.text();
+        const contractnamePath = `contracts/${contractKey}.sol:${contractKey}`;
+        
+        let constructorArgs = '';
+        const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+        const govAddress = this.editingContracts['governance_address'];
+
+        if (contractKey === 'BoardGovernance') {
+          constructorArgs = abiCoder.encode(
+            ['address[]', 'uint256'],
+            [this.contractOwners(), this.minSignatures()]
+          ).replace('0x', '');
+        } else if (contractKey === 'EquityToken') {
+          constructorArgs = abiCoder.encode(
+            ['string', 'string', 'address'],
+            [this.companyName(), comp.code, govAddress]
+          ).replace('0x', '');
+        } else if (contractKey === 'FinanceManager') {
+          constructorArgs = abiCoder.encode(
+            ['address'],
+            [govAddress]
+          ).replace('0x', '');
+        } else if (contractKey === 'Marketplace') {
+          constructorArgs = abiCoder.encode(
+            ['address', 'address'],
+            [govAddress, govAddress]
+          ).replace('0x', '');
+        }
+
+        const params = new URLSearchParams();
+        params.append('apikey', apiKey);
+        params.append('module', 'contract');
+        params.append('action', 'verifysourcecode');
+        params.append('contractaddress', contractAddress);
+        params.append('sourceCode', sourceCode);
+        params.append('codeformat', 'solidity-single-file');
+        params.append('contractname', contractnamePath);
+        params.append('compilerversion', 'v0.8.24+commit.e11b9ed9');
+        params.append('optimizationUsed', '1');
+        params.append('runs', '1');
+        params.append('constructorArguements', constructorArgs);
+
+        const response = await fetch(requestUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: params.toString()
+        });
+
+        const submitData = await response.json();
+        if (submitData.status !== '1') {
+          throw new Error(submitData.result || 'Yêu cầu verify bị Explorer từ chối.');
+        }
+
+        const guid = submitData.result;
         this.verifyStatus.update(s => ({ ...s, [contractKey]: 'submitted' }));
-        this.stateService.showToast(`Đã submit verify cho ${contractName}. GUID: ${submitRes.guid}`, 'success');
+        this.stateService.showToast(`Đã submit verify cho ${contractName}. Đang tiến hành xác minh...`, 'success');
+
+        // 3. Polling kiểm tra kết quả
+        await this.pollVerifyStatus(requestUrl, guid, apiKey, contractKey, chainId, contractName);
       }
     } catch (e: any) {
       this.verifyStatus.update(s => ({ ...s, [contractKey]: 'error' }));
@@ -411,6 +478,50 @@ Hãy lưu trữ cẩn thận và không chia sẻ khóa bảo mật (Private Key
     } finally {
       this.verifyLoading.update(s => ({ ...s, [contractKey]: false }));
     }
+  }
+
+  private async pollVerifyStatus(
+    requestUrl: string,
+    guid: string,
+    apiKey: string,
+    contractKey: string,
+    chainId: number,
+    contractName: string
+  ): Promise<void> {
+    let attempts = 0;
+    const maxAttempts = 15; // 75 giây
+
+    return new Promise<void>((resolve, reject) => {
+      const interval = setInterval(async () => {
+        attempts++;
+        try {
+          const checkUrl = `${requestUrl}&module=contract&action=checkverifystatus&guid=${guid}&apikey=${apiKey}`;
+          const res = await fetch(checkUrl);
+          const data = await res.json();
+          const result = data.result ? data.result.toLowerCase() : '';
+
+          if (result === 'pass' || result.includes('verified') || result.includes('success')) {
+            clearInterval(interval);
+            this.verifyStatus.update(s => ({ ...s, [contractKey]: 'verified' }));
+            this.stateService.showToast(`✓ ${contractName} đã được verify thành công on-chain!`, 'success');
+            resolve();
+          } else if (result.includes('fail') || result.includes('error')) {
+            clearInterval(interval);
+            this.verifyStatus.update(s => ({ ...s, [contractKey]: 'error' }));
+            reject(new Error(data.result || 'Xác minh thất bại.'));
+          } else {
+            if (attempts >= maxAttempts) {
+              clearInterval(interval);
+              this.verifyStatus.update(s => ({ ...s, [contractKey]: 'error' }));
+              reject(new Error('Quá thời gian chờ phản hồi từ Explorer.'));
+            }
+          }
+        } catch (err) {
+          clearInterval(interval);
+          reject(err);
+        }
+      }, 5000);
+    });
   }
 
   // --- Xóa doanh nghiệp nháp ---
