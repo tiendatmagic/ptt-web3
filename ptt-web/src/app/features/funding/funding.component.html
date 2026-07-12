@@ -27,7 +27,7 @@
             <div class="flex justify-between items-start">
               <div>
                 <h3 class="text-xs font-black text-slate-800 dark:text-white">{{ round.name }}</h3>
-                <span class="text-sm font-bold text-slate-400">Giá cổ phần: ${{ round.share_price }}/Share</span>
+                <span class="text-sm font-bold text-slate-400">Giá cổ phần: {{ round.share_price }} BNB/Share</span>
               </div>
               <span class="px-2 py-0.5 rounded-full text-xs font-black uppercase"
                 [class.bg-yellow-100]="round.status === 'DRAFT'" [class.text-yellow-600]="round.status === 'DRAFT'"
@@ -41,7 +41,7 @@
             <div class="space-y-1">
               <div class="flex justify-between items-center text-sm font-bold text-slate-400">
                 <span>Tiến độ huy động</span>
-                <span>{{ (round.raised_amount / round.target_amount * 100) | number:'1.0-1' }}% (${{ round.raised_amount }} / ${{ round.target_amount }})</span>
+                <span>{{ (round.raised_amount / round.target_amount * 100) | number:'1.0-1' }}% ({{ round.raised_amount }} / {{ round.target_amount }} BNB)</span>
               </div>
               <div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
                 <div [style.width.%]="(round.raised_amount / round.target_amount * 100)" class="h-full bg-primary rounded-full"></div>
@@ -51,7 +51,7 @@
             <!-- Purchase Input / Action -->
             @if (round.status === 'ACTIVE') {
               <div class="flex gap-2 pt-2 select-none">
-                <input type="number" [(ngModel)]="purchaseAmount" placeholder="Số BNB muốn mua..." class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold bg-white dark:bg-slate-950" />
+                <input type="number" [(ngModel)]="purchaseAmount" placeholder="Số lượng cổ phần muốn mua..." class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold bg-white dark:bg-slate-950" />
                 <button app-button variant="primary" (click)="handlePurchaseShares(round)" class="h-10 px-4 rounded-xl text-xs font-extrabold shrink-0">
                   MUA CỔ PHẦN
                 </button>

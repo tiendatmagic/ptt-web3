@@ -6,7 +6,7 @@ import { ApiService } from '@core/services/api.service';
 import { ModalRef } from '@core/services/modal-ref';
 import { firstValueFrom } from 'rxjs';
 import { ethers } from 'ethers';
-import { BoardGovernance, EquityToken } from '../../../core/constants/contracts';
+import { BoardGovernance, EquityToken, FinanceManager } from '../../../core/constants/contracts';
 
 import { ButtonComponent } from '@shared/components/button/button.component';
 
@@ -46,6 +46,7 @@ import { ButtonComponent } from '@shared/components/button/button.component';
             <option value="MINT">MINT (Phát hành cổ phần)</option>
             <option value="BURN">BURN (Hủy cổ phần)</option>
             <option value="WITHDRAW">WITHDRAW (Rút quỹ BNB)</option>
+            <option value="FUNDING_ROUND">FUNDING_ROUND (Tạo vòng gọi vốn)</option>
             <option value="ADD_MEMBER">ADD_MEMBER (Thêm HĐQT)</option>
             <option value="REMOVE_MEMBER">REMOVE_MEMBER (Xóa HĐQT)</option>
             <option value="CHANGE_THRESHOLD">CHANGE_THRESHOLD (Đổi Threshold)</option>
@@ -137,7 +138,53 @@ import { ButtonComponent } from '@shared/components/button/button.component';
         </div>
       }
 
-      <!-- 4. ADD / REMOVE MEMBER HĐQT -->
+      <!-- 4. FUNDING_ROUND (TAO VONG GOI VON) -->
+      @if (newProposal.type === 'FUNDING_ROUND') {
+        <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20 space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="text-xs font-black text-slate-400 uppercase">Tên vòng gọi vốn</label>
+              <input
+                type="text"
+                [(ngModel)]="newProposal.fundingRoundParams.name"
+                placeholder="VD: Vòng Seed"
+                class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+              />
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs font-black text-slate-400 uppercase">Giá cổ phần (BNB)</label>
+              <input
+                type="text"
+                [(ngModel)]="newProposal.fundingRoundParams.share_price"
+                placeholder="VD: 0.001"
+                class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+              />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="text-xs font-black text-slate-400 uppercase">Số lượng cổ phần bán tối đa</label>
+              <input
+                type="number"
+                [(ngModel)]="newProposal.fundingRoundParams.max_supply"
+                placeholder="VD: 100000"
+                class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+              />
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs font-black text-slate-400 uppercase">Thời gian bán (Ngày)</label>
+              <input
+                type="number"
+                [(ngModel)]="newProposal.fundingRoundParams.duration_days"
+                placeholder="VD: 30"
+                class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+              />
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- 5. ADD / REMOVE MEMBER HĐQT -->
       @if (newProposal.type === 'ADD_MEMBER' || newProposal.type === 'REMOVE_MEMBER') {
         <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20 space-y-1">
           <label class="text-xs font-black text-slate-400 uppercase">Địa chỉ ví thành viên HĐQT</label>
@@ -150,7 +197,7 @@ import { ButtonComponent } from '@shared/components/button/button.component';
         </div>
       }
 
-      <!-- 5. CHANGE THRESHOLD -->
+      <!-- 6. CHANGE THRESHOLD -->
       @if (newProposal.type === 'CHANGE_THRESHOLD') {
         <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20 space-y-1">
           <label class="text-xs font-black text-slate-400 uppercase">Số chữ ký tối thiểu mới</label>
@@ -163,7 +210,7 @@ import { ButtonComponent } from '@shared/components/button/button.component';
         </div>
       }
 
-      <!-- 6. PAUSE / UNPAUSE TOKEN -->
+      <!-- 7. PAUSE / UNPAUSE TOKEN -->
       @if (newProposal.type === 'PAUSE_TOKEN' || newProposal.type === 'UNPAUSE_TOKEN') {
         <div class="bg-slate-50 dark:bg-slate-900/30 p-4 rounded-xl border border-slate-100 dark:border-slate-900/10 text-xs text-slate-500 dark:text-slate-400">
           * Đề xuất này sẽ gửi yêu cầu khóa hoặc mở khóa chức năng chuyển nhượng giao dịch của Cổ phần. Không cần tham số đầu vào.
@@ -211,6 +258,12 @@ export class CreateProposalModalComponent {
     burnParams: {
       from: '',
       amount: 0
+    },
+    fundingRoundParams: {
+      name: 'Vòng gọi vốn',
+      share_price: '0.001',
+      max_supply: 100000,
+      duration_days: 30
     },
     memberParams: {
       address: ''
@@ -281,6 +334,30 @@ export class CreateProposalModalComponent {
         target = comp.governance_address;
         const govInterface = new ethers.Interface(BoardGovernance.abi);
         calldata = govInterface.encodeFunctionData('changeThreshold', [this.newProposal.thresholdParams.newThreshold]);
+      } else if (this.newProposal.type === 'FUNDING_ROUND') {
+        if (!comp.funding_address) {
+          this.stateService.showToast('Địa chỉ FinanceManager của công ty chưa cấu hình!', 'error');
+          this.isLoading.set(false);
+          return;
+        }
+        target = comp.funding_address;
+        const financeInterface = new ethers.Interface(FinanceManager.abi);
+        
+        const params = {
+          name: this.newProposal.fundingRoundParams.name,
+          shareToken: comp.token_address,
+          paymentToken: ethers.ZeroAddress, // BNB làm đồng tiền thanh toán mặc định
+          treasury: comp.governance_address, // Quỹ BNB chảy về ví két sắt BoardGovernance
+          price: ethers.parseEther(this.newProposal.fundingRoundParams.share_price.toString()),
+          maxSupply: ethers.parseUnits(this.newProposal.fundingRoundParams.max_supply.toString(), 18),
+          startTime: Math.floor(Date.now() / 1000), // bắt đầu ngay lập tức
+          endTime: Math.floor(Date.now() / 1000) + this.newProposal.fundingRoundParams.duration_days * 86400,
+          minPurchase: 0,
+          maxPurchase: 0,
+          isWhitelistOnly: false
+        };
+
+        calldata = financeInterface.encodeFunctionData('createFundingRound', [params]);
       }
 
       // Xác thực dữ liệu

@@ -1,27 +1,21 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { StateService } from '@core/services/state.service';
 import { ApiService } from '@core/services/api.service';
 import { IconComponent } from '@shared/components/icon/icon.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { firstValueFrom } from 'rxjs';
-import { Contract, parseEther } from 'ethers';
+import { Contract, parseEther, ethers } from 'ethers';
 
 import { ModalService } from '@core/services/modal.service';
-import { CreateRoundModalComponent } from './modals/create-round-modal.component';
 
-// ABI rút gọn của FundingManager để purchaseShares
-const FUNDING_MANAGER_ABI = [
-  "function purchaseShares() external payable",
-  "function getRaisedAmount() public view returns (uint256)",
-  "function isActive() public view returns (bool)"
-];
-
-// ABI rút gọn của DistributionManager để claimDividend
-const DISTRIBUTION_MANAGER_ABI = [
-  "function claimDividend(uint256 companyId, uint256 dividendId) external",
-  "function getClaimableAmount(uint256 companyId, uint256 dividendId, address shareholder) public view returns (uint256)"
+// ABI rút gọn của FinanceManager để quản lý Gọi vốn & Cổ tức
+const FINANCE_MANAGER_ABI = [
+  "function buyShares(uint256 roundId, uint256 tokenAmount) external payable",
+  "function rounds(uint256 roundId) external view returns (tuple(uint256 id, string name, address shareToken, address paymentToken, address treasury, uint256 price, uint256 maxSupply, uint256 soldAmount, uint256 startTime, uint256 endTime, uint256 minPurchase, uint256 maxPurchase, bool isWhitelistOnly, bool active))",
+  "function claimDividend(uint256 dividendId) external"
 ];
 
 @Component({
@@ -34,6 +28,7 @@ export class FundingComponent implements OnInit {
   public stateService = inject(StateService);
   private apiService = inject(ApiService);
   private modalService = inject(ModalService);
+  private router = inject(Router);
 
   // Gọi vốn
   public roundsList = signal<any[]>([]);
@@ -65,8 +60,8 @@ export class FundingComponent implements OnInit {
 
   // Mua cổ phần gọi vốn (Purchase Shares)
   public async handlePurchaseShares(round: any) {
-    if (!this.purchaseAmount) {
-      this.stateService.showToast('Vui lòng nhập số tiền muốn mua', 'warning');
+    if (!this.purchaseAmount || Number(this.purchaseAmount) <= 0) {
+      this.stateService.showToast('Vui lòng nhập số lượng cổ phần muốn mua', 'warning');
       return;
     }
 
@@ -81,29 +76,39 @@ export class FundingComponent implements OnInit {
 
     try {
       this.stateService.isLoading.set(true);
-      this.stateService.showToast('Đang gửi giao dịch mua cổ phần lên blockchain...', 'warning');
+      this.stateService.showToast('Đang kết nối ví và kiểm tra thông tin vòng gọi vốn...', 'warning');
 
-      // 1. Lấy signer và khởi tạo contract FundingManager
+      // 1. Lấy signer và khởi tạo contract FinanceManager
       const signer = await this.stateService.getSigner();
-      const fundingContract = new Contract(comp.funding_address, FUNDING_MANAGER_ABI, signer);
+      const financeContract = new Contract(comp.funding_address, FINANCE_MANAGER_ABI, signer);
 
-      const valueToSend = parseEther(this.purchaseAmount); // thanh toán bằng BNB
+      // 2. Đọc thông tin round từ contract để lấy giá price chính xác
+      const roundInfo = await financeContract['rounds'](round.id);
+      const price = roundInfo.price; // Giá cổ phần bằng Wei (ví dụ: 0.001 BNB)
+
+      const tokenAmount = parseEther(this.purchaseAmount); // Số lượng cổ phần quy đổi sang Wei (18 decimals)
+      const cost = (tokenAmount * BigInt(price)) / 1000000000000000000n;   // Chi phí BNB = (amount * price) / 10^18
+
+      this.stateService.showToast(`Chi phí cần thanh toán: ${ethers.formatEther(cost)} BNB. Đang gửi giao dịch...`, 'warning');
       const gasOverrides = await this.stateService.getGasOverrides(signer);
 
-      // 2. Gọi hàm purchaseShares on-chain
-      const tx = await fundingContract['purchaseShares']({
-        value: valueToSend,
+      // 3. Gọi hàm buyShares on-chain
+      const tx = await financeContract['buyShares'](round.id, tokenAmount, {
+        value: cost,
         ...gasOverrides
       });
 
-      this.stateService.showToast('Giao dịch đang chờ xác nhận...', 'warning');
+      this.stateService.showToast('Giao dịch đang chờ xác nhận từ mạng lưới...', 'warning');
       await tx.wait();
 
-      // 3. Đồng bộ lại raised amount từ contract
-      const raisedWei = await fundingContract['getRaisedAmount']();
-      const raisedEth = Number(raisedWei) / 1e18; // convert back to standard decimal
+      // 4. Tính toán số tiền đã huy động được (raised_amount) để đồng bộ về Backend
+      // Lấy soldAmount thực tế sau giao dịch
+      const updatedRoundInfo = await financeContract['rounds'](round.id);
+      const soldAmount = updatedRoundInfo.soldAmount;
+      const raisedWei = (BigInt(soldAmount) * BigInt(price)) / 1000000000000000000n;
+      const raisedEth = Number(ethers.formatEther(raisedWei));
 
-      // 4. Cập nhật Backend
+      // 5. Cập nhật Backend
       await firstValueFrom(
         this.apiService.post<any>(`funding/${round.id}/sync`, {
           raised_amount: raisedEth,
@@ -111,7 +116,7 @@ export class FundingComponent implements OnInit {
         }, comp.id)
       );
 
-      this.stateService.showToast('Mua cổ phần thành công! Cổ phần đã được tự động mint về ví của bạn.', 'success');
+      this.stateService.showToast('Mua cổ phần thành công! Cổ phần đã được phân phối trực tiếp về ví của bạn.', 'success');
       this.purchaseAmount = '';
       await this.loadFundingData();
     } catch (e: any) {
@@ -122,17 +127,10 @@ export class FundingComponent implements OnInit {
     }
   }
 
-  // Đăng ký vòng gọi vốn mới qua ModalService
+  // Tạo đề xuất gọi vốn mới chuyển sang Governance
   public openCreateRoundModal() {
-    const ref = this.modalService.open(CreateRoundModalComponent, {
-      title: 'Tạo vòng gọi vốn mới',
-      size: 'md'
-    });
-    ref.afterClosed$.subscribe(success => {
-      if (success) {
-        this.loadFundingData();
-      }
-    });
+    this.stateService.showToast('Vui lòng tạo đề xuất FUNDING_ROUND tại trang Hội đồng Quản trị để mở vòng gọi vốn mới.', 'warning');
+    this.router.navigate(['/governance']);
   }
 
   // Rút cổ tức (Claim Dividend)
@@ -144,19 +142,19 @@ export class FundingComponent implements OnInit {
       this.stateService.isLoading.set(true);
       this.stateService.showToast('Đang gửi yêu cầu claim cổ tức lên blockchain...', 'warning');
 
-      // 1. Lấy signer và khởi tạo contract DistributionManager (nằm trong FinanceManager)
+      // 1. Lấy signer và khởi tạo contract FinanceManager
       const signer = await this.stateService.getSigner();
-      const distContract = new Contract(comp.funding_address, DISTRIBUTION_MANAGER_ABI, signer);
+      const financeContract = new Contract(comp.funding_address, FINANCE_MANAGER_ABI, signer);
 
       const gasOverrides = await this.stateService.getGasOverrides(signer);
 
       // 2. Gọi hàm claimDividend on-chain
-      const tx = await distContract['claimDividend'](comp.id, dividend.id, gasOverrides);
+      const tx = await financeContract['claimDividend'](dividend.id, gasOverrides);
 
-      this.stateService.showToast('Giao dịch claim đang chờ xác nhận...', 'warning');
+      this.stateService.showToast('Giao dịch claim đang chờ xác nhận từ mạng lưới...', 'warning');
       await tx.wait();
 
-      this.stateService.showToast('Nhận cổ tức thành công! BNB/Stablecoin đã được chuyển trực tiếp vào ví của bạn.', 'success');
+      this.stateService.showToast('Nhận cổ tức thành công! BNB đã được chuyển trực tiếp vào ví của bạn.', 'success');
       await this.loadFundingData();
     } catch (e: any) {
       console.error(e);
