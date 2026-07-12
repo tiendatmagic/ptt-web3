@@ -1,0 +1,215 @@
+<div class="space-y-4">
+  <div class="form-field">
+    <label>Tiêu đề đề xuất</label>
+    <input
+      type="text"
+      [(ngModel)]="newProposal.title"
+      placeholder="VD: Mint 1,000,000 PTT cho cổ đông mới..."
+      class="form-input focus:border-violet-500"
+    />
+  </div>
+
+  <div class="form-field">
+    <label>Mô tả</label>
+    <textarea
+      [(ngModel)]="newProposal.description"
+      rows="2"
+      placeholder="Mô tả mục đích và phân tích tài chính của quyết định này..."
+      class="form-textarea focus:border-violet-500"
+    ></textarea>
+  </div>
+
+  <div class="grid grid-cols-2 gap-4">
+    <div class="form-field">
+      <label>Loại đề xuất</label>
+      <app-custom-select
+        [options]="proposalTypes"
+        valueKey="value"
+        labelKey="label"
+        [(value)]="newProposal.type"
+        placeholder="Chọn loại đề xuất..."
+        triggerClass="w-full form-input !h-[42px] !bg-slate-50 !border-slate-200/40 dark:!bg-slate-900 dark:!border-slate-800 text-sm"
+      />
+    </div>
+    <div class="form-field">
+      <label>Hạn biểu quyết (Ngày)</label>
+      <input
+        type="number"
+        [(ngModel)]="newProposal.expiration_days"
+        class="form-input focus:border-violet-500"
+      />
+    </div>
+  </div>
+
+  <!-- TRƯỜNG NHẬP DỮ LIỆU ĐỘNG TÙY THEO LOẠI PROPOSAL -->
+  
+  <!-- 1. MINT CO PHAN -->
+  @if (newProposal.type === 'MINT') {
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
+      <div class="form-field">
+        <label>Địa chỉ ví nhận</label>
+        <input
+          type="text"
+          [(ngModel)]="newProposal.mintParams.to"
+          placeholder="0x..."
+          class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-mono text-xs outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+        />
+      </div>
+      <div class="form-field">
+        <label>Số lượng cổ phần</label>
+        <input
+          type="number"
+          [(ngModel)]="newProposal.mintParams.amount"
+          placeholder="VD: 50000"
+          class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+        />
+      </div>
+    </div>
+  }
+
+  <!-- 2. BURN CO PHAN -->
+  @if (newProposal.type === 'BURN') {
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
+      <div class="form-field">
+        <label>Địa chỉ ví bị hủy</label>
+        <input
+          type="text"
+          [(ngModel)]="newProposal.burnParams.from"
+          placeholder="0x..."
+          class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-mono text-xs outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+        />
+      </div>
+      <div class="form-field">
+        <label>Số lượng cổ phần</label>
+        <input
+          type="number"
+          [(ngModel)]="newProposal.burnParams.amount"
+          placeholder="VD: 50000"
+          class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+        />
+      </div>
+    </div>
+  }
+
+  <!-- 3. WITHDRAW BNB -->
+  @if (newProposal.type === 'WITHDRAW') {
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
+      <div class="form-field">
+        <label>Địa chỉ ví thụ hưởng</label>
+        <input
+          type="text"
+          [(ngModel)]="newProposal.target"
+          placeholder="0x..."
+          class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-mono text-xs outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+        />
+      </div>
+      <div class="form-field">
+        <label>Số lượng BNB</label>
+        <input
+          type="text"
+          [(ngModel)]="newProposal.value"
+          placeholder="VD: 0.5"
+          class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+        />
+      </div>
+    </div>
+  }
+
+  <!-- 4. FUNDING_ROUND (TAO VONG GOI VON) -->
+  @if (newProposal.type === 'FUNDING_ROUND') {
+    <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20 space-y-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="form-field">
+          <label>Tên vòng gọi vốn</label>
+          <input
+            type="text"
+            [(ngModel)]="newProposal.fundingRoundParams.name"
+            placeholder="VD: Vòng Seed"
+            class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+          />
+        </div>
+        <div class="form-field">
+          <label>Giá cổ phần (BNB)</label>
+          <input
+            type="text"
+            [(ngModel)]="newProposal.fundingRoundParams.share_price"
+            placeholder="VD: 0.001"
+            class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+          />
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="form-field">
+          <label>Số lượng chào bán</label>
+          <input
+            type="number"
+            [(ngModel)]="newProposal.fundingRoundParams.max_supply"
+            placeholder="VD: 100000"
+            class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+          />
+        </div>
+        <div class="form-field">
+          <label>Thời gian bán (Ngày)</label>
+          <input
+            type="number"
+            [(ngModel)]="newProposal.fundingRoundParams.duration_days"
+            placeholder="VD: 30"
+            class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+          />
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- 5. ADD / REMOVE MEMBER HĐQT -->
+  @if (newProposal.type === 'ADD_MEMBER' || newProposal.type === 'REMOVE_MEMBER') {
+    <div class="form-field bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
+      <label>Địa chỉ ví thành viên HĐQT</label>
+      <input
+        type="text"
+        [(ngModel)]="newProposal.memberParams.address"
+        placeholder="0x..."
+        class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-mono text-xs outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+      />
+    </div>
+  }
+
+  <!-- 6. CHANGE THRESHOLD -->
+  @if (newProposal.type === 'CHANGE_THRESHOLD') {
+    <div class="form-field bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
+      <label>Số chữ ký tối thiểu mới</label>
+      <input
+        type="number"
+        [(ngModel)]="newProposal.thresholdParams.newThreshold"
+        placeholder="VD: 2"
+        class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+      />
+    </div>
+  }
+
+  <!-- 7. PAUSE / UNPAUSE TOKEN -->
+  @if (newProposal.type === 'PAUSE_TOKEN' || newProposal.type === 'UNPAUSE_TOKEN') {
+    <div class="bg-slate-50 dark:bg-slate-900/30 p-4 rounded-xl border border-slate-100 dark:border-slate-900/10 text-xs text-slate-500 dark:text-slate-400">
+      * Đề xuất này sẽ gửi yêu cầu khóa hoặc mở khóa chức năng chuyển nhượng giao dịch của Cổ phần. Không cần tham số đầu vào.
+    </div>
+  }
+
+  <div class="pt-4 border-t border-slate-100 dark:border-slate-800/60 flex justify-end gap-3 select-none">
+    <button
+      app-button
+      variant="cancel"
+      (click)="onCancel()"
+    >
+      Hủy bỏ
+    </button>
+    <button
+      app-button
+      variant="primary"
+      (click)="onSubmit()"
+      [disabled]="!newProposal.title"
+      [loading]="isLoading()"
+    >
+      Tạo và Gửi On-chain
+    </button>
+  </div>
+</div>

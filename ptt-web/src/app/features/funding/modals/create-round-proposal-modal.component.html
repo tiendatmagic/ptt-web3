@@ -1,0 +1,102 @@
+<div class="space-y-4">
+  <div class="form-field">
+    <label>Tên vòng gọi vốn</label>
+    <input
+      type="text"
+      [(ngModel)]="newRound.name"
+      placeholder="VD: Vòng gọi vốn Seed..."
+      class="form-input focus:border-violet-500"
+    />
+  </div>
+
+  <div class="grid grid-cols-2 gap-4">
+    <div class="form-field">
+      <label>Đồng tiền thanh toán</label>
+      <app-custom-select
+        [options]="paymentOptions"
+        valueKey="value"
+        labelKey="label"
+        [(value)]="newRound.paymentMethod"
+        placeholder="Chọn đồng tiền..."
+        triggerClass="w-full form-input !h-[42px] !bg-slate-50 !border-slate-200/40 dark:!bg-slate-900 dark:!border-slate-800 text-sm"
+      />
+    </div>
+    <div class="form-field">
+      <label>Giá cổ phần</label>
+      <input
+        type="text"
+        [(ngModel)]="newRound.share_price"
+        placeholder="0.1"
+        class="form-input focus:border-violet-500"
+      />
+    </div>
+  </div>
+
+  <!-- Hiển thị ô nhập địa chỉ contract stablecoin nếu chọn ERC20 -->
+  @if (newRound.paymentMethod === 'ERC20') {
+    <div class="form-field bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
+      <label>Địa chỉ hợp đồng Token (ERC20 Address)</label>
+      <input
+        type="text"
+        [(ngModel)]="newRound.paymentTokenAddress"
+        placeholder="0x..."
+        class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-mono text-xs outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+      />
+      <p class="text-[10px] text-slate-400 mt-1">* Vui lòng nhập đúng địa chỉ Contract của Token stablecoin trên mạng lưới (ví dụ: USDT/USDC testnet).</p>
+    </div>
+  }
+
+  <div class="grid grid-cols-2 gap-4">
+    <div class="form-field">
+      <label>Số lượng chào bán</label>
+      <input
+        type="number"
+        [(ngModel)]="newRound.max_supply"
+        placeholder="100000"
+        class="form-input focus:border-violet-500"
+      />
+    </div>
+    <div class="form-field">
+      <label>Thời gian bán (Ngày)</label>
+      <input
+        type="number"
+        [(ngModel)]="newRound.duration_days"
+        placeholder="30"
+        class="form-input focus:border-violet-500"
+      />
+    </div>
+  </div>
+
+  <div class="form-field">
+    <label>Hạn biểu quyết (Ngày)</label>
+    <input
+      type="number"
+      [(ngModel)]="newRound.expiration_days"
+      placeholder="7"
+      class="form-input focus:border-violet-500"
+    />
+  </div>
+
+  <div class="bg-slate-50 dark:bg-slate-900/30 p-4 rounded-xl border border-slate-100 dark:border-slate-900/10 text-xs text-slate-500 dark:text-slate-400">
+    * Hệ thống sẽ tự động tạo một Đề xuất (Proposal) biểu quyết trên HĐQT. Sau khi đề xuất được các thành viên duyệt và thực thi on-chain, vòng gọi vốn này mới chính thức được mở trên blockchain.
+  </div>
+
+  <div class="pt-4 border-t border-slate-100 dark:border-slate-800/60 flex justify-end gap-3 select-none">
+    <button
+      app-button
+      variant="cancel"
+      (click)="onCancel()"
+    >
+      Hủy bỏ
+    </button>
+    <button
+      app-button
+      variant="primary"
+      (click)="onSubmit()"
+      [disabled]="!newRound.name || !newRound.share_price || !newRound.max_supply"
+      [loading]="isLoading()"
+    >
+      Đề xuất mở vòng gọi vốn
+    </button>
+  </div>
+</div>
