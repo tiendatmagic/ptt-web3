@@ -193,6 +193,11 @@ export class CreateProposalModalComponent {
       const expirationDate = new Date();
       expirationDate.setDate(expirationDate.getDate() + this.newProposal.expiration_days);
 
+      const formatDate = (date: Date) => {
+        const pad = (num: number) => String(num).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+      };
+
       await firstValueFrom(this.apiService.post<any>('proposals', {
         title: this.newProposal.title,
         description: this.newProposal.description,
@@ -203,7 +208,7 @@ export class CreateProposalModalComponent {
           calldata,
           onchain_id: onchainId
         },
-        expiration_date: expirationDate.toISOString()
+        expiration_date: formatDate(expirationDate)
       }, comp.id));
 
       this.stateService.showToast('Tạo đề xuất thành công và đã đồng bộ lên hệ thống!', 'success');

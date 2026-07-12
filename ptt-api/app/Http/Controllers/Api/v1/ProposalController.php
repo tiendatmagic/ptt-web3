@@ -92,7 +92,7 @@ class ProposalController extends Controller
             'type' => $request->input('type'),
             'params' => json_encode($request->input('params')),
             'status' => 'PENDING',
-            'expiration_date' => $request->input('expiration_date'),
+            'expiration_date' => $request->input('expiration_date') ? \Illuminate\Support\Carbon::parse($request->input('expiration_date')) : null,
             'created_by' => $user->id,
             'created_at' => now(),
             'updated_at' => now(),

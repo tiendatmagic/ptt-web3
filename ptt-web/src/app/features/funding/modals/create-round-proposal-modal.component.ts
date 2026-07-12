@@ -194,6 +194,11 @@ export class CreateRoundProposalModalComponent {
       const expirationDate = new Date();
       expirationDate.setDate(expirationDate.getDate() + this.newRound.expiration_days);
 
+      const formatDate = (date: Date) => {
+        const pad = (num: number) => String(num).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+      };
+
       await firstValueFrom(this.apiService.post<any>('proposals', {
         title: proposalTitle,
         description: `Mở vòng gọi vốn ${this.newRound.name} thanh toán bằng ${this.newRound.paymentMethod}. Giá ${this.newRound.share_price} / Share, giới hạn chào bán ${this.newRound.max_supply} cổ phần.`,
@@ -204,7 +209,7 @@ export class CreateRoundProposalModalComponent {
           calldata,
           onchain_id: onchainId
         },
-        expiration_date: expirationDate.toISOString()
+        expiration_date: formatDate(expirationDate)
       }, comp.id));
 
       // 3. Đồng bộ tạo Vòng gọi vốn tạm thời (DRAFT) trên Backend DB
@@ -219,8 +224,8 @@ export class CreateRoundProposalModalComponent {
         name: this.newRound.name,
         share_price: parseFloat(this.newRound.share_price),
         target_amount: targetAmount,
-        start_date: startDate.toISOString(),
-        end_date: endDate.toISOString()
+        start_date: formatDate(startDate),
+        end_date: formatDate(endDate)
       }, comp.id));
 
       this.stateService.showToast('Đã đề xuất vòng gọi vốn thành công! Chờ HĐQT ký duyệt biểu quyết.', 'success');
