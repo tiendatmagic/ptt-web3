@@ -13,14 +13,11 @@ interface IComplianceToken {
 contract Marketplace is Ownable {
     using ECDSA for bytes32;
 
-    // System operator wallets for trade matching (Backend Matcher)
     mapping(address => bool) public isOperator;
     
-    // Trade fee percentage (basis points, 100 = 1%)
-    uint256 public feePercentBps = 50; // 0.5% default
+    uint256 public feePercentBps = 50;
     address public feeTreasury;
 
-    // Prevent replay attack using nonce per account
     mapping(address => mapping(uint256 => bool)) public usedNonces;
 
     bytes32 public DOMAIN_SEPARATOR;
@@ -78,15 +75,13 @@ contract Marketplace is Ownable {
         emit FeeConfigUpdated(feeBps, treasury);
     }
 
-    // --- SETTLEMENT EXECUTION ---
-
     function executeTrade(
         address token,
         address paymentToken,
         address buyer,
         address seller,
         uint256 amount,
-        uint256 price, // unit price per token in paymentToken
+        uint256 price,
         uint256 buyerNonce,
         uint256 sellerNonce,
         uint256 buyerDeadline,
@@ -99,11 +94,9 @@ contract Marketplace is Ownable {
         require(!usedNonces[buyer][buyerNonce], "Buyer nonce already used");
         require(!usedNonces[seller][sellerNonce], "Seller nonce already used");
 
-        // Check compliance whitelists of both buyer and seller for the equity token
         require(IComplianceToken(token).isWhitelisted(buyer), "Buyer not whitelisted for shares");
         require(IComplianceToken(token).isWhitelisted(seller), "Seller not whitelisted for shares");
 
-        // Verify Buyer signature
         bytes32 buyerStructHash = keccak256(
             abi.encode(BUY_ORDER_TYPEHASH, buyer, token, amount, price, buyerNonce, buyerDeadline)
         );
@@ -111,7 +104,6 @@ contract Marketplace is Ownable {
         address recoveredBuyer = buyerDigest.recover(buyerSig);
         require(recoveredBuyer == buyer, "Invalid buyer signature");
 
-        // Verify Seller signature
         bytes32 sellerStructHash = keccak256(
             abi.encode(SELL_ORDER_TYPEHASH, seller, token, amount, price, sellerNonce, sellerDeadline)
         );
@@ -119,12 +111,9 @@ contract Marketplace is Ownable {
         address recoveredSeller = sellerDigest.recover(sellerSig);
         require(recoveredSeller == seller, "Invalid seller signature");
 
-        // Mark nonces as used
         usedNonces[buyer][buyerNonce] = true;
         usedNonces[seller][sellerNonce] = true;
 
-        // Calculate cost for stablecoin transfer
-        // cost = (amount * price) / 10**18 (to balance token decimals)
         uint256 cost = (amount * price) / 1e18;
         require(cost > 0, "Trade cost too small");
 
@@ -136,7 +125,6 @@ contract Marketplace is Ownable {
             netSellerProceeds = cost - fee;
         }
 
-        // 1. Transfer stablecoin (paymentToken) from Buyer to Seller & Fee Treasury
         IERC20 stablecoin = IERC20(paymentToken);
         require(stablecoin.balanceOf(buyer) >= cost, "Buyer insufficient stablecoin balance");
         
@@ -148,7 +136,6 @@ contract Marketplace is Ownable {
         bool paymentSuccess = stablecoin.transferFrom(buyer, seller, netSellerProceeds);
         require(paymentSuccess, "Seller payment failed");
 
-        // 2. Transfer EquityToken from Seller to Buyer
         IERC20 equity = IERC20(token);
         require(equity.balanceOf(seller) >= amount, "Seller insufficient shares");
         bool sharesSuccess = equity.transferFrom(seller, buyer, amount);

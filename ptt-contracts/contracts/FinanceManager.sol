@@ -11,21 +11,20 @@ interface IEquityToken {
 }
 
 contract FinanceManager is Ownable {
-    // --- STRUCTURES ---
 
     struct FundingRound {
         uint256 id;
         string name;
         address shareToken;
-        address paymentToken; // stablecoin (USDT/USDC) or address(0) for BNB
+        address paymentToken;
         address treasury;
-        uint256 price; // Share price (calculated in the smallest unit of paymentToken)
-        uint256 maxSupply; // Maximum number of shares to be sold
-        uint256 soldAmount; // Sold shares
+        uint256 price;
+        uint256 maxSupply;
+        uint256 soldAmount;
         uint256 startTime;
         uint256 endTime;
-        uint256 minPurchase; // Minimum purchase limit per wallet (token amount)
-        uint256 maxPurchase; // Maximum purchase limit per wallet (token amount)
+        uint256 minPurchase;
+        uint256 maxPurchase;
         bool isWhitelistOnly;
         bool active;
     }
@@ -34,7 +33,7 @@ contract FinanceManager is Ownable {
         uint256 id;
         string name;
         address shareToken;
-        address dividendToken; // stablecoin (USDT/USDC/PTT) or address(0) for BNB
+        address dividendToken;
         uint256 totalAmount;
         uint256 claimedAmount;
         uint256 checkpointBlock;
@@ -43,22 +42,15 @@ contract FinanceManager is Ownable {
         bool active;
     }
 
-    // --- VARIABLES ---
-
     uint256 public roundCount;
     mapping(uint256 => FundingRound) public rounds;
     
-    // roundId => investorAddress => purchaseAmount
     mapping(uint256 => mapping(address => uint256)) public investorPurchases;
-    // roundId => investorAddress => isWhitelisted
     mapping(uint256 => mapping(address => bool)) public roundWhitelist;
 
     uint256 public dividendCount;
     mapping(uint256 => DividendRound) public dividends;
-    // dividendId => shareholderAddress => claimed
     mapping(uint256 => mapping(address => bool)) public hasClaimed;
-
-    // --- EVENTS ---
 
     event RoundCreated(uint256 indexed roundId, string name, uint256 price);
     event RoundStatusUpdated(uint256 indexed roundId, bool active);
@@ -93,8 +85,6 @@ contract FinanceManager is Ownable {
         rounds[roundId].price = newPrice;
         emit RoundPriceUpdated(roundId, newPrice);
     }
-
-    // --- FUNDING ROUND CONFIGURATION (GOVERNANCE) ---
 
     function createFundingRound(
         string memory name,
@@ -155,8 +145,6 @@ contract FinanceManager is Ownable {
         emit WhitelistUpdated(roundId, accounts, status);
     }
 
-    // --- BUY SHARES (INVESTORS) ---
-
     function buyShares(uint256 roundId, uint256 tokenAmount) external payable {
         require(roundId <= roundCount && roundId > 0, "Round does not exist");
         FundingRound storage round = rounds[roundId];
@@ -166,21 +154,17 @@ contract FinanceManager is Ownable {
         require(block.timestamp <= round.endTime, "Round ended");
         require(round.soldAmount + tokenAmount <= round.maxSupply, "Exceeds round max supply");
 
-        // Verify this contract has enough EquityTokens to deliver
         require(
             IERC20(round.shareToken).balanceOf(address(this)) >= tokenAmount,
             "FinanceManager has insufficient EquityTokens to distribute"
         );
 
-        // Check funding round whitelist
         if (round.isWhitelistOnly) {
             require(roundWhitelist[roundId][msg.sender], "Not whitelisted in this round");
         }
 
-        // Check compliance whitelist on the main token
         require(IEquityToken(round.shareToken).isWhitelisted(msg.sender), "Not whitelisted for equity holding");
 
-        // Check purchase limits
         uint256 totalPurchased = investorPurchases[roundId][msg.sender] + tokenAmount;
         if (round.minPurchase > 0) {
             require(totalPurchased >= round.minPurchase, "Under minimum purchase limit");
@@ -189,47 +173,36 @@ contract FinanceManager is Ownable {
             require(totalPurchased <= round.maxPurchase, "Exceeds maximum purchase limit");
         }
 
-        // Calculate cost (assuming tokenAmount has 18 decimals)
         uint256 cost = (tokenAmount * round.price) / 1e18;
         require(cost > 0, "Cost is too small");
 
         investorPurchases[roundId][msg.sender] = totalPurchased;
         round.soldAmount += tokenAmount;
 
-        // Process payment
         if (round.paymentToken == address(0)) {
-            // Pay with BNB
             require(msg.value >= cost, "Insufficient BNB sent");
             
-            // Refund excess BNB
             if (msg.value > cost) {
                 payable(msg.sender).transfer(msg.value - cost);
             }
 
-            // Transfer BNB to Treasury (BoardGovernance Multisig)
             (bool success, ) = round.treasury.call{value: cost}("");
             require(success, "BNB transfer to treasury failed");
         } else {
-            // Pay with ERC20 (USDT / USDC)
             require(msg.value == 0, "Do not send BNB for token payment");
             IERC20 token = IERC20(round.paymentToken);
             require(token.balanceOf(msg.sender) >= cost, "Insufficient stablecoin balance");
             
-            // Transfer stablecoin directly to Treasury
             bool success = token.transferFrom(msg.sender, round.treasury, cost);
             require(success, "Token transfer to treasury failed");
         }
 
-        // Transfer share tokens to investor
         bool transferSuccess = IERC20(round.shareToken).transfer(msg.sender, tokenAmount);
         require(transferSuccess, "Share transfer to investor failed");
 
         emit SharesPurchased(roundId, msg.sender, tokenAmount, cost);
     }
 
-    // --- DIVIDEND CONFIGURATION (GOVERNANCE) ---
-
-    // Governance creates dividend round and deposits funds (BNB or ERC20 like USDT/USDC/PTT)
     function createDividendRound(
         string memory name,
         address shareToken,
@@ -244,7 +217,6 @@ contract FinanceManager is Ownable {
         require(checkpointBlock < block.number, "Checkpoint block must be in the past");
         require(endTime > startTime, "End must be after start");
 
-        // Process dividend token deposit
         if (dividendToken == address(0)) {
             require(msg.value == totalAmount, "Must send exact BNB amount");
         } else {
@@ -281,8 +253,6 @@ contract FinanceManager is Ownable {
         emit DividendRoundStatusUpdated(dividendId, active);
     }
 
-    // --- CLAIM DIVIDEND (SHAREHOLDERS) ---
-
     function claimDividend(uint256 dividendId) external {
         require(dividendId <= dividendCount && dividendId > 0, "Dividend does not exist");
         DividendRound storage div = dividends[dividendId];
@@ -299,20 +269,16 @@ contract FinanceManager is Ownable {
         uint256 totalShares = token.getPastTotalSupply(div.checkpointBlock);
         require(totalShares > 0, "Total shares must be > 0");
 
-        // Calculate payout: (userBalance * totalAmount) / totalShares
         uint256 claimAmount = (userBalance * div.totalAmount) / totalShares;
         require(claimAmount > 0, "Claim amount is too small");
 
         hasClaimed[dividendId][msg.sender] = true;
         div.claimedAmount += claimAmount;
 
-        // Process dividend payout
         if (div.dividendToken == address(0)) {
-            // Payout BNB
             (bool success, ) = payable(msg.sender).call{value: claimAmount}("");
             require(success, "BNB claim payout failed");
         } else {
-            // Payout ERC20 (USDT / USDC / PTT)
             bool success = IERC20(div.dividendToken).transfer(msg.sender, claimAmount);
             require(success, "ERC20 claim payout failed");
         }
@@ -320,9 +286,6 @@ contract FinanceManager is Ownable {
         emit DividendClaimed(dividendId, msg.sender, claimAmount);
     }
 
-    // --- EMERGENCY RECLAIM ---
-
-    // Recover leftover/unclaimed dividends after expiration
     function reclaimLeftoverDividend(uint256 dividendId, address recipient) external onlyOwner {
         require(dividendId <= dividendCount && dividendId > 0, "Dividend does not exist");
         DividendRound storage div = dividends[dividendId];
@@ -332,7 +295,7 @@ contract FinanceManager is Ownable {
         uint256 leftover = div.totalAmount - div.claimedAmount;
         require(leftover > 0, "No leftover funds to reclaim");
 
-        div.claimedAmount = div.totalAmount; // mark as fully claimed to prevent re-withdrawal
+        div.claimedAmount = div.totalAmount;
 
         if (div.dividendToken == address(0)) {
             (bool success, ) = payable(recipient).call{value: leftover}("");
@@ -343,6 +306,5 @@ contract FinanceManager is Ownable {
         }
     }
 
-    // Fallback to receive BNB
     receive() external payable {}
 }

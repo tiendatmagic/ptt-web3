@@ -847,26 +847,18 @@ contract EquityToken is ERC20, Ownable, Pausable {
         uint256 value;
     }
 
-    // Checkpoints for each account's balance
     mapping(address => Checkpoint[]) private _balancesCheckpoints;
-    // Checkpoints for total supply
     Checkpoint[] private _totalSupplyCheckpoints;
 
-    // Limit the maximum ownership percentage per wallet (e.g. 10 = 10%)
-    // 0 means no limit
     uint256 public maxOwnershipPercent;
 
-    // Whitelist and Blacklist status
     mapping(address => bool) public isWhitelisted;
     mapping(address => bool) public isBlacklisted;
     
-    // Operator status (wallets authorized to manage whitelist/blacklist directly)
     mapping(address => bool) public isOperator;
     
-    // Whitelist active check (if true, only whitelisted wallets can send/receive tokens)
     bool public isWhitelistEnabled = true;
 
-    // Minter permissions for funding round automated minting
     mapping(address => bool) public isMinter;
 
     event WhitelistedUpdated(address indexed account, bool status);
@@ -891,17 +883,13 @@ contract EquityToken is ERC20, Ownable, Pausable {
         string memory symbol,
         address initialOwner
     ) ERC20(name, symbol) Ownable(initialOwner) {
-        // Default initial owner is whitelisted
         isWhitelisted[initialOwner] = true;
     }
-
-    // --- GOVERNANCE (OWNER) FUNCTIONS ---
 
     function mint(address to, uint256 amount) external onlyMinterOrOwner whenNotPaused {
         _mint(to, amount);
     }
 
-    // Burn remains only accessible by owner (Governance)
     function burn(address from, uint256 amount) external onlyOwner whenNotPaused {
         _burn(from, amount);
     }
@@ -945,8 +933,6 @@ contract EquityToken is ERC20, Ownable, Pausable {
         emit MinterStatusUpdated(minter, status);
     }
 
-    // --- CHECKPOINT QUERY FUNCTIONS ---
-
     function getPastBalanceOf(address account, uint256 blockNumber) external view returns (uint256) {
         require(blockNumber < block.number, "Block number must be in the past");
         return _getPastValue(_balancesCheckpoints[account], blockNumber);
@@ -957,27 +943,20 @@ contract EquityToken is ERC20, Ownable, Pausable {
         return _getPastValue(_totalSupplyCheckpoints, blockNumber);
     }
 
-    // --- OVERRIDES FOR CHECKPOINT & COMPLIANCE ---
-
-    // Override ERC20 _update in OpenZeppelin v5 for transfer hooks and checkpoint updates
     function _update(
         address from,
         address to,
         uint256 value
     ) internal override whenNotPaused {
-        // Skip compliance checks for minting/burning from/to address(0) by Governance or Minters
         if (from != address(0) && to != address(0)) {
-            // Check Blacklist
             require(!isBlacklisted[from], "Sender is blacklisted");
             require(!isBlacklisted[to], "Receiver is blacklisted");
 
-            // Check Whitelist
             if (isWhitelistEnabled) {
                 require(isWhitelisted[from], "Sender is not whitelisted");
                 require(isWhitelisted[to], "Receiver is not whitelisted");
             }
 
-            // Check Maximum Ownership limit for the receiver
             if (maxOwnershipPercent > 0) {
                 uint256 newBalance = balanceOf(to) + value;
                 uint256 total = totalSupply();
@@ -992,7 +971,6 @@ contract EquityToken is ERC20, Ownable, Pausable {
 
         super._update(from, to, value);
 
-        // Update checkpoints
         if (from != address(0)) {
             _updateCheckpoint(_balancesCheckpoints[from], balanceOf(from));
         }
@@ -1003,8 +981,6 @@ contract EquityToken is ERC20, Ownable, Pausable {
             _updateCheckpoint(_totalSupplyCheckpoints, totalSupply());
         }
     }
-
-    // --- CHECKPOINT & BINARY SEARCH LOGIC ---
 
     function _updateCheckpoint(Checkpoint[] storage ckpts, uint256 newValue) private {
         uint32 blockNumber = uint32(block.number);

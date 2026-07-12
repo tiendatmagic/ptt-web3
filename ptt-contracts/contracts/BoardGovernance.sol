@@ -21,7 +21,6 @@ contract BoardGovernance {
     uint256 public proposalCount;
 
     mapping(uint256 => Proposal) public proposals;
-    // proposalId => memberAddress => hasVoted
     mapping(uint256 => mapping(address => bool)) public hasVoted;
 
     event MemberAdded(address indexed member);
@@ -62,8 +61,6 @@ contract BoardGovernance {
         return _members;
     }
 
-    // --- PROPOSAL MANAGEMENT ---
-
     function createProposal(
         address target,
         uint256 value,
@@ -90,7 +87,6 @@ contract BoardGovernance {
 
         emit ProposalCreated(proposalId, target, description);
 
-        // Creator automatically signs the proposal
         signProposal(proposalId);
 
         return proposalId;
@@ -131,12 +127,9 @@ contract BoardGovernance {
         require(!proposal.executed, "Proposal already executed");
         require(!proposal.cancelled, "Proposal already cancelled");
         
-        // Only allowed to cancel by board members if not executed yet
         proposal.cancelled = true;
         emit ProposalCancelled(proposalId);
     }
-
-    // --- GOVERNANCE CONFIGURATION FUNCTIONS (SELF CALL ONLY VIA PROPOSAL) ---
 
     function addMember(address member) external onlySelf {
         require(member != address(0), "Invalid address");
@@ -152,7 +145,6 @@ contract BoardGovernance {
         
         isMember[member] = false;
         
-        // Remove member from the array list
         for (uint256 i = 0; i < _members.length; i++) {
             if (_members[i] == member) {
                 _members[i] = _members[_members.length - 1];
@@ -162,7 +154,6 @@ contract BoardGovernance {
         }
         emit MemberRemoved(member);
 
-        // Adjust threshold if it exceeds the new member count
         if (threshold > _members.length) {
             threshold = _members.length;
             emit ThresholdChanged(threshold);
@@ -175,6 +166,5 @@ contract BoardGovernance {
         emit ThresholdChanged(newThreshold);
     }
 
-    // Receive BNB directly (needed when proposal value > 0)
     receive() external payable {}
 }
