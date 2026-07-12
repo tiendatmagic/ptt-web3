@@ -408,9 +408,9 @@ Hãy lưu trữ cẩn thận và không chia sẻ khóa bảo mật (Private Key
       } else {
         // 2. Nếu chưa verify, tải mã nguồn và tính toán constructor arguments gửi verify thực tế
         const fileName = contractKey.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
-        const sourceRes = await fetch(`/assets/contracts/${fileName}.flat.sol?t=${new Date().getTime()}`);
+        const sourceRes = await fetch(`/contracts/${fileName}.flat.sol?t=${new Date().getTime()}`);
         if (!sourceRes.ok) {
-          throw new Error(`Không tìm thấy tệp mã nguồn của hợp đồng ${contractName} trong Assets!`);
+          throw new Error(`Không tìm thấy tệp mã nguồn của hợp đồng ${contractName}!`);
         }
         const sourceCode = await sourceRes.text();
         const contractnamePath = `contracts/${contractKey}.sol:${contractKey}`;
