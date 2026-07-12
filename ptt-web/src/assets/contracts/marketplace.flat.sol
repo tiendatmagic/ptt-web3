@@ -1,4 +1,3 @@
-◇ injected env (0) from ..\.env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
 // Sources flattened with hardhat v2.28.6 https://hardhat.org
 
 // SPDX-License-Identifier: MIT
