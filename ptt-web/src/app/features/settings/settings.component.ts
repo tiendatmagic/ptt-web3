@@ -196,7 +196,11 @@ export class SettingsComponent implements OnInit {
       this.stateService.showToast('✓ Deploy Marketplace thành công: ' + marketplaceAddr, 'success');
       this.autoVerify(marketplaceAddr, 'Marketplace', Marketplace.sourceCode, chainId);
 
-      this.stateService.showToast('Hoàn tất deploy 4 contracts! Vui lòng nhấn "Lưu cấu hình Smart Contracts" để hoàn tất liên kết vào hệ thống.', 'success');
+      // Tự động lưu cấu hình contract ngay sau khi deploy đủ 4 contracts
+      this.stateService.showToast('Đang tự động lưu cấu hình Smart Contracts...', 'warning');
+      await this.handleSaveContracts();
+
+      this.stateService.showToast('🎉 Hoàn tất! Đã deploy và lưu cấu hình 4 Smart Contracts thành công.', 'success');
 
     } catch (e: any) {
       console.error(e);
