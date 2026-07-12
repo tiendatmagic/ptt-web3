@@ -11,10 +11,10 @@ import { Contract } from 'ethers';
 import { ModalService } from '@core/services/modal.service';
 import { CreateProposalModalComponent } from './modals/create-proposal-modal.component';
 
-// ABI rút gọn của BoardGovernance để thực thi executeProposal
+// ABI rút gọn của BoardGovernance để thực thi executeProposal & signProposal
 const BOARD_GOVERNANCE_ABI = [
-  "function executeProposal(uint256 proposalId, bytes[] memory signatures) external payable",
-  "function getProposalHash(uint256 proposalId) public view returns (bytes32)"
+  "function executeProposal(uint256 proposalId) external returns (bytes memory)",
+  "function signProposal(uint256 proposalId) external"
 ];
 
 @Component({
@@ -74,24 +74,37 @@ export class GovernanceComponent implements OnInit {
     });
   }
 
-  // Ký Biểu quyết (EIP-712/personal_sign)
+  // Ký Biểu quyết (On-chain + Off-chain đồng bộ)
   public async handleSignProposal(proposal: any) {
     const comp = this.stateService.currentCompany();
-    if (!comp) return;
+    if (!comp || !comp.governance_address) return;
+
+    const onchainId = proposal.params?.onchain_id;
+    if (!onchainId) {
+      this.stateService.showToast('Đề xuất này thiếu ID on-chain, không thể biểu quyết!', 'error');
+      return;
+    }
 
     try {
       this.stateService.isLoading.set(true);
 
-      // 1. Tạo thông điệp EIP-712 / personal_sign
-      // Phục vụ ký off-chain: cấu trúc chuẩn hóa cho Board Governance
+      // 1. Ký thông điệp off-chain để gửi lưu trữ trên Backend (phục vụ hiển thị UI)
       const walletAddress = this.stateService.address();
       const message = `Approve Proposal #${proposal.id} for ${comp.name}\nType: ${proposal.type}\nVal: ${proposal.params?.value || 0}`;
 
-      // 2. Ký qua ví
       const signer = await this.stateService.getSigner();
       const signature = await signer.signMessage(message);
 
-      // 3. Gửi lên Backend
+      // 2. Thực hiện giao dịch ký duyệt on-chain (signProposal) lên contract BoardGovernance
+      this.stateService.showToast('Vui lòng xác nhận giao dịch ký duyệt biểu quyết trên ví MetaMask...', 'warning');
+      const govContract = new Contract(comp.governance_address, BOARD_GOVERNANCE_ABI, signer);
+      const gasOverrides = await this.stateService.getGasOverrides(signer);
+      
+      const tx = await govContract['signProposal'](onchainId, gasOverrides);
+      this.stateService.showToast('Giao dịch ký duyệt đã gửi. Chờ xác nhận từ mạng lưới...', 'warning');
+      await tx.wait();
+
+      // 3. Gửi chữ ký off-chain lên Backend để cập nhật cơ sở dữ liệu
       const response = await firstValueFrom(
         this.apiService.post<any>(`proposals/${proposal.id}/sign`, {
           signature: signature,
@@ -99,14 +112,14 @@ export class GovernanceComponent implements OnInit {
         }, comp.id)
       );
 
-      this.stateService.showToast(`Biểu quyết thành công! Trạng thái hiện tại: ${response.status}`, 'success');
+      this.stateService.showToast(`Biểu quyết và ghi nhận đề xuất thành công! Trạng thái: ${response.status}`, 'success');
       
       // Load lại chi tiết
       await this.selectProposal(proposal);
       await this.loadProposals();
     } catch (e: any) {
       console.error(e);
-      this.stateService.showToast(e.error?.message || 'Từ chối ký hoặc lỗi xác thực chữ ký!', 'error');
+      this.stateService.showToast(e.message || e.error?.message || 'Từ chối ký hoặc lỗi xác thực chữ ký!', 'error');
     } finally {
       this.stateService.isLoading.set(false);
     }
@@ -117,6 +130,12 @@ export class GovernanceComponent implements OnInit {
     const comp = this.stateService.currentCompany();
     if (!comp || !comp.governance_address) return;
 
+    const onchainId = proposal.params?.onchain_id;
+    if (!onchainId) {
+      this.stateService.showToast('Đề xuất này thiếu ID on-chain, không thể thực thi!', 'error');
+      return;
+    }
+
     try {
       this.stateService.isLoading.set(true);
       
@@ -124,31 +143,21 @@ export class GovernanceComponent implements OnInit {
       const signer = await this.stateService.getSigner();
       const govContract = new Contract(comp.governance_address, BOARD_GOVERNANCE_ABI, signer);
 
-      // Lấy danh sách chữ ký hợp lệ từ Backend
-      const detail = await firstValueFrom(this.apiService.get<any>(`proposals/${proposal.id}`, comp.id));
-      const sigs = (detail.signatures || []).map((s: any) => s.signature);
-
-      if (sigs.length === 0) {
-        this.stateService.showToast('Không có đủ chữ ký để thực thi on-chain!', 'warning');
-        return;
-      }
-
       this.stateService.showToast('Đang gửi giao dịch execute on-chain...', 'warning');
 
-      // 2. Gọi hàm executeProposal trên smart contract
-      // Tùy thuộc vào value đề xuất chuyển native coin (BNB)
+      // 2. Gọi hàm executeProposal trên smart contract (chỉ nhận onchainId và gasOverrides)
       const valueToSend = proposal.params?.value ? BigInt(proposal.params.value) : 0n;
       const gasOverrides = await this.stateService.getGasOverrides(signer);
 
-      const tx = await govContract['executeProposal'](proposal.id, sigs, {
+      const tx = await govContract['executeProposal'](onchainId, {
         value: valueToSend,
         ...gasOverrides
       });
 
-      this.stateService.showToast('Giao dịch thực thi đã gửi. Chờ xác nhận...', 'warning');
+      this.stateService.showToast('Giao dịch thực thi đã gửi. Chờ xác nhận từ mạng lưới...', 'warning');
       const receipt = await tx.wait();
 
-      // 3. Gửi transaction hash lên Backend để cập nhật EXECUTED
+      // 3. Gửi transaction hash lên Backend để cập nhật trạng thái EXECUTED
       await firstValueFrom(
         this.apiService.post<any>(`proposals/${proposal.id}/execute`, {
           tx_hash: receipt.hash
