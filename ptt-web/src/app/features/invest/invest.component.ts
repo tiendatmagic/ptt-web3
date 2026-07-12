@@ -18,10 +18,11 @@ const EQUITY_TOKEN_ABI = [
   'function decimals() view returns (uint8)'
 ];
 
+// ABI khớp chính xác với FinanceManager contract
 const FUNDING_MANAGER_ABI = [
-  'function activeRoundId() view returns (uint256)',
-  'function rounds(uint256) view returns (uint256 id, uint256 targetAmount, uint256 raisedAmount, uint256 pricePerShare, bool isActive, bool isWhitelistOnly)',
-  'function purchaseShares(uint256 amount) payable'
+  'function roundCount() view returns (uint256)',
+  'function rounds(uint256 roundId) view returns (uint256 id, string name, address shareToken, address paymentToken, address treasury, uint256 price, uint256 maxSupply, uint256 soldAmount, uint256 startTime, uint256 endTime, uint256 minPurchase, uint256 maxPurchase, bool isWhitelistOnly, bool active)',
+  'function buyShares(uint256 roundId, uint256 tokenAmount) external payable'
 ];
 
 const DISTRIBUTION_MANAGER_ABI = [
@@ -142,21 +143,33 @@ export class InvestComponent implements OnInit {
         this.claimableDiv.set(ethers.formatEther(claimable));
       }
 
-      // Active funding round
+      // Active funding round — contract dùng roundCount() + rounds(id), không có activeRoundId()
       if (company.funding_address) {
         const funding = new ethers.Contract(company.funding_address, FUNDING_MANAGER_ABI, provider);
         try {
-          const roundId = await funding['activeRoundId']();
-          const round = await funding['rounds'](roundId);
-          this.activeFundingRound.set({
-            id: roundId.toString(),
-            targetAmount: ethers.formatEther(round[1]),
-            raisedAmount: ethers.formatEther(round[2]),
-            pricePerShare: ethers.formatEther(round[3]),
-            isActive: round[4],
-            isWhitelistOnly: round[5]
-          });
-        } catch {
+          const count = Number(await funding['roundCount']());
+          let found = null;
+          // Tìm round mới nhất có active = true
+          for (let i = count; i >= 1; i--) {
+            const r = await funding['rounds'](i);
+            if (r.active) {
+              found = {
+                id: Number(r.id),
+                name: r.name,
+                price: ethers.formatEther(r.price),           // BNB/token
+                maxSupply: ethers.formatEther(r.maxSupply),   // max tokens
+                soldAmount: ethers.formatEther(r.soldAmount), // tokens đã bán
+                isWhitelistOnly: r.isWhitelistOnly,
+                active: r.active,
+                startTime: Number(r.startTime),
+                endTime: Number(r.endTime)
+              };
+              break;
+            }
+          }
+          this.activeFundingRound.set(found);
+        } catch (err) {
+          console.warn('Lỗi đọc funding round:', err);
           this.activeFundingRound.set(null);
         }
       }
@@ -187,16 +200,22 @@ export class InvestComponent implements OnInit {
     try {
       const signer = await this.stateService.web3Service.getSigner();
       const funding = new ethers.Contract(company.funding_address, FUNDING_MANAGER_ABI, signer);
-      const priceEth = parseFloat(round.pricePerShare) * this.buyAmount();
-      const value = ethers.parseEther(priceEth.toFixed(8));
+
+      // Token amount (18 decimals)
+      const tokenAmount = ethers.parseEther(this.buyAmount().toString());
+      // Chi phí BNB = amount * price/token
+      const pricePerToken = ethers.parseEther(round.price);
+      const value = (tokenAmount * pricePerToken) / ethers.parseEther('1');
+
       const gasOverrides = await this.stateService.web3Service.getGasOverrides();
 
-      const tx = await funding['purchaseShares'](this.buyAmount(), { ...gasOverrides, value });
+      // Gọi buyShares(roundId, tokenAmount) với ETH/BNB = value
+      const tx = await funding['buyShares'](round.id, tokenAmount, { ...gasOverrides, value });
       await tx.wait();
       this.stateService.showToast(`Mua thành công ${this.buyAmount()} cổ phần!`, 'success');
       await this.loadOnChainData(company);
     } catch (e: any) {
-      this.stateService.showToast(e.reason || 'Giao dịch thất bại!', 'error');
+      this.stateService.showToast(e.reason || e.message || 'Giao dịch thất bại!', 'error');
     } finally {
       this.buyLoading.set(false);
     }

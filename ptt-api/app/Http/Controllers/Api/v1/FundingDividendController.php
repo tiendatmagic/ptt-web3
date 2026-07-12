@@ -42,9 +42,12 @@ class FundingDividendController extends Controller
             'target_amount' => 'required|numeric|gt:0',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after:start_date',
+            'status' => 'nullable|string|in:DRAFT,ACTIVE,COMPLETED,CANCELLED',
+            'onchain_round_id' => 'nullable|integer',
         ]);
 
         $companyId = $request->header('X-Company-Id');
+        $status = $request->input('status', 'DRAFT'); // mặc định DRAFT khi tạo thủ công
 
         $roundId = DB::table('funding_rounds')->insertGetId([
             'company_id' => $companyId,
@@ -54,7 +57,8 @@ class FundingDividendController extends Controller
             'raised_amount' => 0,
             'start_date' => $request->input('start_date'),
             'end_date' => $request->input('end_date'),
-            'status' => 'DRAFT',
+            'status' => $status,
+            'onchain_round_id' => $request->input('onchain_round_id'),
             'created_at' => now(),
             'updated_at' => now(),
         ]);

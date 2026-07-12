@@ -218,6 +218,39 @@ export class GovernanceComponent implements OnInit {
         this.apiService.post<any>(`proposals/${proposal.id}/execute`, body, comp.id)
       );
 
+      // 4. Nếu proposal là FUNDING_ROUND → tự động tạo record funding round DB status ACTIVE
+      // để trang Gọi vốn hiển thị đúng
+      if (proposal.type === 'FUNDING_ROUND') {
+        try {
+          const p = proposal.params || {};
+          // share_price là giá BNB/share từ lúc tạo proposal, dùng trực tiếp
+          // target_amount = max_supply * share_price (ước tính)
+          const sharePrice = p.share_price || '0.001';
+          const maxSupply = p.max_supply || 1000;
+          const durationDays = p.duration_days || 30;
+          const targetAmount = Number(sharePrice) * Number(maxSupply);
+
+          const startDate = new Date();
+          const endDate = new Date();
+          endDate.setDate(endDate.getDate() + durationDays);
+          const fmt = (d: Date) => d.toISOString().slice(0, 19).replace('T', ' ');
+
+          await firstValueFrom(
+            this.apiService.post<any>('funding', {
+              name: p.name || proposal.title,
+              share_price: Number(sharePrice),
+              target_amount: targetAmount,
+              start_date: fmt(startDate),
+              end_date: fmt(endDate),
+              onchain_round_id: onchainId,
+              status: 'ACTIVE'   // Tạo trực tiếp ACTIVE vì đã execute on-chain
+            }, comp.id)
+          );
+        } catch (fundErr) {
+          console.warn('Không thể tự động tạo funding round:', fundErr);
+        }
+      }
+
       const msg = alreadyExecutedOnChain
         ? 'Đồng bộ trạng thái thành công! Đề xuất đã EXECUTED.'
         : 'Đề xuất đã được thực thi thành công on-chain!';

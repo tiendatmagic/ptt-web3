@@ -199,6 +199,15 @@ export class CreateProposalModalComponent {
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
       };
 
+      const extraParams = this.newProposal.type === 'FUNDING_ROUND'
+        ? {
+            name: this.newProposal.fundingRoundParams.name,
+            share_price: this.newProposal.fundingRoundParams.share_price,
+            max_supply: this.newProposal.fundingRoundParams.max_supply,
+            duration_days: this.newProposal.fundingRoundParams.duration_days
+          }
+        : {};
+
       const createResponse = await firstValueFrom(this.apiService.post<any>('proposals', {
         title: this.newProposal.title,
         description: this.newProposal.description,
@@ -207,7 +216,8 @@ export class CreateProposalModalComponent {
           target,
           value,
           calldata,
-          onchain_id: onchainId
+          onchain_id: onchainId,
+          ...extraParams  // lưu funding round params để dùng khi execute
         },
         expiration_date: formatDate(expirationDate)
       }, comp.id));
