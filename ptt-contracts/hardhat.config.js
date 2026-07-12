@@ -6,7 +6,7 @@ const bscScanApiKey = process.env.ETH_API_KEY || "";
 
 module.exports = {
   solidity: {
-    version: "0.8.24",
+    version: "0.8.34",
     settings: {
       optimizer: {
         enabled: true,

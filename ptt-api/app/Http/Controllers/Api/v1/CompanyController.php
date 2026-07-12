@@ -33,12 +33,10 @@ class CompanyController extends Controller
                 'name' => $company->getName(),
                 'logo' => $company->getLogo(),
                 'valuation' => $company->getValuation(),
-                'registry_address' => $company->getRegistryAddress(),
                 'governance_address' => $company->getGovernanceAddress(),
                 'token_address' => $company->getTokenAddress(),
                 'funding_address' => $company->getFundingAddress(),
                 'marketplace_address' => $company->getMarketplaceAddress(),
-                'oracle_address' => $company->getOracleAddress(),
                 'status' => $company->getStatus(),
             ];
         }, $companies);
