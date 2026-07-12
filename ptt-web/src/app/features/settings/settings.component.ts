@@ -7,6 +7,7 @@ import { ethers } from 'ethers';
 import { StateService } from '@core/services/state.service';
 import { ApiService } from '@core/services/api.service';
 import { ModalService } from '@core/services/modal.service';
+import { EtherscanVerifyService } from '@core/services/etherscan-verify.service';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { BoardGovernance, EquityToken, FinanceManager, Marketplace } from '../../core/constants/contracts';
 import { IconComponent } from '@shared/components/icon/icon.component';
@@ -23,6 +24,7 @@ export class SettingsComponent implements OnInit {
   private apiService = inject(ApiService);
   private router = inject(Router);
   private modalService = inject(ModalService);
+  private verifyService = inject(EtherscanVerifyService);
 
   // --- Contract owners ---
   public contractOwners = signal<string[]>([]);
@@ -151,59 +153,48 @@ export class SettingsComponent implements OnInit {
     this.deployAllLoading.set(true);
     this.stateService.showToast('Bắt đầu deploy hệ thống 4 contracts. Vui lòng duyệt từng giao dịch trên Metamask...', 'warning');
 
+    const chainId = this.stateService.chainId();
+
     try {
       // 1. Deploy BoardGovernance
       this.stateService.showToast('[1/4] Đang deploy Board Governance (HĐQT Multisig)...', 'warning');
-      const govFactory = new ethers.ContractFactory(
-        BoardGovernance.abi,
-        BoardGovernance.bytecode,
-        signer
-      );
-      // threshold lấy từ lựa chọn của người dùng
+      const govFactory = new ethers.ContractFactory(BoardGovernance.abi, BoardGovernance.bytecode, signer);
       const govContract = await govFactory.deploy(owners, this.minSignatures());
       await govContract.waitForDeployment();
       const govAddr = await govContract.getAddress();
       this.editingContracts['governance_address'] = govAddr;
       this.stateService.showToast('✓ Deploy Board Governance thành công: ' + govAddr, 'success');
+      this.autoVerify(govAddr, 'BoardGovernance', BoardGovernance.sourceCode, chainId);
 
       // 2. Deploy EquityToken
       this.stateService.showToast('[2/4] Đang deploy Equity Token (Cổ phần)...', 'warning');
-      const tokenFactory = new ethers.ContractFactory(
-        EquityToken.abi,
-        EquityToken.bytecode,
-        signer
-      );
+      const tokenFactory = new ethers.ContractFactory(EquityToken.abi, EquityToken.bytecode, signer);
       const tokenContract = await tokenFactory.deploy(comp.name, comp.code, govAddr);
       await tokenContract.waitForDeployment();
       const tokenAddr = await tokenContract.getAddress();
       this.editingContracts['token_address'] = tokenAddr;
       this.stateService.showToast('✓ Deploy Equity Token thành công: ' + tokenAddr, 'success');
+      this.autoVerify(tokenAddr, 'EquityToken', EquityToken.sourceCode, chainId);
 
       // 3. Deploy FinanceManager
       this.stateService.showToast('[3/4] Đang deploy Finance Manager (Gọi vốn & Cổ tức)...', 'warning');
-      const financeFactory = new ethers.ContractFactory(
-        FinanceManager.abi,
-        FinanceManager.bytecode,
-        signer
-      );
+      const financeFactory = new ethers.ContractFactory(FinanceManager.abi, FinanceManager.bytecode, signer);
       const financeContract = await financeFactory.deploy(govAddr);
       await financeContract.waitForDeployment();
       const financeAddr = await financeContract.getAddress();
       this.editingContracts['funding_address'] = financeAddr;
       this.stateService.showToast('✓ Deploy Finance Manager thành công: ' + financeAddr, 'success');
+      this.autoVerify(financeAddr, 'FinanceManager', FinanceManager.sourceCode, chainId);
 
       // 4. Deploy Marketplace
       this.stateService.showToast('[4/4] Đang deploy Marketplace (Sàn giao dịch)...', 'warning');
-      const marketplaceFactory = new ethers.ContractFactory(
-        Marketplace.abi,
-        Marketplace.bytecode,
-        signer
-      );
+      const marketplaceFactory = new ethers.ContractFactory(Marketplace.abi, Marketplace.bytecode, signer);
       const marketplaceContract = await marketplaceFactory.deploy(govAddr, govAddr);
       await marketplaceContract.waitForDeployment();
       const marketplaceAddr = await marketplaceContract.getAddress();
       this.editingContracts['marketplace_address'] = marketplaceAddr;
       this.stateService.showToast('✓ Deploy Marketplace thành công: ' + marketplaceAddr, 'success');
+      this.autoVerify(marketplaceAddr, 'Marketplace', Marketplace.sourceCode, chainId);
 
       this.stateService.showToast('Hoàn tất deploy 4 contracts! Vui lòng nhấn "Lưu cấu hình Smart Contracts" để hoàn tất liên kết vào hệ thống.', 'success');
 
@@ -213,6 +204,29 @@ export class SettingsComponent implements OnInit {
     } finally {
       this.deployAllLoading.set(false);
     }
+  }
+
+  /** Tự động verify contract trên Explorer sau khi deploy (background, không block UI) */
+  private autoVerify(address: string, contractName: string, sourceCode: string, chainId: number | null) {
+    if (!chainId || !sourceCode) return;
+    this.stateService.showToast(`🔍 Đang gửi yêu cầu verify ${contractName} lên Explorer...`, 'warning');
+
+    this.verifyService.submitVerify({ contractAddress: address, contractName, sourceCode, chainId })
+      .then(result => {
+        if (result.success && result.guid) {
+          this.stateService.showToast(`✓ Đã gửi verify ${contractName}. Đang chờ xác nhận...`, 'success');
+          return this.verifyService.pollVerifyStatus(result.guid, chainId).then(status => {
+            if (status.verified) {
+              this.stateService.showToast(`✅ ${contractName} đã được verify thành công trên Explorer!`, 'success');
+            } else {
+              this.stateService.showToast(`⚠️ Verify ${contractName}: ${status.message}`, 'warning');
+            }
+          });
+        }
+        this.stateService.showToast(`⚠️ Gửi verify ${contractName} thất bại: ${result.message}`, 'warning');
+        return Promise.resolve();
+      })
+      .catch(err => console.warn(`[Verify] ${contractName} error:`, err));
   }
 
   // --- Owners ---
