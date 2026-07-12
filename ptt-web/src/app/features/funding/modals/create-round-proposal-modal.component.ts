@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '@core/services/state.service';
@@ -10,11 +10,12 @@ import { BoardGovernance, FinanceManager } from '../../../core/constants/contrac
 
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { CustomSelectComponent } from '../../../shared/components/custom-select/custom-select.component';
+import { IconComponent } from '@shared/components/icon/icon.component';
 
 @Component({
   selector: 'app-create-round-proposal-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, CustomSelectComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, CustomSelectComponent, IconComponent],
   templateUrl: './create-round-proposal-modal.component.html'
 })
 export class CreateRoundProposalModalComponent {
@@ -24,23 +25,86 @@ export class CreateRoundProposalModalComponent {
 
   public isLoading = signal(false);
 
+  // Phân tích & xác thực ERC20 Token thông qua RPC
+  public detectedTokenSymbol = signal<string>('');
+  public detectedTokenDecimals = signal<number | null>(null);
+  public isValidatingToken = signal<boolean>(false);
+  public tokenValidationError = signal<string>('');
+
   public paymentOptions = [
-    { value: 'ERC20', label: 'USDT / USDC' },
+    { value: 'ERC20', label: 'Token ERC20' },
     { value: 'BNB', label: 'BNB (Native)' }
   ];
 
   public newRound = {
     name: 'Vòng Seed',
-    share_price: '0.1', // stablecoin mặc định giá 0.1
+    share_price: '0.1', // mặc định giá 0.1
     max_supply: 100000,
     duration_days: 30,
     expiration_days: 7,
-    paymentMethod: 'ERC20', // Mặc định là Stablecoin
+    paymentMethod: 'ERC20', // Mặc định là Token ERC20
     paymentTokenAddress: ''
   };
 
   onCancel() {
     this.modalRef.close();
+  }
+
+  // Tự động load thông tin ERC20 khi dán địa chỉ hợp đồng
+  async onTokenAddressChange(addr: string) {
+    this.newRound.paymentTokenAddress = addr.trim();
+    const cleanAddr = this.newRound.paymentTokenAddress;
+
+    if (!cleanAddr) {
+      this.detectedTokenSymbol.set('');
+      this.detectedTokenDecimals.set(null);
+      this.tokenValidationError.set('');
+      return;
+    }
+
+    // 1. Kiểm tra định dạng địa chỉ ví
+    if (!ethers.isAddress(cleanAddr)) {
+      this.detectedTokenSymbol.set('');
+      this.detectedTokenDecimals.set(null);
+      this.tokenValidationError.set('Địa chỉ ví không đúng định dạng 0x...!');
+      return;
+    }
+
+    this.isValidatingToken.set(true);
+    this.tokenValidationError.set('');
+    this.detectedTokenSymbol.set('');
+    this.detectedTokenDecimals.set(null);
+
+    try {
+      const provider = this.stateService.getProvider();
+      if (!provider) {
+        this.tokenValidationError.set('Ví chưa kết nối, không thể tải thông tin!');
+        this.isValidatingToken.set(false);
+        return;
+      }
+
+      // ABI tối giản ERC20
+      const minErc20Abi = [
+        'function symbol() view returns (string)',
+        'function decimals() view returns (uint8)'
+      ];
+
+      const contract = new ethers.Contract(cleanAddr, minErc20Abi, provider);
+
+      // Đọc symbol và decimals từ blockchain
+      const [symbol, decimals] = await Promise.all([
+        contract['symbol'](),
+        contract['decimals']()
+      ]);
+
+      this.detectedTokenSymbol.set(symbol);
+      this.detectedTokenDecimals.set(Number(decimals));
+    } catch (e: any) {
+      console.error('Lỗi khi đọc token ERC20:', e);
+      this.tokenValidationError.set('Địa chỉ không phải Token ERC20 hợp lệ trên mạng lưới hiện hành!');
+    } finally {
+      this.isValidatingToken.set(false);
+    }
   }
 
   async onSubmit() {
@@ -62,6 +126,8 @@ export class CreateRoundProposalModalComponent {
 
       // Cấu hình tham số gọi vốn on-chain
       let paymentToken = ethers.ZeroAddress;
+      let tokenDecimals = 18; // mặc định BNB là 18 decimals
+
       if (this.newRound.paymentMethod === 'ERC20') {
         if (!this.newRound.paymentTokenAddress || !ethers.isAddress(this.newRound.paymentTokenAddress)) {
           this.stateService.showToast('Địa chỉ hợp đồng Token thanh toán không hợp lệ!', 'error');
@@ -69,10 +135,16 @@ export class CreateRoundProposalModalComponent {
           return;
         }
         paymentToken = this.newRound.paymentTokenAddress;
+        
+        // Nếu load thành công decimals, dùng nó, ngược lại fallback 18
+        if (this.detectedTokenDecimals() !== null) {
+          tokenDecimals = this.detectedTokenDecimals()!;
+        }
       }
 
-      // Giá trị share_price được quy đổi sang Wei (18 decimals)
-      const priceWei = ethers.parseEther(this.newRound.share_price.toString());
+      // Quy đổi share_price tương ứng decimals của token thanh toán
+      const priceWei = ethers.parseUnits(this.newRound.share_price.toString(), tokenDecimals);
+      // Quy đổi max supply tương ứng decimals của token cổ phần (luôn 18 decimals)
       const maxSupplyWei = ethers.parseUnits(this.newRound.max_supply.toString(), 18);
       const startTime = Math.floor(Date.now() / 1000);
       const endTime = startTime + this.newRound.duration_days * 86400;
@@ -141,12 +213,12 @@ export class CreateRoundProposalModalComponent {
       endDate.setDate(endDate.getDate() + this.newRound.duration_days);
 
       // Quy đổi mục tiêu gọi vốn = max_supply * price
-      const targetAmountBnb = Number(this.newRound.max_supply) * parseFloat(this.newRound.share_price);
+      const targetAmount = Number(this.newRound.max_supply) * parseFloat(this.newRound.share_price);
 
       await firstValueFrom(this.apiService.post<any>('funding', {
         name: this.newRound.name,
         share_price: parseFloat(this.newRound.share_price),
-        target_amount: targetAmountBnb,
+        target_amount: targetAmount,
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString()
       }, comp.id));

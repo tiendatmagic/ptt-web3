@@ -38,11 +38,34 @@
       <label>Địa chỉ hợp đồng Token (ERC20 Address)</label>
       <input
         type="text"
-        [(ngModel)]="newRound.paymentTokenAddress"
+        [ngModel]="newRound.paymentTokenAddress"
+        (ngModelChange)="onTokenAddressChange($event)"
         placeholder="0x..."
         class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-mono text-xs outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
       />
-      <p class="text-[10px] text-slate-400 mt-1">* Vui lòng nhập đúng địa chỉ Contract của Token stablecoin trên mạng lưới (ví dụ: USDT/USDC testnet).</p>
+      
+      <!-- Validation State của Token ERC20 -->
+      @if (isValidatingToken()) {
+        <p class="text-[11px] text-violet-500 animate-pulse mt-1.5 select-none flex items-center gap-1">
+          <svg class="animate-spin h-3.5 w-3.5 text-violet-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Đang xác thực thông tin Token ERC20...
+        </p>
+      } @else if (tokenValidationError()) {
+        <p class="text-[11px] text-red-500 font-semibold mt-1.5 select-none flex items-center gap-1">
+          <app-icon name="trash" class="w-3.5 h-3.5 shrink-0 text-red-500" />
+          {{ tokenValidationError() }}
+        </p>
+      } @else if (detectedTokenSymbol()) {
+        <p class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1.5 select-none flex items-center gap-1.5 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+          <app-icon name="shield" class="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+          Đồng tiền nhận diện: <span class="underline">{{ detectedTokenSymbol() }}</span> ({{ detectedTokenDecimals() }} decimals)
+        </p>
+      } @else {
+        <p class="text-[10px] text-slate-400 mt-1">* Vui lòng nhập đúng địa chỉ Contract của Token stablecoin trên mạng lưới (ví dụ: USDT/USDC testnet).</p>
+      }
     </div>
   }
 
