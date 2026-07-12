@@ -73,10 +73,10 @@ export class RegisterCompanyModalComponent {
   public isLoading = signal(false);
 
   public newCompany = {
-    code: 'PTT',
-    name: 'PTT Group Corporation',
+    code: '',
+    name: '',
     logo: '',
-    valuation: 10000000,
+    valuation: 0,
     registry_address: '',
     governance_address: '',
     token_address: '',

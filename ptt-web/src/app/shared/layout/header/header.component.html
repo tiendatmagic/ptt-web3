@@ -38,7 +38,7 @@
     </div>
 
     <!-- PHẦN Ở GIỮA: TRẠNG THÁI MẠNG LƯỚI & CHỌN DOANH NGHIỆP (CHỈ DESKTOP) -->
-    <div class="hidden md:flex items-center gap-4">
+    <div class="hidden md:flex items-center gap-4 shrink-0">
       <!-- Trạng thái mạng lưới -->
       @if (stateService.isConnected()) {
         <div
@@ -46,35 +46,35 @@
           [class.text-primary]="!stateService.isWrongChain()"
           [class.bg-red-500\/10]="stateService.isWrongChain()"
           [class.text-red-500]="stateService.isWrongChain()"
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black select-none border border-primary/10 dark:border-primary/5"
+          class="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black select-none border border-primary/10 dark:border-primary/5 shrink-0 whitespace-nowrap"
         >
           <span
             [class.bg-primary]="!stateService.isWrongChain()"
             [class.bg-red-500]="stateService.isWrongChain()"
-            class="w-1.5 h-1.5 rounded-full inline-block"
+            class="w-1.5 h-1.5 rounded-full inline-block shrink-0"
           ></span>
-          {{ stateService.isWrongChain() ? 'Sai mạng lưới' : stateService.networkName() }}
+          <span class="inline-block whitespace-nowrap">{{ stateService.isWrongChain() ? 'Sai mạng lưới' : stateService.networkName() }}</span>
         </div>
       }
 
       <!-- Chọn doanh nghiệp (Dropdown) -->
       @if (stateService.currentUser()) {
-        <div class="relative">
+        <div class="relative shrink-0">
           <button
             app-button
             variant="cancel"
             (click)="toggleCompanyDropdown($event)"
-            class="h-10 px-4 rounded-xl flex items-center gap-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900"
+            class="h-10 px-3 lg:px-4 rounded-xl flex items-center gap-1.5 lg:gap-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 shrink-0"
           >
-            <app-icon name="home" class="w-4 h-4 text-primary" />
-            <span class="text-sm font-bold text-slate-700 dark:text-slate-200">
+            <app-icon name="home" class="w-4 h-4 text-primary shrink-0" />
+            <span class="inline-block text-sm font-bold text-slate-700 dark:text-slate-200 truncate max-w-[80px] lg:max-w-[140px] whitespace-nowrap align-middle">
               {{
                 stateService.currentCompany()
                   ? stateService.currentCompany().name
                   : 'Chọn Doanh Nghiệp'
               }}
             </span>
-            <app-icon name="chevron-down" class="w-3.5 h-3.5 text-slate-400" />
+            <app-icon name="chevron-down" class="w-3.5 h-3.5 text-slate-400 shrink-0" />
           </button>
 
           @if (showCompanyDropdown()) {
@@ -333,6 +333,58 @@
         </span>
       </div>
     </div>
+
+    <!-- Chọn doanh nghiệp (Mobile) -->
+    @if (stateService.currentUser()) {
+      <div class="px-5 py-3 border-b border-slate-100 dark:border-slate-800/60 select-none">
+        <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2">Doanh nghiệp đang chọn</label>
+        
+        <div class="relative">
+          <button
+            app-button
+            variant="cancel"
+            (click)="toggleCompanyDropdown($event)"
+            class="w-full h-11 px-4 rounded-xl flex items-center justify-between border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900"
+          >
+            <div class="flex items-center gap-2 min-w-0">
+              <app-icon name="home" class="w-4 h-4 text-primary shrink-0" />
+              <span class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
+                {{
+                  stateService.currentCompany()
+                    ? stateService.currentCompany().name
+                    : 'Chọn Doanh Nghiệp'
+                }}
+              </span>
+            </div>
+            <app-icon name="chevron-down" class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          </button>
+
+          @if (showCompanyDropdown()) {
+            <div
+              class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-lg z-[200] overflow-hidden py-2"
+            >
+              <div class="max-h-60 overflow-y-auto px-1.5">
+                @for (company of stateService.companiesList(); track company.id) {
+                  <button
+                    (click)="stateService.selectCompany(company); showCompanyDropdown.set(false); stateService.showMobileMenu.set(false)"
+                    [class.bg-primary/10]="stateService.currentCompany()?.id === company.id"
+                    class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-left"
+                  >
+                    <span class="truncate pr-2">{{ company.name }}</span>
+                    <span class="text-xs font-mono text-slate-400 shrink-0">#{{ company.code }}</span>
+                  </button>
+                }
+                @if (stateService.companiesList().length === 0) {
+                  <div class="px-3 py-4 text-center text-xs text-slate-400">
+                    Chưa có doanh nghiệp nào.
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
 
     <!-- Nav Links -->
     <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">

@@ -3,31 +3,31 @@
        WELCOME BANNER — compact, cân đối
   ===================================================== -->
   <div
-    class="relative overflow-hidden rounded-[15px] bg-gradient-to-r from-violet-600 via-violet-700 to-indigo-700 text-white px-6 py-4 shadow-md flex items-center justify-between gap-4"
+    class="relative overflow-hidden rounded-[15px] bg-gradient-to-r from-violet-600 via-violet-700 to-indigo-700 text-white px-6 py-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4"
   >
     <!-- Text -->
-    <div class="min-w-0">
+    <div class="min-w-0 w-full sm:w-auto">
       @if (stateService.currentUser()) {
-        <h1 class="text-base sm:text-lg font-black truncate">
+        <h1 class="text-base sm:text-lg font-black break-words">
           Xin chào, {{ stateService.currentUser().name || 'Nhà đầu tư Web3' }}! <app-icon name="sparkles" class="w-5 h-5 text-yellow-400 ml-1 inline-flex align-middle" />
         </h1>
-        <p class="text-sm text-violet-200 mt-0.5 hidden sm:block">
+        <p class="text-xs sm:text-sm text-violet-200 mt-1">
           PTT Dapp · Token hóa cổ phần doanh nghiệp · Quản trị on-chain phi tập trung
         </p>
       } @else {
         <h1 class="text-base sm:text-lg font-black">Kết nối Ví Web3 để trải nghiệm</h1>
-        <p class="text-sm text-violet-200 mt-0.5 hidden sm:block">
+        <p class="text-xs sm:text-sm text-violet-200 mt-1">
           Kết nối Metamask hoặc TrustWallet để bắt đầu quản trị doanh nghiệp.
         </p>
       }
     </div>
 
     <!-- Action -->
-    <div class="shrink-0">
+    <div class="shrink-0 w-full sm:w-auto">
       @if (!stateService.isConnected()) {
         <button
           (click)="stateService.connectWallet()"
-          class="flex items-center gap-2 bg-white text-violet-700 font-extrabold text-sm px-4 py-2 rounded-xl shadow-lg hover:bg-violet-50 active:scale-95 transition-all duration-150 shrink-0"
+          class="w-full sm:w-auto flex items-center justify-center gap-2 bg-white text-violet-700 font-extrabold text-sm px-4 py-2.5 rounded-xl shadow-lg hover:bg-violet-50 active:scale-95 transition-all duration-150"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
@@ -37,7 +37,7 @@
         </button>
       } @else if (!stateService.currentUser()) {
         <div
-          class="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-xl border border-white/10"
+          class="flex items-center justify-center gap-2 bg-white/20 px-3 py-2 rounded-xl border border-white/10 w-full sm:w-auto"
         >
           <span class="animate-pulse w-2 h-2 rounded-full bg-yellow-300 shrink-0"></span>
           <span class="text-sm font-bold">Đang xác thực...</span>
@@ -45,7 +45,7 @@
       } @else {
         <button
           (click)="openRegisterCompany()"
-          class="flex items-center gap-2 bg-white text-violet-700 font-extrabold text-sm px-4 py-2 rounded-xl shadow-lg hover:bg-violet-50 active:scale-95 transition-all duration-150 shrink-0"
+          class="w-full sm:w-auto flex items-center justify-center gap-2 bg-white text-violet-700 font-extrabold text-sm px-4 py-2.5 rounded-xl shadow-lg hover:bg-violet-50 active:scale-95 transition-all duration-150"
         >
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
