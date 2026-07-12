@@ -250,6 +250,20 @@ contract FinanceManager is Ownable {
         bool active;
     }
 
+    struct RoundParams {
+        string name;
+        address shareToken;
+        address paymentToken;
+        address treasury;
+        uint256 price;
+        uint256 maxSupply;
+        uint256 startTime;
+        uint256 endTime;
+        uint256 minPurchase;
+        uint256 maxPurchase;
+        bool isWhitelistOnly;
+    }
+
     struct DividendRound {
         uint256 id;
         string name;
@@ -264,13 +278,13 @@ contract FinanceManager is Ownable {
     }
 
     uint256 public roundCount;
-    mapping(uint256 => FundingRound) public rounds;
+    mapping(uint256 => FundingRound) private _rounds;
     
     mapping(uint256 => mapping(address => uint256)) public investorPurchases;
     mapping(uint256 => mapping(address => bool)) public roundWhitelist;
 
     uint256 public dividendCount;
-    mapping(uint256 => DividendRound) public dividends;
+    mapping(uint256 => DividendRound) private _dividends;
     mapping(uint256 => mapping(address => bool)) public hasClaimed;
 
     event RoundCreated(uint256 indexed roundId, string name, uint256 price);
@@ -294,6 +308,14 @@ contract FinanceManager is Ownable {
 
     constructor(address initialOwner) Ownable(initialOwner) {}
 
+    function rounds(uint256 roundId) external view returns (FundingRound memory) {
+        return _rounds[roundId];
+    }
+
+    function dividends(uint256 dividendId) external view returns (DividendRound memory) {
+        return _dividends[dividendId];
+    }
+
     function setOperator(address _operator) external onlyOwner {
         address oldOperator = operator;
         operator = _operator;
@@ -303,54 +325,42 @@ contract FinanceManager is Ownable {
     function updateRoundPrice(uint256 roundId, uint256 newPrice) external onlyOwnerOrOperator {
         require(roundId <= roundCount && roundId > 0, "Round does not exist");
         require(newPrice > 0, "Invalid price");
-        rounds[roundId].price = newPrice;
+        _rounds[roundId].price = newPrice;
         emit RoundPriceUpdated(roundId, newPrice);
     }
 
-    function createFundingRound(
-        string memory name,
-        address shareToken,
-        address paymentToken,
-        address treasury,
-        uint256 price,
-        uint256 maxSupply,
-        uint256 startTime,
-        uint256 endTime,
-        uint256 minPurchase,
-        uint256 maxPurchase,
-        bool isWhitelistOnly
-    ) external onlyOwner returns (uint256) {
-        require(shareToken != address(0) && treasury != address(0), "Invalid addresses");
-        require(endTime > startTime, "End must be after start");
-        require(price > 0 && maxSupply > 0, "Invalid pricing or supply");
+    function createFundingRound(RoundParams calldata p) external onlyOwner returns (uint256) {
+        require(p.shareToken != address(0) && p.treasury != address(0), "Invalid addresses");
+        require(p.endTime > p.startTime, "End must be after start");
+        require(p.price > 0 && p.maxSupply > 0, "Invalid pricing or supply");
 
         roundCount++;
         uint256 roundId = roundCount;
 
-        rounds[roundId] = FundingRound({
+        _rounds[roundId] = FundingRound({
             id: roundId,
-            name: name,
-            shareToken: shareToken,
-            paymentToken: paymentToken,
-            treasury: treasury,
-            price: price,
-            maxSupply: maxSupply,
+            name: p.name,
+            shareToken: p.shareToken,
+            paymentToken: p.paymentToken,
+            treasury: p.treasury,
+            price: p.price,
+            maxSupply: p.maxSupply,
             soldAmount: 0,
-            startTime: startTime,
-            endTime: endTime,
-            minPurchase: minPurchase,
-            maxPurchase: maxPurchase,
-            isWhitelistOnly: isWhitelistOnly,
+            startTime: p.startTime,
+            endTime: p.endTime,
+            minPurchase: p.minPurchase,
+            maxPurchase: p.maxPurchase,
+            isWhitelistOnly: p.isWhitelistOnly,
             active: true
         });
 
-        emit RoundCreated(roundId, name, price);
+        emit RoundCreated(roundId, p.name, p.price);
         return roundId;
     }
 
     function setRoundStatus(uint256 roundId, bool active) external onlyOwner {
         require(roundId <= roundCount && roundId > 0, "Round does not exist");
-        rounds[roundId].active = active;
+        _rounds[roundId].active = active;
         emit RoundStatusUpdated(roundId, active);
     }
 
@@ -366,60 +376,81 @@ contract FinanceManager is Ownable {
         emit WhitelistUpdated(roundId, accounts, status);
     }
 
-    function buyShares(uint256 roundId, uint256 tokenAmount) external payable {
-        require(roundId <= roundCount && roundId > 0, "Round does not exist");
-        FundingRound storage round = rounds[roundId];
-        
-        require(round.active, "Round not active");
-        require(block.timestamp >= round.startTime, "Round not started");
-        require(block.timestamp <= round.endTime, "Round ended");
-        require(round.soldAmount + tokenAmount <= round.maxSupply, "Exceeds round max supply");
-
-        require(
-            IERC20(round.shareToken).balanceOf(address(this)) >= tokenAmount,
-            "FinanceManager has insufficient EquityTokens to distribute"
-        );
-
-        if (round.isWhitelistOnly) {
-            require(roundWhitelist[roundId][msg.sender], "Not whitelisted in this round");
-        }
-
-        require(IEquityToken(round.shareToken).isWhitelisted(msg.sender), "Not whitelisted for equity holding");
-
-        uint256 totalPurchased = investorPurchases[roundId][msg.sender] + tokenAmount;
-        if (round.minPurchase > 0) {
-            require(totalPurchased >= round.minPurchase, "Under minimum purchase limit");
-        }
-        if (round.maxPurchase > 0) {
-            require(totalPurchased <= round.maxPurchase, "Exceeds maximum purchase limit");
-        }
-
-        uint256 cost = (tokenAmount * round.price) / 1e18;
-        require(cost > 0, "Cost is too small");
-
-        investorPurchases[roundId][msg.sender] = totalPurchased;
-        round.soldAmount += tokenAmount;
-
-        if (round.paymentToken == address(0)) {
+    function _processPayment(
+        address paymentToken,
+        address treasury,
+        uint256 cost
+    ) private {
+        if (paymentToken == address(0)) {
             require(msg.value >= cost, "Insufficient BNB sent");
-            
             if (msg.value > cost) {
-                payable(msg.sender).transfer(msg.value - cost);
+                (bool refundSuccess, ) = payable(msg.sender).call{value: msg.value - cost}("");
+                require(refundSuccess, "Refund failed");
             }
-
-            (bool success, ) = round.treasury.call{value: cost}("");
-            require(success, "BNB transfer to treasury failed");
+            (bool treasurySuccess, ) = treasury.call{value: cost}("");
+            require(treasurySuccess, "BNB transfer to treasury failed");
         } else {
             require(msg.value == 0, "Do not send BNB for token payment");
-            IERC20 token = IERC20(round.paymentToken);
+            IERC20 token = IERC20(paymentToken);
             require(token.balanceOf(msg.sender) >= cost, "Insufficient stablecoin balance");
-            
-            bool success = token.transferFrom(msg.sender, round.treasury, cost);
-            require(success, "Token transfer to treasury failed");
+            require(token.transferFrom(msg.sender, treasury, cost), "Token transfer to treasury failed");
+        }
+    }
+
+    function _depositDividend(address dividendToken, uint256 totalAmount) private {
+        if (dividendToken == address(0)) {
+            require(msg.value == totalAmount, "Must send exact BNB amount");
+        } else {
+            require(msg.value == 0, "Do not send BNB for token dividend");
+            IERC20 token = IERC20(dividendToken);
+            require(token.balanceOf(msg.sender) >= totalAmount, "Insufficient dividend token balance");
+            require(token.transferFrom(msg.sender, address(this), totalAmount), "Dividend deposit failed");
+        }
+    }
+
+    function buyShares(uint256 roundId, uint256 tokenAmount) external payable {
+        require(roundId <= roundCount && roundId > 0, "Round does not exist");
+        
+        {
+            require(_rounds[roundId].active, "Round not active");
+            require(block.timestamp >= _rounds[roundId].startTime, "Round not started");
+            require(block.timestamp <= _rounds[roundId].endTime, "Round ended");
+            require(_rounds[roundId].soldAmount + tokenAmount <= _rounds[roundId].maxSupply, "Exceeds round max supply");
         }
 
-        bool transferSuccess = IERC20(round.shareToken).transfer(msg.sender, tokenAmount);
-        require(transferSuccess, "Share transfer to investor failed");
+        {
+            address shareToken = _rounds[roundId].shareToken;
+            require(
+                IERC20(shareToken).balanceOf(address(this)) >= tokenAmount,
+                "FinanceManager has insufficient EquityTokens to distribute"
+            );
+            if (_rounds[roundId].isWhitelistOnly) {
+                require(roundWhitelist[roundId][msg.sender], "Not whitelisted in this round");
+            }
+            require(IEquityToken(shareToken).isWhitelisted(msg.sender), "Not whitelisted for equity holding");
+        }
+
+        {
+            uint256 totalPurchased = investorPurchases[roundId][msg.sender] + tokenAmount;
+            uint256 minP = _rounds[roundId].minPurchase;
+            uint256 maxP = _rounds[roundId].maxPurchase;
+            if (minP > 0) {
+                require(totalPurchased >= minP, "Under minimum purchase limit");
+            }
+            if (maxP > 0) {
+                require(totalPurchased <= maxP, "Exceeds maximum purchase limit");
+            }
+            investorPurchases[roundId][msg.sender] = totalPurchased;
+        }
+
+        uint256 cost = (tokenAmount * _rounds[roundId].price) / 1e18;
+        require(cost > 0, "Cost is too small");
+
+        _rounds[roundId].soldAmount += tokenAmount;
+
+        _processPayment(_rounds[roundId].paymentToken, _rounds[roundId].treasury, cost);
+
+        require(IERC20(_rounds[roundId].shareToken).transfer(msg.sender, tokenAmount), "Share transfer to investor failed");
 
         emit SharesPurchased(roundId, msg.sender, tokenAmount, cost);
     }
@@ -438,20 +469,12 @@ contract FinanceManager is Ownable {
         require(checkpointBlock < block.number, "Checkpoint block must be in the past");
         require(endTime > startTime, "End must be after start");
 
-        if (dividendToken == address(0)) {
-            require(msg.value == totalAmount, "Must send exact BNB amount");
-        } else {
-            require(msg.value == 0, "Do not send BNB for token dividend");
-            IERC20 token = IERC20(dividendToken);
-            require(token.balanceOf(msg.sender) >= totalAmount, "Insufficient dividend token balance");
-            bool success = token.transferFrom(msg.sender, address(this), totalAmount);
-            require(success, "Dividend deposit failed");
-        }
+        _depositDividend(dividendToken, totalAmount);
 
         dividendCount++;
         uint256 dividendId = dividendCount;
 
-        dividends[dividendId] = DividendRound({
+        _dividends[dividendId] = DividendRound({
             id: dividendId,
             name: name,
             shareToken: shareToken,
@@ -470,38 +493,50 @@ contract FinanceManager is Ownable {
 
     function setDividendStatus(uint256 dividendId, bool active) external onlyOwner {
         require(dividendId <= dividendCount && dividendId > 0, "Dividend does not exist");
-        dividends[dividendId].active = active;
+        _dividends[dividendId].active = active;
         emit DividendRoundStatusUpdated(dividendId, active);
     }
 
     function claimDividend(uint256 dividendId) external {
         require(dividendId <= dividendCount && dividendId > 0, "Dividend does not exist");
-        DividendRound storage div = dividends[dividendId];
-
-        require(div.active, "Dividend not active");
-        require(block.timestamp >= div.startTime, "Dividend claim period not started");
-        require(block.timestamp <= div.endTime, "Dividend claim period ended");
         require(!hasClaimed[dividendId][msg.sender], "Already claimed");
 
-        IEquityToken token = IEquityToken(div.shareToken);
-        uint256 userBalance = token.getPastBalanceOf(msg.sender, div.checkpointBlock);
-        require(userBalance > 0, "No shares owned at checkpoint");
+        uint256 userBalance;
+        uint256 totalShares;
+        uint256 claimAmount;
+        address divToken;
 
-        uint256 totalShares = token.getPastTotalSupply(div.checkpointBlock);
-        require(totalShares > 0, "Total shares must be > 0");
+        {
+            address shareToken = _dividends[dividendId].shareToken;
+            uint256 checkpoint = _dividends[dividendId].checkpointBlock;
+            
+            require(_dividends[dividendId].active, "Dividend not active");
+            require(block.timestamp >= _dividends[dividendId].startTime, "Dividend claim period not started");
+            require(block.timestamp <= _dividends[dividendId].endTime, "Dividend claim period ended");
 
-        uint256 claimAmount = (userBalance * div.totalAmount) / totalShares;
-        require(claimAmount > 0, "Claim amount is too small");
+            IEquityToken token = IEquityToken(shareToken);
+            userBalance = token.getPastBalanceOf(msg.sender, checkpoint);
+            require(userBalance > 0, "No shares owned at checkpoint");
+
+            totalShares = token.getPastTotalSupply(checkpoint);
+            require(totalShares > 0, "Total shares must be > 0");
+        }
+
+        {
+            uint256 totalAmt = _dividends[dividendId].totalAmount;
+            claimAmount = (userBalance * totalAmt) / totalShares;
+            require(claimAmount > 0, "Claim amount is too small");
+            divToken = _dividends[dividendId].dividendToken;
+        }
 
         hasClaimed[dividendId][msg.sender] = true;
-        div.claimedAmount += claimAmount;
+        _dividends[dividendId].claimedAmount += claimAmount;
 
-        if (div.dividendToken == address(0)) {
+        if (divToken == address(0)) {
             (bool success, ) = payable(msg.sender).call{value: claimAmount}("");
             require(success, "BNB claim payout failed");
         } else {
-            bool success = IERC20(div.dividendToken).transfer(msg.sender, claimAmount);
-            require(success, "ERC20 claim payout failed");
+            require(IERC20(divToken).transfer(msg.sender, claimAmount), "ERC20 claim payout failed");
         }
 
         emit DividendClaimed(dividendId, msg.sender, claimAmount);
@@ -509,21 +544,20 @@ contract FinanceManager is Ownable {
 
     function reclaimLeftoverDividend(uint256 dividendId, address recipient) external onlyOwner {
         require(dividendId <= dividendCount && dividendId > 0, "Dividend does not exist");
-        DividendRound storage div = dividends[dividendId];
-        require(block.timestamp > div.endTime, "Claim period has not ended yet");
         require(recipient != address(0), "Invalid recipient");
+        require(block.timestamp > _dividends[dividendId].endTime, "Claim period has not ended yet");
 
-        uint256 leftover = div.totalAmount - div.claimedAmount;
+        uint256 leftover = _dividends[dividendId].totalAmount - _dividends[dividendId].claimedAmount;
         require(leftover > 0, "No leftover funds to reclaim");
 
-        div.claimedAmount = div.totalAmount;
+        _dividends[dividendId].claimedAmount = _dividends[dividendId].totalAmount;
+        address divToken = _dividends[dividendId].dividendToken;
 
-        if (div.dividendToken == address(0)) {
+        if (divToken == address(0)) {
             (bool success, ) = payable(recipient).call{value: leftover}("");
             require(success, "Reclaim BNB failed");
         } else {
-            bool success = IERC20(div.dividendToken).transfer(recipient, leftover);
-            require(success, "Reclaim ERC20 failed");
+            require(IERC20(divToken).transfer(recipient, leftover), "Reclaim ERC20 failed");
         }
     }
 

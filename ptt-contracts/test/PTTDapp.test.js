@@ -139,19 +139,19 @@ describe("PTT Dapp Suite", function () {
     const price = ethers.parseEther("0.1"); // 1 PTTS = 0.1 BNB
     const maxSupply = ethers.parseEther("500"); // sell 500 PTTS max
 
-    const createRoundData = financeManager.interface.encodeFunctionData("createFundingRound", [
-      "Seed Round",
-      tokenAddress,
-      ethers.ZeroAddress, // BNB payment
-      govAddress, // treasury = BoardGovernance
-      price,
-      maxSupply,
-      startTime,
-      endTime,
-      0,
-      0,
-      false // public
-    ]);
+    const createRoundData = financeManager.interface.encodeFunctionData("createFundingRound", [{
+      name: "Seed Round",
+      shareToken: tokenAddress,
+      paymentToken: ethers.ZeroAddress,
+      treasury: govAddress,
+      price: price,
+      maxSupply: maxSupply,
+      startTime: startTime,
+      endTime: endTime,
+      minPurchase: 0,
+      maxPurchase: 0,
+      isWhitelistOnly: false
+    }]);
 
     propTx = await governance.connect(memberA).createProposal(
       financeAddress,

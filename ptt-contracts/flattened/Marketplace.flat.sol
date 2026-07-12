@@ -3682,6 +3682,21 @@ interface IComplianceToken {
 contract Marketplace is Ownable {
     using ECDSA for bytes32;
 
+    struct TradeParams {
+        address token;
+        address paymentToken;
+        address buyer;
+        address seller;
+        uint256 amount;
+        uint256 price;
+        uint256 buyerNonce;
+        uint256 sellerNonce;
+        uint256 buyerDeadline;
+        uint256 sellerDeadline;
+        bytes buyerSig;
+        bytes sellerSig;
+    }
+
     mapping(address => bool) public isOperator;
     
     uint256 public feePercentBps = 50;
@@ -3744,46 +3759,35 @@ contract Marketplace is Ownable {
         emit FeeConfigUpdated(feeBps, treasury);
     }
 
-    function executeTrade(
-        address token,
-        address paymentToken,
-        address buyer,
-        address seller,
-        uint256 amount,
-        uint256 price,
-        uint256 buyerNonce,
-        uint256 sellerNonce,
-        uint256 buyerDeadline,
-        uint256 sellerDeadline,
-        bytes calldata buyerSig,
-        bytes calldata sellerSig
-    ) external onlyOperator {
-        require(block.timestamp <= buyerDeadline, "Buyer signature expired");
-        require(block.timestamp <= sellerDeadline, "Seller signature expired");
-        require(!usedNonces[buyer][buyerNonce], "Buyer nonce already used");
-        require(!usedNonces[seller][sellerNonce], "Seller nonce already used");
+    function executeTrade(TradeParams calldata p) external onlyOperator {
+        require(block.timestamp <= p.buyerDeadline, "Buyer signature expired");
+        require(block.timestamp <= p.sellerDeadline, "Seller signature expired");
+        require(!usedNonces[p.buyer][p.buyerNonce], "Buyer nonce already used");
+        require(!usedNonces[p.seller][p.sellerNonce], "Seller nonce already used");
 
-        require(IComplianceToken(token).isWhitelisted(buyer), "Buyer not whitelisted for shares");
-        require(IComplianceToken(token).isWhitelisted(seller), "Seller not whitelisted for shares");
+        require(IComplianceToken(p.token).isWhitelisted(p.buyer), "Buyer not whitelisted for shares");
+        require(IComplianceToken(p.token).isWhitelisted(p.seller), "Seller not whitelisted for shares");
 
-        bytes32 buyerStructHash = keccak256(
-            abi.encode(BUY_ORDER_TYPEHASH, buyer, token, amount, price, buyerNonce, buyerDeadline)
-        );
-        bytes32 buyerDigest = MessageHashUtils.toTypedDataHash(DOMAIN_SEPARATOR, buyerStructHash);
-        address recoveredBuyer = buyerDigest.recover(buyerSig);
-        require(recoveredBuyer == buyer, "Invalid buyer signature");
+        {
+            bytes32 buyerStructHash = keccak256(
+                abi.encode(BUY_ORDER_TYPEHASH, p.buyer, p.token, p.amount, p.price, p.buyerNonce, p.buyerDeadline)
+            );
+            bytes32 buyerDigest = MessageHashUtils.toTypedDataHash(DOMAIN_SEPARATOR, buyerStructHash);
+            require(buyerDigest.recover(p.buyerSig) == p.buyer, "Invalid buyer signature");
+        }
 
-        bytes32 sellerStructHash = keccak256(
-            abi.encode(SELL_ORDER_TYPEHASH, seller, token, amount, price, sellerNonce, sellerDeadline)
-        );
-        bytes32 sellerDigest = MessageHashUtils.toTypedDataHash(DOMAIN_SEPARATOR, sellerStructHash);
-        address recoveredSeller = sellerDigest.recover(sellerSig);
-        require(recoveredSeller == seller, "Invalid seller signature");
+        {
+            bytes32 sellerStructHash = keccak256(
+                abi.encode(SELL_ORDER_TYPEHASH, p.seller, p.token, p.amount, p.price, p.sellerNonce, p.sellerDeadline)
+            );
+            bytes32 sellerDigest = MessageHashUtils.toTypedDataHash(DOMAIN_SEPARATOR, sellerStructHash);
+            require(sellerDigest.recover(p.sellerSig) == p.seller, "Invalid seller signature");
+        }
 
-        usedNonces[buyer][buyerNonce] = true;
-        usedNonces[seller][sellerNonce] = true;
+        usedNonces[p.buyer][p.buyerNonce] = true;
+        usedNonces[p.seller][p.sellerNonce] = true;
 
-        uint256 cost = (amount * price) / 1e18;
+        uint256 cost = (p.amount * p.price) / 1e18;
         require(cost > 0, "Trade cost too small");
 
         uint256 fee = 0;
@@ -3794,22 +3798,19 @@ contract Marketplace is Ownable {
             netSellerProceeds = cost - fee;
         }
 
-        IERC20 stablecoin = IERC20(paymentToken);
-        require(stablecoin.balanceOf(buyer) >= cost, "Buyer insufficient stablecoin balance");
+        IERC20 stablecoin = IERC20(p.paymentToken);
+        require(stablecoin.balanceOf(p.buyer) >= cost, "Buyer insufficient stablecoin balance");
         
         if (fee > 0) {
-            bool feeTransferSuccess = stablecoin.transferFrom(buyer, feeTreasury, fee);
-            require(feeTransferSuccess, "Fee payment failed");
+            require(stablecoin.transferFrom(p.buyer, feeTreasury, fee), "Fee payment failed");
         }
         
-        bool paymentSuccess = stablecoin.transferFrom(buyer, seller, netSellerProceeds);
-        require(paymentSuccess, "Seller payment failed");
+        require(stablecoin.transferFrom(p.buyer, p.seller, netSellerProceeds), "Seller payment failed");
 
-        IERC20 equity = IERC20(token);
-        require(equity.balanceOf(seller) >= amount, "Seller insufficient shares");
-        bool sharesSuccess = equity.transferFrom(seller, buyer, amount);
-        require(sharesSuccess, "Shares transfer failed");
+        IERC20 equity = IERC20(p.token);
+        require(equity.balanceOf(p.seller) >= p.amount, "Seller insufficient shares");
+        require(equity.transferFrom(p.seller, p.buyer, p.amount), "Shares transfer failed");
 
-        emit TradeSettled(token, buyer, seller, amount, price, fee);
+        emit TradeSettled(p.token, p.buyer, p.seller, p.amount, p.price, fee);
     }
 }
