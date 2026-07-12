@@ -174,6 +174,12 @@ class CompanyController extends Controller
         ]);
 
         foreach ($validated as $key => $value) {
+            // Chống scam: Nếu địa chỉ hiện tại trong DB đã có giá trị, không cho phép sửa đổi hoặc gỡ bỏ (trở thành null hoặc rỗng)
+            if (!empty($companyModel->$key) && $companyModel->$key !== $value) {
+                return response()->json([
+                    'message' => "Cannot modify or remove " . str_replace('_', ' ', $key) . " once it has been linked."
+                ], 400);
+            }
             $companyModel->$key = $value;
         }
         $companyModel->save();

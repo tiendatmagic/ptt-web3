@@ -98,8 +98,30 @@ export class SettingsComponent implements OnInit {
     if (saved) this.bscApiKey.set(saved);
   }
 
+  public isContractLinked(key: string): boolean {
+    const comp = this.stateService.currentCompany();
+    if (!comp) return false;
+    return !!(comp as any)[key];
+  }
+
+  public isAllContractsLinked(): boolean {
+    const comp = this.stateService.currentCompany();
+    if (!comp) return false;
+    return !!(
+      comp.governance_address &&
+      comp.token_address &&
+      comp.funding_address &&
+      comp.marketplace_address
+    );
+  }
+
   // --- Auto Deploy ---
   public async handleDeployAll() {
+    if (this.isAllContractsLinked()) {
+      this.stateService.showToast('Hệ thống Smart Contracts đã được triển khai đầy đủ. Không thể deploy lại!', 'warning');
+      return;
+    }
+
     const signer = await this.stateService.getSigner();
     if (!signer) {
       this.stateService.showToast('Vui lòng kết nối ví Metamask trước!', 'warning');
