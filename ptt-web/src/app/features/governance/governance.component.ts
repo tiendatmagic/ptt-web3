@@ -184,33 +184,52 @@ export class GovernanceComponent implements OnInit {
 
     try {
       this.stateService.isLoading.set(true);
-      
+
       // 1. Lấy signer và khởi tạo contract BoardGovernance
       const signer = await this.stateService.getSigner();
       const govContract = new Contract(comp.governance_address, BOARD_GOVERNANCE_ABI, signer);
 
-      this.stateService.showToast('Đang gửi giao dịch execute on-chain...', 'warning');
+      // 2. Thực thi on-chain
+      // Nếu đã execute rồi thì bỏ qua và chỉ đồng bộ backend
+      let txHash: string | null = null;
+      let alreadyExecutedOnChain = false;
+      try {
+        this.stateService.showToast('Đang gửi giao dịch execute on-chain...', 'warning');
+        const gasOverrides = await this.stateService.getGasOverrides(signer);
+        const tx = await govContract['executeProposal'](onchainId, gasOverrides);
+        this.stateService.showToast('Giao dịch thực thi đang chờ xác nhận...', 'warning');
+        await tx.wait();
+        txHash = tx.hash;
+      } catch (onChainErr: any) {
+        const errMsg = onChainErr?.reason || onChainErr?.message || '';
+        if (errMsg.toLowerCase().includes('already executed') || errMsg.toLowerCase().includes('proposal already')) {
+          alreadyExecutedOnChain = true;
+          this.stateService.showToast('Đề xuất đã thực thi on-chain, đang đồng bộ trạng thái...', 'warning');
+        } else {
+          throw onChainErr;
+        }
+      }
 
-      // 2. Gọi hàm executeProposal trên smart contract (chỉ nhận onchainId và gasOverrides)
-      const gasOverrides = await this.stateService.getGasOverrides(signer);
-      const tx = await govContract['executeProposal'](onchainId, gasOverrides);
+      // 3. Cập nhật backend (tx_hash có thể null nếu đã execute rồi)
+      const body: any = {};
+      if (txHash) body['tx_hash'] = txHash;
 
-      this.stateService.showToast('Giao dịch thực thi đang chờ xác nhận...', 'warning');
-      await tx.wait();
-
-      // 3. Gửi request báo Backend cập nhật DB trạng thái proposal thành EXECUTED
       await firstValueFrom(
-        this.apiService.post<any>(`proposals/${proposal.id}/execute`, {}, comp.id)
+        this.apiService.post<any>(`proposals/${proposal.id}/execute`, body, comp.id)
       );
 
-      this.stateService.showToast('Đề xuất đã được thực thi thành công on-chain!', 'success');
+      const msg = alreadyExecutedOnChain
+        ? 'Đồng bộ trạng thái thành công! Đề xuất đã EXECUTED.'
+        : 'Đề xuất đã được thực thi thành công on-chain!';
+      this.stateService.showToast(msg, 'success');
 
       // Load lại dữ liệu
-      await this.selectProposal(proposal);
       await this.loadProposals();
+      await this.selectProposal(proposal);
     } catch (e: any) {
       console.error(e);
-      this.stateService.showToast(e.message || e.error?.message || 'Lỗi thực thi đề xuất!', 'error');
+      const msg = e?.reason || e?.message || e?.error?.message || 'Lỗi thực thi đề xuất!';
+      this.stateService.showToast(msg, 'error');
     } finally {
       this.stateService.isLoading.set(false);
     }

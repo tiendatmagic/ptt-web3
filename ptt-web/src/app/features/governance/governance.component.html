@@ -166,18 +166,12 @@
               <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
                 @for (sig of proposalSignatures(); track sig.id) {
                   <div
-                    class="flex justify-between items-center bg-slate-50 dark:bg-slate-900/25 p-3 rounded-xl border border-slate-100 dark:border-slate-900/10 text-xs"
+                    class="flex flex-col gap-1.5 bg-slate-50 dark:bg-slate-900/25 p-3 rounded-xl border border-slate-100 dark:border-slate-900/10 text-xs"
                   >
-                    <div class="flex flex-col">
-                      <span class="font-extrabold text-slate-700 dark:text-slate-300"
-                        >Biểu quyết bởi:</span
-                      >
-                      <span class="font-mono text-sm text-slate-400">{{ sig.wallet_address }}</span>
-                    </div>
-                    <span
-                      class="text-sm font-black text-emerald-500 uppercase flex items-center gap-1"
-                    >
-                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span class="font-extrabold text-slate-700 dark:text-slate-300">Biểu quyết bởi:</span>
+                    <span class="font-mono text-[11px] break-all text-slate-500 dark:text-slate-400">{{ sig.wallet_address }}</span>
+                    <span class="text-[10px] font-black text-emerald-500 uppercase flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                       Đã ký (SIGNED)
                     </span>
                   </div>
@@ -200,7 +194,9 @@
             ) {
               <!-- Kiểm tra ví hiện tại đã ký chưa để tránh lỗi Already signed -->
               @if (hasCurrentWalletSigned()) {
-                <div class="h-11 px-5 rounded-xl flex items-center gap-2 text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                <div
+                  class="h-11 px-5 rounded-xl flex items-center gap-2 text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800"
+                >
                   <app-icon name="shield" class="w-4 h-4" />
                   ĐÃ KÝ BIỂU QUYẾT
                 </div>
@@ -228,7 +224,7 @@
                 class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 !text-white shadow-md border-0"
               >
                 <app-icon name="send" class="w-4 h-4" />
-                THỰC THI ON-CHAIN (EXECUTE)
+                THỰC THI ON-CHAIN
               </button>
             }
           </div>
@@ -244,5 +240,4 @@
       }
     </div>
   </div>
-
 </div>

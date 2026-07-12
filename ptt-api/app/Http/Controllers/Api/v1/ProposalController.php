@@ -210,7 +210,7 @@ class ProposalController extends Controller
     public function execute(Request $request, $id)
     {
         $request->validate([
-            'tx_hash' => 'required|string|regex:/^0x[a-fA-F0-9]{64}$/'
+            'tx_hash' => 'nullable|string|regex:/^0x[a-fA-F0-9]{64}$/'
         ]);
 
         $companyId = $request->header('X-Company-Id');
@@ -225,7 +225,8 @@ class ProposalController extends Controller
             return response()->json(['message' => 'Proposal not found'], 404);
         }
 
-        if ($proposal->status !== 'APPROVED') {
+        // Cho phép cập nhật cả khi APPROVED lẫn khi đã EXECUTED (sync lại từ on-chain)
+        if (!in_array($proposal->status, ['APPROVED', 'EXECUTED'])) {
             return response()->json(['message' => 'Proposal must be APPROVED before execution'], 422);
         }
 
