@@ -203,11 +203,8 @@ export class SettingsComponent implements OnInit {
     if (!comp) return;
     this.saveContractsLoading.set(true);
     try {
-      // Tự động ánh xạ treasury và distribution về cùng địa chỉ
       const payload = {
-        ...this.editingContracts,
-        treasury_address: this.editingContracts['governance_address'],
-        distribution_address: this.editingContracts['funding_address'],
+        ...this.editingContracts
       };
       await firstValueFrom(this.apiService.put<any>(`companies/${comp.id}/contracts`, payload));
       this.stateService.showToast('Cập nhật địa chỉ Smart Contracts thành công!', 'success');

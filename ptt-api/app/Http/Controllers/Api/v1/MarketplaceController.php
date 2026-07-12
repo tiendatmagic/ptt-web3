@@ -182,14 +182,32 @@ class MarketplaceController extends Controller
         ]);
 
         DB::transaction(function () use ($request) {
-            DB::table('trades')->insert([
-                'buy_order_id' => $request->input('buy_order_id'),
-                'sell_order_id' => $request->input('sell_order_id'),
-                'price' => $request->input('price'),
-                'amount' => $request->input('amount'),
-                'tx_hash' => $request->input('tx_hash'),
-                'created_at' => now(),
-            ]);
+            $existing = DB::table('trades')
+                ->where('buy_order_id', $request->input('buy_order_id'))
+                ->where('sell_order_id', $request->input('sell_order_id'))
+                ->where('price', $request->input('price'))
+                ->where('amount', $request->input('amount'))
+                ->where('tx_hash', 'MATCHED_PENDING_SETTLEMENT')
+                ->first();
+
+            if ($existing) {
+                DB::table('trades')
+                    ->where('id', $existing->id)
+                    ->update([
+                        'tx_hash' => $request->input('tx_hash'),
+                        'updated_at' => now()
+                    ]);
+            } else {
+                DB::table('trades')->insert([
+                    'buy_order_id' => $request->input('buy_order_id'),
+                    'sell_order_id' => $request->input('sell_order_id'),
+                    'price' => $request->input('price'),
+                    'amount' => $request->input('amount'),
+                    'tx_hash' => $request->input('tx_hash'),
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
         });
 
         return response()->json(['message' => 'Trade settlement registered successfully']);

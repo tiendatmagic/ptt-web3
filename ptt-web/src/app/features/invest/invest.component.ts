@@ -136,8 +136,8 @@ export class InvestComponent implements OnInit {
       }
 
       // Claimable dividend
-      if (company.distribution_address && this.walletAddress()) {
-        const dist = new ethers.Contract(company.distribution_address, DISTRIBUTION_MANAGER_ABI, provider);
+      if (company.funding_address && this.walletAddress()) {
+        const dist = new ethers.Contract(company.funding_address, DISTRIBUTION_MANAGER_ABI, provider);
         const claimable = await dist['claimableDividend'](this.walletAddress());
         this.claimableDiv.set(ethers.formatEther(claimable));
       }
@@ -234,7 +234,7 @@ export class InvestComponent implements OnInit {
     this.dividendLoading.set(true);
     try {
       const signer = await this.stateService.web3Service.getSigner();
-      const dist = new ethers.Contract(company.distribution_address, DISTRIBUTION_MANAGER_ABI, signer);
+      const dist = new ethers.Contract(company.funding_address, DISTRIBUTION_MANAGER_ABI, signer);
       const gasOverrides = await this.stateService.web3Service.getGasOverrides();
 
       const tx = await dist['claimDividend'](gasOverrides);

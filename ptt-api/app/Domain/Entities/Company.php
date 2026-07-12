@@ -5,6 +5,7 @@ namespace App\Domain\Entities;
 class Company
 {
     private ?int $id;
+    private ?string $uuid;
     private string $code;
     private string $name;
     private ?string $logo;
@@ -12,15 +13,14 @@ class Company
     private ?string $registryAddress;
     private ?string $governanceAddress;
     private ?string $tokenAddress;
-    private ?string $treasuryAddress;
     private ?string $fundingAddress;
-    private ?string $distributionAddress;
     private ?string $marketplaceAddress;
     private ?string $oracleAddress;
     private string $status;
 
     public function __construct(
         ?int $id,
+        ?string $uuid,
         string $code,
         string $name,
         ?string $logo,
@@ -28,14 +28,13 @@ class Company
         ?string $registryAddress,
         ?string $governanceAddress,
         ?string $tokenAddress,
-        ?string $treasuryAddress,
         ?string $fundingAddress,
-        ?string $distributionAddress,
         ?string $marketplaceAddress,
         ?string $oracleAddress,
         string $status = 'ACTIVE'
     ) {
         $this->id = $id;
+        $this->uuid = $uuid;
         $this->code = $code;
         $this->name = $name;
         $this->logo = $logo;
@@ -43,9 +42,7 @@ class Company
         $this->registryAddress = $registryAddress;
         $this->governanceAddress = $governanceAddress;
         $this->tokenAddress = $tokenAddress;
-        $this->treasuryAddress = $treasuryAddress;
         $this->fundingAddress = $fundingAddress;
-        $this->distributionAddress = $distributionAddress;
         $this->marketplaceAddress = $marketplaceAddress;
         $this->oracleAddress = $oracleAddress;
         $this->status = $status;
@@ -56,6 +53,11 @@ class Company
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getUuid(): ?string
+    {
+        return $this->uuid;
     }
 
     public function getCode(): string
@@ -93,19 +95,9 @@ class Company
         return $this->tokenAddress;
     }
 
-    public function getTreasuryAddress(): ?string
-    {
-        return $this->treasuryAddress;
-    }
-
     public function getFundingAddress(): ?string
     {
         return $this->fundingAddress;
-    }
-
-    public function getDistributionAddress(): ?string
-    {
-        return $this->distributionAddress;
     }
 
     public function getMarketplaceAddress(): ?string
@@ -133,9 +125,7 @@ class Company
         if (isset($addresses['registry'])) $this->registryAddress = $addresses['registry'];
         if (isset($addresses['governance'])) $this->governanceAddress = $addresses['governance'];
         if (isset($addresses['token'])) $this->tokenAddress = $addresses['token'];
-        if (isset($addresses['treasury'])) $this->treasuryAddress = $addresses['treasury'];
         if (isset($addresses['funding'])) $this->fundingAddress = $addresses['funding'];
-        if (isset($addresses['distribution'])) $this->distributionAddress = $addresses['distribution'];
         if (isset($addresses['marketplace'])) $this->marketplaceAddress = $addresses['marketplace'];
         if (isset($addresses['oracle'])) $this->oracleAddress = $addresses['oracle'];
     }

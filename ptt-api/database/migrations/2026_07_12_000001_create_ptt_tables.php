@@ -14,18 +14,17 @@ return new class extends Migration
         // 1. Companies table
         Schema::create('companies', function (Blueprint $table) {
             $table->id();
+            $table->uuid('uuid')->unique();
             $table->string('code')->unique();
             $table->string('name');
             $table->string('logo')->nullable();
             $table->decimal('valuation', 24, 4)->default(0);
-            $table->string('registry_address')->nullable();
-            $table->string('governance_address')->nullable();
-            $table->string('token_address')->nullable();
-            $table->string('treasury_address')->nullable();
-            $table->string('funding_address')->nullable();
-            $table->string('distribution_address')->nullable();
-            $table->string('marketplace_address')->nullable();
-            $table->string('oracle_address')->nullable();
+            $table->string('registry_address', 42)->nullable();
+            $table->string('governance_address', 42)->nullable();
+            $table->string('token_address', 42)->nullable();
+            $table->string('funding_address', 42)->nullable();
+            $table->string('marketplace_address', 42)->nullable();
+            $table->string('oracle_address', 42)->nullable();
             $table->string('status')->default('ACTIVE'); // ACTIVE, SUSPENDED
             $table->timestamps();
         });
@@ -63,13 +62,15 @@ return new class extends Migration
             $table->timestamp('expiration_date')->nullable();
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->timestamps();
+
+            $table->index(['company_id', 'status']);
         });
 
         // 5. Proposal Signatures table (Board members voting/signing)
         Schema::create('proposal_signatures', function (Blueprint $table) {
             $table->id();
             $table->foreignId('proposal_id')->constrained('proposals')->onDelete('cascade');
-            $table->string('wallet_address');
+            $table->string('wallet_address', 42);
             $table->text('signature'); // EIP-712 Signature
             $table->string('status')->default('SIGNED'); // SIGNED, REJECTED
             $table->timestamps();
@@ -105,7 +106,7 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('company_id')->constrained('companies')->onDelete('cascade');
-            $table->string('user_address');
+            $table->string('user_address', 42);
             $table->string('side'); // BUY, SELL
             $table->decimal('price', 24, 4);
             $table->decimal('amount', 24, 4);
@@ -113,6 +114,8 @@ return new class extends Migration
             $table->text('signature'); // EIP-712 signature from investor approving order matching
             $table->string('status')->default('PENDING'); // PENDING, FILLED, PARTIALLY_FILLED, CANCELLED
             $table->timestamps();
+
+            $table->index(['company_id', 'side', 'status']);
         });
 
         // 9. Trades table (Matched Trades History)
@@ -124,12 +127,14 @@ return new class extends Migration
             $table->decimal('amount', 24, 4);
             $table->string('tx_hash'); // On-chain Settlement Tx Hash
             $table->timestamps();
+
+            $table->index('tx_hash');
         });
 
         // 10. Audit Logs table
         Schema::create('audit_logs', function (Blueprint $table) {
             $table->id();
-            $table->string('wallet_address')->nullable();
+            $table->string('wallet_address', 42)->nullable();
             $table->string('action');
             $table->text('details')->nullable();
             $table->string('ip_address')->nullable();

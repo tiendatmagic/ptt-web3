@@ -80,9 +80,7 @@ export class RegisterCompanyModalComponent {
     registry_address: '',
     governance_address: '',
     token_address: '',
-    treasury_address: '',
     funding_address: '',
-    distribution_address: '',
     marketplace_address: '',
     oracle_address: ''
   };

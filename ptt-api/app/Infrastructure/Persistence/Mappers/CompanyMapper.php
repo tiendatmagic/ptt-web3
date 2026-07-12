@@ -11,6 +11,7 @@ class CompanyMapper
     {
         return new Company(
             $model->id,
+            $model->uuid,
             $model->code,
             $model->name,
             $model->logo,
@@ -18,9 +19,7 @@ class CompanyMapper
             $model->registry_address,
             $model->governance_address,
             $model->token_address,
-            $model->treasury_address,
             $model->funding_address,
-            $model->distribution_address,
             $model->marketplace_address,
             $model->oracle_address,
             $model->status
@@ -34,6 +33,7 @@ class CompanyMapper
             $model->id = $entity->getId();
             $model->exists = true;
         }
+        $model->uuid = $entity->getUuid();
         $model->code = $entity->getCode();
         $model->name = $entity->getName();
         $model->logo = $entity->getLogo();
@@ -41,9 +41,7 @@ class CompanyMapper
         $model->registry_address = $entity->getRegistryAddress();
         $model->governance_address = $entity->getGovernanceAddress();
         $model->token_address = $entity->getTokenAddress();
-        $model->treasury_address = $entity->getTreasuryAddress();
         $model->funding_address = $entity->getFundingAddress();
-        $model->distribution_address = $entity->getDistributionAddress();
         $model->marketplace_address = $entity->getMarketplaceAddress();
         $model->oracle_address = $entity->getOracleAddress();
         $model->status = $entity->getStatus();

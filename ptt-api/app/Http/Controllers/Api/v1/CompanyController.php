@@ -28,11 +28,17 @@ class CompanyController extends Controller
         $result = array_map(function ($company) {
             return [
                 'id' => $company->getId(),
+                'uuid' => $company->getUuid(),
                 'code' => $company->getCode(),
                 'name' => $company->getName(),
                 'logo' => $company->getLogo(),
                 'valuation' => $company->getValuation(),
+                'registry_address' => $company->getRegistryAddress(),
+                'governance_address' => $company->getGovernanceAddress(),
                 'token_address' => $company->getTokenAddress(),
+                'funding_address' => $company->getFundingAddress(),
+                'marketplace_address' => $company->getMarketplaceAddress(),
+                'oracle_address' => $company->getOracleAddress(),
                 'status' => $company->getStatus(),
             ];
         }, $companies);
@@ -54,6 +60,7 @@ class CompanyController extends Controller
 
         return response()->json([
             'id' => $company->getId(),
+            'uuid' => $company->getUuid(),
             'code' => $company->getCode(),
             'name' => $company->getName(),
             'logo' => $company->getLogo(),
@@ -61,9 +68,7 @@ class CompanyController extends Controller
             'registry_address' => $company->getRegistryAddress(),
             'governance_address' => $company->getGovernanceAddress(),
             'token_address' => $company->getTokenAddress(),
-            'treasury_address' => $company->getTreasuryAddress(),
             'funding_address' => $company->getFundingAddress(),
-            'distribution_address' => $company->getDistributionAddress(),
             'marketplace_address' => $company->getMarketplaceAddress(),
             'oracle_address' => $company->getOracleAddress(),
             'status' => $company->getStatus(),
@@ -79,8 +84,9 @@ class CompanyController extends Controller
 
         // Sử dụng Transaction để đảm bảo tính toàn vẹn dữ liệu
         $company = DB::transaction(function () use ($request, $user) {
-            // 1. Tạo Company Entity
+            // 1. Tạo Company Entity (truyền uuid = null để DB tự sinh)
             $company = new Company(
+                null,
                 null,
                 $request->input('code'),
                 $request->input('name'),
@@ -89,9 +95,7 @@ class CompanyController extends Controller
                 $request->input('registry_address'),
                 $request->input('governance_address'),
                 $request->input('token_address'),
-                $request->input('treasury_address'),
                 $request->input('funding_address'),
-                $request->input('distribution_address'),
                 $request->input('marketplace_address'),
                 $request->input('oracle_address')
             );
@@ -139,6 +143,7 @@ class CompanyController extends Controller
             'message' => 'Company registered successfully',
             'company' => [
                 'id' => $company->getId(),
+                'uuid' => $company->getUuid(),
                 'code' => $company->getCode(),
                 'name' => $company->getName(),
                 'registry_address' => $company->getRegistryAddress(),
@@ -163,9 +168,7 @@ class CompanyController extends Controller
             'registry_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'governance_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'token_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
-            'treasury_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'funding_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
-            'distribution_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'marketplace_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'oracle_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
         ]);
@@ -179,14 +182,13 @@ class CompanyController extends Controller
             'message' => 'Contract addresses updated successfully',
             'company' => [
                 'id' => $companyModel->id,
+                'uuid' => $companyModel->uuid,
                 'code' => $companyModel->code,
                 'name' => $companyModel->name,
                 'registry_address' => $companyModel->registry_address,
                 'governance_address' => $companyModel->governance_address,
                 'token_address' => $companyModel->token_address,
-                'treasury_address' => $companyModel->treasury_address,
                 'funding_address' => $companyModel->funding_address,
-                'distribution_address' => $companyModel->distribution_address,
                 'marketplace_address' => $companyModel->marketplace_address,
                 'oracle_address' => $companyModel->oracle_address,
             ]

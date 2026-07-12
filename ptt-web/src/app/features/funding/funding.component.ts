@@ -138,15 +138,15 @@ export class FundingComponent implements OnInit {
   // Rút cổ tức (Claim Dividend)
   public async handleClaimDividend(dividend: any) {
     const comp = this.stateService.currentCompany();
-    if (!comp || !comp.distribution_address) return;
+    if (!comp || !comp.funding_address) return;
 
     try {
       this.stateService.isLoading.set(true);
       this.stateService.showToast('Đang gửi yêu cầu claim cổ tức lên blockchain...', 'warning');
 
-      // 1. Lấy signer và khởi tạo contract DistributionManager
+      // 1. Lấy signer và khởi tạo contract DistributionManager (nằm trong FinanceManager)
       const signer = await this.stateService.getSigner();
-      const distContract = new Contract(comp.distribution_address, DISTRIBUTION_MANAGER_ABI, signer);
+      const distContract = new Contract(comp.funding_address, DISTRIBUTION_MANAGER_ABI, signer);
 
       const gasOverrides = await this.stateService.getGasOverrides(signer);
 

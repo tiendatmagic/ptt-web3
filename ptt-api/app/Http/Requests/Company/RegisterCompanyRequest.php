@@ -21,9 +21,7 @@ class RegisterCompanyRequest extends FormRequest
             'registry_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'governance_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'token_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
-            'treasury_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'funding_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
-            'distribution_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'marketplace_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'oracle_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
         ];

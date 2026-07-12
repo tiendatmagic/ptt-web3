@@ -119,10 +119,10 @@
               contract of [
                 { label: 'Equity Token', key: 'token_address', icon: 'ethereum' },
                 { label: 'Board Governance', key: 'governance_address', icon: 'scale' },
-                { label: 'Treasury', key: 'treasury_address', icon: 'bank' },
+                { label: 'Treasury', key: 'governance_address', icon: 'bank' },
                 { label: 'Marketplace', key: 'marketplace_address', icon: 'sync' }
               ];
-              track contract.key
+              track contract.label
             ) {
               <div class="bg-slate-50 dark:bg-slate-900/30 rounded-xl p-4 border border-slate-100 dark:border-slate-800/40 space-y-1.5 hover:border-violet-500/20 transition-all duration-200">
                 <div class="flex items-center gap-1.5">

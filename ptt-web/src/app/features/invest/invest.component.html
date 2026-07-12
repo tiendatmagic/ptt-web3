@@ -369,8 +369,7 @@
               <p class="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Smart Contracts liên quan</p>
               @for (item of [
                 {label: 'Equity Token', addr: selectedCompany()?.token_address},
-                {label: 'Funding Manager', addr: selectedCompany()?.funding_address},
-                {label: 'Distribution', addr: selectedCompany()?.distribution_address}
+                {label: 'Finance Manager', addr: selectedCompany()?.funding_address}
               ]; track item.label) {
                 <div class="flex items-center justify-between gap-3 py-2 border-b border-slate-200 dark:border-slate-800/60 last:border-0">
                   <span class="text-xs font-bold text-slate-500 shrink-0">{{ item.label }}</span>
