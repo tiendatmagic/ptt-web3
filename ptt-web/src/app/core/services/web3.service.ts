@@ -88,8 +88,8 @@ export class Web3Service {
       defaultNetwork: this.supportedChains[0] as any, // Arbitrum One làm default
       allowUnsupportedChain: true,
       metadata: {
-        name: 'Angular Web3 DApp',
-        description: 'Angular Web3 Application Framework',
+        name: 'PTT Web3',
+        description: 'PTT Web3 Application Framework',
         url: window.location.origin,
         icons: [window.location.origin + '/assets/logo.svg']
       },
