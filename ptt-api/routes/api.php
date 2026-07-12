@@ -81,6 +81,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         
         // System admin kyc approval routes (For simplicity, we protect with permission:staffs.edit on company basis, or simple auth for platform admin)
         Route::get('kyc', [UserController::class, 'indexKyc'])->middleware('permission:staffs.edit');
+        Route::post('kyc/batch-sync', [UserController::class, 'batchSyncKyc'])->middleware('permission:staffs.edit');
         Route::post('kyc/{id}/approve', [UserController::class, 'approveKyc'])->middleware('permission:staffs.edit');
         Route::post('kyc/{id}/reject', [UserController::class, 'rejectKyc'])->middleware('permission:staffs.edit');
     });

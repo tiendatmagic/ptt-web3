@@ -17,7 +17,8 @@ class UserMapper
             $model->phone,
             $model->address,
             $model->kyc_status,
-            $model->is_whitelisted
+            $model->is_whitelisted,
+            $model->is_blacklisted
         );
     }
 
@@ -35,6 +36,7 @@ class UserMapper
         $model->address = $entity->getAddress();
         $model->kyc_status = $entity->getKycStatus();
         $model->is_whitelisted = $entity->isWhitelisted();
+        $model->is_blacklisted = $entity->isBlacklisted();
         
         return $model;
     }

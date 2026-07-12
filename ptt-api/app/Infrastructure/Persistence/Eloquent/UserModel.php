@@ -22,6 +22,7 @@ class UserModel extends Authenticatable
         'password',
         'kyc_status',
         'is_whitelisted',
+        'is_blacklisted',
     ];
 
     protected $hidden = [
@@ -35,6 +36,7 @@ class UserModel extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_whitelisted' => 'boolean',
+            'is_blacklisted' => 'boolean',
         ];
     }
 

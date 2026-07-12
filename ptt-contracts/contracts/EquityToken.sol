@@ -81,6 +81,20 @@ contract EquityToken is ERC20, Ownable, Pausable {
         emit BlacklistedUpdated(account, status);
     }
 
+    function setWhitelistedBatch(address[] calldata accounts, bool status) external onlyOwnerOrOperator {
+        for (uint256 i = 0; i < accounts.length; i++) {
+            isWhitelisted[accounts[i]] = status;
+            emit WhitelistedUpdated(accounts[i], status);
+        }
+    }
+
+    function setBlacklistedBatch(address[] calldata accounts, bool status) external onlyOwnerOrOperator {
+        for (uint256 i = 0; i < accounts.length; i++) {
+            isBlacklisted[accounts[i]] = status;
+            emit BlacklistedUpdated(accounts[i], status);
+        }
+    }
+
     function setWhitelistEnabled(bool enabled) external onlyOwner {
         isWhitelistEnabled = enabled;
         emit WhitelistEnabledUpdated(enabled);

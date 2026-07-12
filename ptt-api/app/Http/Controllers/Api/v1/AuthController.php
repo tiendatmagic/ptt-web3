@@ -152,6 +152,7 @@ class AuthController extends Controller
                 'address'        => $user->getAddress(),
                 'kyc_status'     => $user->getKycStatus(),
                 'is_whitelisted' => $user->isWhitelisted(),
+                'is_blacklisted' => $user->isBlacklisted(),
             ],
             // Auth qua HttpOnly cookie auth_token — không expose token trong response
         ])->withCookie($cookie)->withCookie($loggedInCookie);
@@ -192,6 +193,7 @@ class AuthController extends Controller
                 'address' => $userModel->address,
                 'kyc_status' => $userModel->kyc_status,
                 'is_whitelisted' => $userModel->is_whitelisted,
+                'is_blacklisted' => $userModel->is_blacklisted,
             ]
         ]);
     }

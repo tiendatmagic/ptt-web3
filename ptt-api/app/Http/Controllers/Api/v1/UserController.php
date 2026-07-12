@@ -98,6 +98,7 @@ class UserController extends Controller
                 'address' => $userModel->address,
                 'kyc_status' => $userModel->kyc_status,
                 'is_whitelisted' => $userModel->is_whitelisted,
+                'is_blacklisted' => $userModel->is_blacklisted,
             ]
         ]);
     }
@@ -118,6 +119,51 @@ class UserController extends Controller
         return response()->json([
             'message' => 'KYC request submitted successfully',
             'kyc_status' => 'PENDING'
+        ]);
+    }
+
+    /**
+     * Đồng bộ Whitelist/Blacklist hàng loạt từ frontend.
+     */
+    public function batchSyncKyc(Request $request)
+    {
+        $request->validate([
+            'addresses' => 'required|array',
+            'addresses.*' => 'required|string|size:42',
+            'action' => 'required|string|in:whitelist,blacklist,remove_whitelist,remove_blacklist'
+        ]);
+
+        $addresses = array_map('strtolower', $request->input('addresses'));
+        $action = $request->input('action');
+        $updatedCount = 0;
+
+        foreach ($addresses as $addr) {
+            $user = UserModel::firstOrNew(['wallet_address' => $addr]);
+
+            if ($action === 'whitelist') {
+                $user->kyc_status = 'APPROVED';
+                $user->is_whitelisted = true;
+                $user->is_blacklisted = false;
+            } elseif ($action === 'blacklist') {
+                $user->is_blacklisted = true;
+                $user->is_whitelisted = false;
+                $user->kyc_status = 'REJECTED';
+            } elseif ($action === 'remove_whitelist') {
+                $user->is_whitelisted = false;
+                if ($user->kyc_status === 'APPROVED') {
+                    $user->kyc_status = 'PENDING';
+                }
+            } elseif ($action === 'remove_blacklist') {
+                $user->is_blacklisted = false;
+            }
+
+            $user->save();
+            $updatedCount++;
+        }
+
+        return response()->json([
+            'message' => "Successfully synced {$updatedCount} addresses",
+            'updated_count' => $updatedCount
         ]);
     }
 }

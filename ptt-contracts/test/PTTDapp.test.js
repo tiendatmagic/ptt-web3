@@ -307,4 +307,30 @@ describe("PTT Dapp Suite", function () {
       financeManager.connect(investorA).updateRoundPrice(roundId, ethers.parseEther("0.03"))
     ).to.be.revertedWith("Not owner or operator");
   });
+
+  it("Should allow Operator to setWhitelistedBatch and setBlacklistedBatch", async function () {
+    // 1. memberA (Operator) whitelists investorA and investorB in batch
+    await token.connect(memberA).setWhitelistedBatch([investorA.address, investorB.address], false);
+    expect(await token.isWhitelisted(investorA.address)).to.equal(false);
+    expect(await token.isWhitelisted(investorB.address)).to.equal(false);
+
+    await token.connect(memberA).setWhitelistedBatch([investorA.address, investorB.address], true);
+    expect(await token.isWhitelisted(investorA.address)).to.equal(true);
+    expect(await token.isWhitelisted(investorB.address)).to.equal(true);
+
+    // 2. memberA (Operator) blacklists investorA and investorB in batch
+    await token.connect(memberA).setBlacklistedBatch([investorA.address, investorB.address], true);
+    expect(await token.isBlacklisted(investorA.address)).to.equal(true);
+    expect(await token.isBlacklisted(investorB.address)).to.equal(true);
+
+    // Remove from blacklist in batch
+    await token.connect(memberA).setBlacklistedBatch([investorA.address, investorB.address], false);
+    expect(await token.isBlacklisted(investorA.address)).to.equal(false);
+    expect(await token.isBlacklisted(investorB.address)).to.equal(false);
+
+    // 3. A non-operator trying to batch update should fail
+    await expect(
+      token.connect(investorA).setWhitelistedBatch([investorB.address], true)
+    ).to.be.revertedWith("Not authorized: must be owner or operator");
+  });
 });

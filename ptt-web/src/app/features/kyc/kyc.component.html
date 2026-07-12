@@ -23,170 +23,240 @@
   ></app-tab-group>
 
   <!-- MAIN CONTENT PANEL -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- DANH SÁCH KYC -->
+  @if (activeFilter() === 'BATCH_MANAGE') {
+    <!-- BATCH MANAGE PANEL -->
     <div
-      class="lg:col-span-1 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-5 shadow-sm space-y-3 flex flex-col max-h-[650px]"
+      class="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm max-w-4xl mx-auto w-full space-y-6 animate-fade-in"
     >
-      <h2 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
-        {{ kycList().length }} hồ sơ
-      </h2>
+      <div class="border-b border-slate-100 dark:border-slate-900/60 pb-4">
+        <h2 class="text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider">
+          Phê duyệt Whitelist / Blacklist hàng loạt
+        </h2>
+        <p class="text-xs text-slate-400 mt-1">
+          Nhập danh sách ví để thực thi giao dịch hàng loạt trực tiếp lên Smart Contract của Cổ phần doanh nghiệp.
+        </p>
+      </div>
 
-      <div class="flex-1 overflow-y-auto space-y-2 pr-1">
-        @for (user of kycList(); track user.id) {
-          <div
-            (click)="selectedUser.set(user)"
-            [class.border-primary]="selectedUser()?.id === user.id"
-            [class.bg-slate-50]="selectedUser()?.id === user.id"
-            [class.dark:bg-slate-900/40]="selectedUser()?.id === user.id"
-            class="p-4 rounded-xl border border-slate-100 dark:border-slate-900/80 hover:bg-slate-50 dark:hover:bg-slate-900/20 cursor-pointer transition-all space-y-2"
-          >
-            <div class="flex justify-between items-start gap-2">
-              <h3 class="text-xs font-black text-slate-700 dark:text-slate-200 line-clamp-1">
-                {{ user.name || 'Chưa có tên' }}
-              </h3>
-              <span
-                class="px-2 py-0.5 rounded-full text-xs font-black uppercase"
-                [class.bg-yellow-100]="user.kyc_status === 'PENDING'"
-                [class.text-yellow-600]="user.kyc_status === 'PENDING'"
-                [class.bg-emerald-100]="user.kyc_status === 'APPROVED'"
-                [class.text-emerald-600]="user.kyc_status === 'APPROVED'"
-                [class.bg-red-100]="user.kyc_status === 'REJECTED'"
-                [class.text-red-600]="user.kyc_status === 'REJECTED'"
-              >
-                {{ user.kyc_status }}
-              </span>
-            </div>
-            <p class="text-sm font-mono text-slate-400 break-all">{{ user.wallet_address }}</p>
-          </div>
-        } @empty {
-          <div class="text-center py-10 space-y-2">
-            <app-icon name="shield" class="w-10 h-10 mx-auto text-slate-300" />
-            <p class="text-xs text-slate-400">Không có hồ sơ nào.</p>
-          </div>
-        }
+      <!-- Action Select -->
+      <div class="space-y-2">
+        <label class="text-xs font-black text-slate-400 uppercase tracking-wider">Hành động thực thi</label>
+        <app-custom-select
+          [options]="batchActionOptions"
+          [selectedValue]="batchAction()"
+          (selectedValueChange)="batchAction.set($event)"
+        ></app-custom-select>
+      </div>
+
+      <!-- Textarea Input -->
+      <div class="space-y-2">
+        <label class="text-xs font-black text-slate-400 uppercase tracking-wider">
+          Danh sách địa chỉ ví
+        </label>
+        <p class="text-[11px] text-slate-400 italic">
+          Nhập nhiều địa chỉ ví, phân cách bằng dấu xuống dòng hoặc dấu phẩy.
+        </p>
+        <textarea
+          [(ngModel)]="batchAddressesInput"
+          rows="10"
+          placeholder="Ví dụ:&#10;0x75AD18eF47eDa21Baff837CAC0f1563D0C355555&#10;0x87C8a1e4968E68C08B64C4a1813E53aA380D02E7"
+          class="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono outline-none focus:border-primary bg-slate-50/40 dark:bg-slate-900/10 placeholder-slate-300 dark:placeholder-slate-700"
+        ></textarea>
+      </div>
+
+      <!-- Notes -->
+      <div
+        class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-4 border border-slate-100 dark:border-slate-900/20 space-y-1.5"
+      >
+        <h4 class="text-[12px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+          <app-icon name="shield" class="w-4 h-4 text-primary" />
+          Quy tắc kiểm tra tự động
+        </h4>
+        <ul class="text-xs text-slate-400 list-disc list-inside space-y-1">
+          <li>Chỉ chấp nhận các địa chỉ ví định dạng hợp lệ (Ethereum/BSC 42 ký tự hex).</li>
+          <li>Hệ thống sẽ tự động loại bỏ các địa chỉ ví trùng lặp trong danh sách đầu vào.</li>
+          <li>Bạn phải là **Owner** hoặc **Operator** của Smart Contract EquityToken mới có quyền thực thi.</li>
+        </ul>
+      </div>
+
+      <!-- Actions -->
+      <div class="pt-4 border-t border-slate-100 dark:border-slate-900/60 flex justify-end">
+        <button
+          app-button
+          variant="primary"
+          [loading]="isBatchExecuting()"
+          (click)="handleBatchAction()"
+          class="h-11 px-8 rounded-xl font-extrabold flex items-center gap-2"
+        >
+          <app-icon name="shield" class="w-4 h-4" />
+          THỰC THI GIAO DỊCH BATCH
+        </button>
       </div>
     </div>
+  } @else {
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- DANH SÁCH KYC -->
+      <div
+        class="lg:col-span-1 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-5 shadow-sm space-y-3 flex flex-col max-h-[650px]"
+      >
+        <h2 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+          {{ kycList().length }} hồ sơ
+        </h2>
 
-    <!-- CHI TIẾT KYC PANEL -->
-    <div
-      class="lg:col-span-2 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm flex flex-col min-h-[400px]"
-    >
-      @if (selectedUser()) {
-        <div class="flex-1 flex flex-col justify-between space-y-6">
-          <div class="space-y-6">
-            <!-- HEADER USER INFO -->
+        <div class="flex-1 overflow-y-auto space-y-2 pr-1">
+          @for (user of kycList(); track user.id) {
             <div
-              class="flex justify-between items-start gap-4 pb-4 border-b border-slate-100 dark:border-slate-900/60"
+              (click)="selectedUser.set(user)"
+              [class.border-primary]="selectedUser()?.id === user.id"
+              [class.bg-slate-50]="selectedUser()?.id === user.id"
+              [class.dark:bg-slate-900/40]="selectedUser()?.id === user.id"
+              class="p-4 rounded-xl border border-slate-100 dark:border-slate-900/80 hover:bg-slate-50 dark:hover:bg-slate-900/20 cursor-pointer transition-all space-y-2"
             >
-              <div class="space-y-1">
-                <span class="text-xs font-black text-primary uppercase tracking-widest"
-                  >Hồ sơ KYC #{{ selectedUser().id }}</span
+              <div class="flex justify-between items-start gap-2">
+                <h3 class="text-xs font-black text-slate-700 dark:text-slate-200 line-clamp-1">
+                  {{ user.name || 'Chưa có tên' }}
+                </h3>
+                <span
+                  class="px-2 py-0.5 rounded-full text-xs font-black uppercase"
+                  [class.bg-yellow-100]="user.kyc_status === 'PENDING'"
+                  [class.text-yellow-600]="user.kyc_status === 'PENDING'"
+                  [class.bg-emerald-100]="user.kyc_status === 'APPROVED'"
+                  [class.text-emerald-600]="user.kyc_status === 'APPROVED'"
+                  [class.bg-red-100]="user.kyc_status === 'REJECTED'"
+                  [class.text-red-600]="user.kyc_status === 'REJECTED'"
                 >
-                <h2 class="text-base font-extrabold text-slate-800 dark:text-white">
-                  {{ selectedUser().name || 'Chưa cập nhật tên' }}
-                </h2>
-                <p class="text-sm font-mono text-slate-400 break-all">
-                  {{ selectedUser().wallet_address }}
-                </p>
+                  {{ user.kyc_status }}
+                </span>
               </div>
-              <span
-                class="px-2.5 py-1 rounded-full text-xs font-black uppercase"
-                [class.bg-yellow-100]="selectedUser().kyc_status === 'PENDING'"
-                [class.text-yellow-600]="selectedUser().kyc_status === 'PENDING'"
-                [class.bg-emerald-100]="selectedUser().kyc_status === 'APPROVED'"
-                [class.text-emerald-600]="selectedUser().kyc_status === 'APPROVED'"
-                [class.bg-red-100]="selectedUser().kyc_status === 'REJECTED'"
-                [class.text-red-600]="selectedUser().kyc_status === 'REJECTED'"
-              >
-                {{ selectedUser().kyc_status }}
-              </span>
+              <p class="text-sm font-mono text-slate-400 break-all">{{ user.wallet_address }}</p>
             </div>
-
-            <!-- KYC DETAILS -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div class="space-y-1">
-                <span class="text-xs font-black text-slate-400 uppercase tracking-wider"
-                  >Email</span
-                >
-                <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  {{ selectedUser().email || '—' }}
-                </p>
-              </div>
-              <div class="space-y-1">
-                <span class="text-xs font-black text-slate-400 uppercase tracking-wider"
-                  >Ngày đăng ký</span
-                >
-                <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  {{ selectedUser().created_at | date: 'dd/MM/yyyy HH:mm' }}
-                </p>
-              </div>
-            </div>
-
-            <!-- Ghi chú KYC -->
-            <div
-              class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-4 border border-slate-100 dark:border-slate-900/20 space-y-1"
-            >
-              <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
-                Thông tin KYC nộp hồ sơ
-              </h4>
-              <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Nhà đầu tư kết nối ví Web3 và ký SIWE message xác thực quyền sở hữu địa chỉ ví. Đây
-                là bước bắt buộc để địa chỉ ví được thêm vào Whitelist của EquityToken Smart
-                Contract và có quyền tham gia giao dịch trên nền tảng.
-              </p>
-            </div>
-
-            <!-- Rejection reason -->
-            @if (selectedUser().kyc_status === 'PENDING') {
-              <div class="space-y-1">
-                <label class="text-xs font-black text-slate-400 uppercase tracking-wider"
-                  >Lý do từ chối (nếu reject)</label
-                >
-                <textarea
-                  [(ngModel)]="rejectionReason"
-                  rows="2"
-                  placeholder="Nhập lý do từ chối..."
-                  class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs outline-none focus:border-primary"
-                ></textarea>
-              </div>
-            }
-          </div>
-
-          <!-- ACTION BUTTONS -->
-          @if (selectedUser().kyc_status === 'PENDING') {
-            <div
-              class="pt-4 border-t border-slate-100 dark:border-slate-900/60 flex justify-end gap-3"
-            >
-              <button
-                app-button
-                variant="cancel"
-                (click)="handleRejectKyc(selectedUser().id)"
-                class="h-11 px-5 rounded-xl font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-red-200 dark:border-red-950/30"
-              >
-                TỪ CHỐI (REJECT)
-              </button>
-              <button
-                app-button
-                variant="primary"
-                (click)="handleApproveKyc(selectedUser().id)"
-                class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2"
-              >
-                <app-icon name="shield" class="w-4 h-4" />
-                DUYỆT KYC & WHITELIST
-              </button>
+          } @empty {
+            <div class="text-center py-10 space-y-2">
+              <app-icon name="shield" class="w-10 h-10 mx-auto text-slate-300" />
+              <p class="text-xs text-slate-400">Không có hồ sơ nào.</p>
             </div>
           }
         </div>
-      } @else {
-        <div class="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-3">
-          <app-icon name="shield" class="w-16 h-16 text-slate-200 dark:text-slate-800" />
-          <h3 class="text-sm font-extrabold text-slate-500">Chọn một hồ sơ để xem chi tiết</h3>
-          <p class="text-xs text-slate-400 max-w-xs">
-            Thông tin KYC đầy đủ và các nút hành động sẽ hiển thị tại đây.
-          </p>
-        </div>
-      }
+      </div>
+
+      <!-- CHI TIẾT KYC PANEL -->
+      <div
+        class="lg:col-span-2 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm flex flex-col min-h-[400px]"
+      >
+        @if (selectedUser()) {
+          <div class="flex-1 flex flex-col justify-between space-y-6">
+            <div class="space-y-6">
+              <!-- HEADER USER INFO -->
+              <div
+                class="flex justify-between items-start gap-4 pb-4 border-b border-slate-100 dark:border-slate-900/60"
+              >
+                <div class="space-y-1">
+                  <span class="text-xs font-black text-primary uppercase tracking-widest"
+                    >Hồ sơ KYC #{{ selectedUser().id }}</span
+                  >
+                  <h2 class="text-base font-extrabold text-slate-800 dark:text-white">
+                    {{ selectedUser().name || 'Chưa cập nhật tên' }}
+                  </h2>
+                  <p class="text-sm font-mono text-slate-400 break-all">
+                    {{ selectedUser().wallet_address }}
+                  </p>
+                </div>
+                <span
+                  class="px-2.5 py-1 rounded-full text-xs font-black uppercase"
+                  [class.bg-yellow-100]="selectedUser().kyc_status === 'PENDING'"
+                  [class.text-yellow-600]="selectedUser().kyc_status === 'PENDING'"
+                  [class.bg-emerald-100]="selectedUser().kyc_status === 'APPROVED'"
+                  [class.text-emerald-600]="selectedUser().kyc_status === 'APPROVED'"
+                  [class.bg-red-100]="selectedUser().kyc_status === 'REJECTED'"
+                  [class.text-red-600]="selectedUser().kyc_status === 'REJECTED'"
+                >
+                  {{ selectedUser().kyc_status }}
+                </span>
+              </div>
+
+              <!-- KYC DETAILS -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div class="space-y-1">
+                  <span class="text-xs font-black text-slate-400 uppercase tracking-wider"
+                    >Email</span
+                  >
+                  <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    {{ selectedUser().email || '—' }}
+                  </p>
+                </div>
+                <div class="space-y-1">
+                  <span class="text-xs font-black text-slate-400 uppercase tracking-wider"
+                    >Ngày đăng ký</span
+                  >
+                  <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    {{ selectedUser().created_at | date: 'dd/MM/yyyy HH:mm' }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Ghi chú KYC -->
+              <div
+                class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-4 border border-slate-100 dark:border-slate-900/20 space-y-1"
+              >
+                <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
+                  Thông tin KYC nộp hồ sơ
+                </h4>
+                <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Nhà đầu tư kết nối ví Web3 và ký SIWE message xác thực quyền sở hữu địa chỉ ví. Đây
+                  là bước bắt buộc để địa chỉ ví được thêm vào Whitelist của EquityToken Smart
+                  Contract và có quyền tham gia giao dịch trên nền tảng.
+                </p>
+              </div>
+
+              <!-- Rejection reason -->
+              @if (selectedUser().kyc_status === 'PENDING') {
+                <div class="space-y-1">
+                  <label class="text-xs font-black text-slate-400 uppercase tracking-wider"
+                    >Lý do từ chối (nếu reject)</label
+                  >
+                  <textarea
+                    [(ngModel)]="rejectionReason"
+                    rows="2"
+                    placeholder="Nhập lý do từ chối..."
+                    class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs outline-none focus:border-primary"
+                  ></textarea>
+                </div>
+              }
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            @if (selectedUser().kyc_status === 'PENDING') {
+              <div
+                class="pt-4 border-t border-slate-100 dark:border-slate-900/60 flex justify-end gap-3"
+              >
+                <button
+                  app-button
+                  variant="cancel"
+                  (click)="handleRejectKyc(selectedUser().id)"
+                  class="h-11 px-5 rounded-xl font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-red-200 dark:border-red-950/30"
+                >
+                  TỪ CHỐI (REJECT)
+                </button>
+                <button
+                  app-button
+                  variant="primary"
+                  (click)="handleApproveKyc(selectedUser().id)"
+                  class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2"
+                >
+                  <app-icon name="shield" class="w-4 h-4" />
+                  DUYỆT KYC & WHITELIST
+                </button>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-3">
+            <app-icon name="shield" class="w-16 h-16 text-slate-200 dark:text-slate-800" />
+            <h3 class="text-sm font-extrabold text-slate-500">Chọn một hồ sơ để xem chi tiết</h3>
+            <p class="text-xs text-slate-400 max-w-xs">
+              Thông tin KYC đầy đủ và các nút hành động sẽ hiển thị tại đây.
+            </p>
+          </div>
+        }
     </div>
-  </div>
+  }
 </div>

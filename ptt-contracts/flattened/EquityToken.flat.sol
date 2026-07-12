@@ -1,3 +1,4 @@
+◇ injected env (1) from ..\.env // tip: ⌘ enable debugging { debug: true }
 // Sources flattened with hardhat v2.28.6 https://hardhat.org
 
 // SPDX-License-Identifier: MIT
@@ -915,6 +916,20 @@ contract EquityToken is ERC20, Ownable, Pausable {
     function setBlacklisted(address account, bool status) external onlyOwnerOrOperator {
         isBlacklisted[account] = status;
         emit BlacklistedUpdated(account, status);
+    }
+
+    function setWhitelistedBatch(address[] calldata accounts, bool status) external onlyOwnerOrOperator {
+        for (uint256 i = 0; i < accounts.length; i++) {
+            isWhitelisted[accounts[i]] = status;
+            emit WhitelistedUpdated(accounts[i], status);
+        }
+    }
+
+    function setBlacklistedBatch(address[] calldata accounts, bool status) external onlyOwnerOrOperator {
+        for (uint256 i = 0; i < accounts.length; i++) {
+            isBlacklisted[accounts[i]] = status;
+            emit BlacklistedUpdated(accounts[i], status);
+        }
     }
 
     function setWhitelistEnabled(bool enabled) external onlyOwner {

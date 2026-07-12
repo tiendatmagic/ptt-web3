@@ -11,7 +11,7 @@ class User
     private ?string $phone;
     private ?string $address;
     private string $kycStatus;
-    private bool $isWhitelisted;
+    private bool $isBlacklisted;
 
     public function __construct(
         ?int $id,
@@ -21,7 +21,8 @@ class User
         ?string $phone = null,
         ?string $address = null,
         string $kycStatus = 'PENDING',
-        bool $isWhitelisted = false
+        bool $isWhitelisted = false,
+        bool $isBlacklisted = false
     ) {
         $this->id = $id;
         $this->name = $name;
@@ -31,6 +32,7 @@ class User
         $this->address = $address;
         $this->kycStatus = $kycStatus;
         $this->isWhitelisted = $isWhitelisted;
+        $this->isBlacklisted = $isBlacklisted;
     }
 
     public function getId(): ?int
@@ -73,6 +75,11 @@ class User
         return $this->isWhitelisted;
     }
 
+    public function isBlacklisted(): bool
+    {
+        return $this->isBlacklisted;
+    }
+
     public function updateProfile(?string $name, ?string $email, ?string $phone = null, ?string $address = null): void
     {
         $this->name = $name;
@@ -89,5 +96,10 @@ class User
     public function updateWhitelisted(bool $status): void
     {
         $this->isWhitelisted = $status;
+    }
+
+    public function updateBlacklisted(bool $status): void
+    {
+        $this->isBlacklisted = $status;
     }
 }
