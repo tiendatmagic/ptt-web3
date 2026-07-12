@@ -335,6 +335,24 @@
               <p class="text-center text-sm text-slate-400 py-4">Chưa có owner nào.</p>
             }
           </div>
+
+          <!-- Threshold Selection -->
+          @if (!isAllContractsLinked()) {
+            <div class="form-field pt-3 space-y-1.5 border-t border-slate-100 dark:border-slate-800/60">
+              <label class="text-xs font-bold text-slate-500 dark:text-slate-400 block">Số chữ ký tối thiểu phê duyệt (Threshold)</label>
+              <app-custom-select
+                [options]="thresholdOptions()"
+                valueKey="value"
+                labelKey="label"
+                [value]="minSignatures()"
+                (valueChange)="minSignatures.set($event)"
+                class="w-full"
+              />
+              <p class="text-[10px] text-slate-400">
+                Số lượng chữ ký tối thiểu cần thiết từ HĐQT để các đề xuất (Proposal) được phê duyệt và thực thi.
+              </p>
+            </div>
+          }
         </div>
       </div>
 

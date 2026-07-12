@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, effect } from '@angular/core';
+import { Component, OnInit, inject, signal, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -10,11 +10,12 @@ import { ModalService } from '@core/services/modal.service';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { CONTRACTS_DATA } from '../../core/constants/contracts-data';
 import { IconComponent } from '@shared/components/icon/icon.component';
+import { CustomSelectComponent } from '@shared/components/custom-select/custom-select.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, IconComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, IconComponent, CustomSelectComponent],
   templateUrl: './settings.component.html'
 })
 export class SettingsComponent implements OnInit {
@@ -43,6 +44,20 @@ export class SettingsComponent implements OnInit {
   public companyValuation = signal<number>(0);
   public companyLogo = signal<string>('');
   public saveInfoLoading = signal<boolean>(false);
+
+  // --- Threshold state ---
+  public minSignatures = signal<number>(1);
+  public thresholdOptions = computed(() => {
+    const ownersCount = this.contractOwners().length;
+    const options = [];
+    for (let i = 1; i <= ownersCount; i++) {
+      options.push({
+        value: i,
+        label: `${i} chữ ký / ${ownersCount} Owners`
+      });
+    }
+    return options;
+  });
 
   // --- Loading states ---
   public saveContractsLoading = signal(false);
@@ -77,6 +92,7 @@ export class SettingsComponent implements OnInit {
         
         if (comp.wallet_address) {
           this.contractOwners.set([comp.wallet_address]);
+          this.minSignatures.set(1);
         }
 
         // Check if deletable: all contract addresses must be null or empty
@@ -151,8 +167,8 @@ export class SettingsComponent implements OnInit {
         CONTRACTS_DATA['BoardGovernance'].bytecode,
         signer
       );
-      // threshold ban đầu mặc định là 1 để dễ thao tác ban đầu
-      const govContract = await govFactory.deploy(owners, 1);
+      // threshold lấy từ lựa chọn của người dùng
+      const govContract = await govFactory.deploy(owners, this.minSignatures());
       await govContract.waitForDeployment();
       const govAddr = await govContract.getAddress();
       this.editingContracts['governance_address'] = govAddr;
@@ -235,7 +251,13 @@ export class SettingsComponent implements OnInit {
   }
 
   public removeOwner(addr: string) {
-    this.contractOwners.update(list => list.filter(a => a !== addr));
+    this.contractOwners.update(list => {
+      const newList = list.filter(a => a !== addr);
+      if (this.minSignatures() > newList.length) {
+        this.minSignatures.set(Math.max(1, newList.length));
+      }
+      return newList;
+    });
   }
 
   // --- Save contracts ---

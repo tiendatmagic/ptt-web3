@@ -77,7 +77,14 @@ export class CustomSelectComponent implements ControlValueAccessor, AfterViewChe
   @Input() value: any = null;
   @Output() valueChange = new EventEmitter<any>();
 
-  @Input() options: any[] = [];
+  private readonly _options = signal<any[]>([]);
+  @Input() set options(val: any[]) {
+    this._options.set(val || []);
+  }
+  get options(): any[] {
+    return this._options();
+  }
+
   @Input() valueKey: string = '';
   @Input() labelKey: string = '';
   @Input() placeholder: string = 'Chọn...';
@@ -191,7 +198,7 @@ export class CustomSelectComponent implements ControlValueAccessor, AfterViewChe
   }
 
   public get selectedLabel(): string {
-    const selected = this.options.find((opt) => {
+    const selected = this._options().find((opt) => {
       const optVal = this.getOptionValue(opt);
       return String(optVal) === String(this.value);
     });
@@ -219,7 +226,7 @@ export class CustomSelectComponent implements ControlValueAccessor, AfterViewChe
   }
 
   public readonly filteredOptions = computed(() => {
-    const opts = this.options || [];
+    const opts = this._options();
     const query = this.searchQuery().trim().toLowerCase();
     if (!query) return opts;
     return opts.filter((opt) => {
