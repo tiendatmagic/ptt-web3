@@ -3,17 +3,17 @@
   <!-- ====================================================
        WELCOME BANNER
   ===================================================== -->
-  <div class="relative overflow-hidden rounded-[15px] bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white px-6 py-4 shadow-md flex items-center justify-between gap-4">
+  <div class="relative overflow-hidden rounded-[15px] bg-gradient-to-r from-[var(--color-primary)] via-purple-650 to-[var(--color-secondary)] text-white px-6 py-4 shadow-md flex items-center justify-between gap-4">
     <div class="min-w-0">
       <h1 class="text-lg font-black">Sàn Đầu tư Cổ phần</h1>
-      <p class="text-sm text-emerald-100 mt-0.5 hidden sm:block">
+      <p class="text-sm text-purple-100 mt-0.5 hidden sm:block">
         Mua cổ phần · Giao dịch P2P · Nhận cổ tức · Không cần đăng nhập
       </p>
     </div>
     <div class="shrink-0 flex items-center gap-3">
       @if (!isConnected()) {
         <button (click)="stateService.connectWallet()"
-          class="bg-white text-emerald-700 hover:bg-emerald-50 font-black text-xs h-9 px-4 rounded-xl flex items-center gap-2 shadow transition-all">
+          class="bg-white text-[var(--color-primary)] hover:bg-purple-50 font-black text-xs h-9 px-4 rounded-xl flex items-center gap-2 shadow transition-all">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
               d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
@@ -22,7 +22,7 @@
         </button>
       } @else {
         <div class="flex items-center gap-2 bg-white/15 px-3 py-1.5 rounded-xl border border-white/20">
-          <span class="w-2 h-2 bg-emerald-300 rounded-full animate-pulse"></span>
+          <span class="w-2 h-2 bg-purple-300 rounded-full animate-pulse"></span>
           <span class="text-xs font-bold font-mono">{{ walletAddress()?.slice(0,6) }}...{{ walletAddress()?.slice(-4) }}</span>
         </div>
       }
@@ -35,29 +35,49 @@
   ===================================================== -->
   <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
     <!-- Company Selector -->
-    <div class="lg:col-span-1 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-4 shadow-sm space-y-3">
+    <div class="lg:col-span-1 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-4 shadow-sm space-y-3 flex flex-col min-h-[300px]">
       <h3 class="text-sm font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider">Chọn công ty</h3>
-      @for (co of companiesList(); track co.id) {
-        <button (click)="selectCompany(co)"
-          class="w-full text-left px-3.5 py-3 rounded-xl border transition-all flex items-center gap-3"
-          [class]="selectedCompany()?.id === co.id
-            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20'
-            : 'border-slate-200 dark:border-slate-800 bg-transparent'">
-          <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center shrink-0">
-            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
+      
+      <!-- Ô TÌM KIẾM -->
+      <div class="relative shrink-0 select-none">
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          placeholder="Tìm tên hoặc mã..."
+          class="w-full h-10 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-semibold outline-none focus:border-[var(--color-primary)] transition-all text-slate-800 dark:text-slate-100"
+        />
+        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+
+      <!-- DANH SÁCH CÔNG TY CUỘN TRÒN -->
+      <div class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[350px] min-h-[150px]">
+        @for (co of filteredCompanies(); track co.id) {
+          <button (click)="selectCompany(co)"
+            class="w-full text-left px-3.5 py-3 rounded-xl border transition-all flex items-center gap-3"
+            [class]="selectedCompany()?.id === co.id
+              ? 'border-[var(--color-primary)] bg-purple-50 dark:bg-purple-950/20'
+              : 'border-slate-200 dark:border-slate-800 bg-transparent'">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+              [class]="selectedCompany()?.id === co.id ? 'bg-[var(--color-primary)]/20 text-[var(--color-primary)]' : 'bg-slate-100 dark:bg-slate-900 text-slate-400'">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-extrabold truncate"
+                 [class]="selectedCompany()?.id === co.id ? 'text-[var(--color-primary)] dark:text-purple-300' : 'text-slate-800 dark:text-white'">{{ co.name }}</p>
+              <p class="text-xs font-bold uppercase" [class]="selectedCompany()?.id === co.id ? 'text-[var(--color-primary)]' : 'text-slate-400'">{{ co.code }}</p>
+            </div>
+          </button>
+        }
+        @empty {
+          <div class="text-center py-8 text-slate-400">
+            <p class="text-xs">Không tìm thấy công ty phù hợp.</p>
           </div>
-          <div class="min-w-0">
-            <p class="text-sm font-extrabold truncate"
-               [class]="selectedCompany()?.id === co.id ? 'text-emerald-900 dark:text-emerald-200' : 'text-slate-800 dark:text-white'">{{ co.name }}</p>
-            <p class="text-xs font-bold text-emerald-500 uppercase">{{ co.code }}</p>
-          </div>
-        </button>
-      }
-      @empty {
-        <p class="text-sm text-slate-400 text-center py-4">Đang tải...</p>
-      }
+        }
+      </div>
     </div>
 
     <!-- Portfolio Stats (3 cột phải) -->
@@ -88,7 +108,7 @@
         </div>
         <p class="text-2xl font-black text-amber-600 dark:text-amber-400">{{ formatNumber(claimableDiv()) }} <span class="text-sm font-bold text-slate-400">BNB</span></p>
         @if (+claimableDiv() > 0) {
-          <button app-button variant="success" size="sm" class="w-full"
+          <button app-button variant="primary" size="sm" class="w-full"
             (click)="handleClaimDividend()" [disabled]="!isConnected()" [loading]="dividendLoading()">
             Nhận cổ tức
           </button>
@@ -100,8 +120,8 @@
       <!-- Định giá công ty -->
       <div class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-5 shadow-sm space-y-3">
         <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center shrink-0">
-            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-950/40 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-[var(--color-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
           </div>
@@ -110,7 +130,7 @@
         <p class="text-2xl font-black text-slate-800 dark:text-white">
           ${{ selectedCompany()?.valuation ? (selectedCompany().valuation | number:'1.0-0') : '—' }}
         </p>
-        <p class="text-xs text-emerald-500 font-bold">{{ selectedCompany()?.code || '—' }} · {{ selectedCompany()?.status || '—' }}</p>
+        <p class="text-xs text-[var(--color-primary)] font-bold">{{ selectedCompany()?.code || '—' }} · {{ selectedCompany()?.status || '—' }}</p>
       </div>
     </div>
   </div>
@@ -143,7 +163,7 @@
                   </div>
                   <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3.5 space-y-1">
                     <span class="text-xs font-black text-slate-400 uppercase block">Trạng thái</span>
-                    <span class="text-sm font-extrabold" [class.text-emerald-500]="round.isActive" [class.text-red-400]="!round.isActive">
+                    <span class="text-sm font-extrabold" [class.text-[var(--color-primary)]]="round.isActive" [class.text-red-400]="!round.isActive">
                       {{ round.isActive ? '● Đang mở' : '○ Đã đóng' }}
                     </span>
                   </div>
@@ -156,10 +176,10 @@
                     <span>Chào bán tối đa: {{ formatNumber(round.maxSupply) }} Share</span>
                   </div>
                   <div class="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
+                    <div class="h-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] rounded-full transition-all duration-500"
                       [style.width]="fundingProgress() + '%'"></div>
                   </div>
-                  <p class="text-xs text-emerald-600 font-bold text-right">{{ fundingProgress().toFixed(1) }}% hoàn thành</p>
+                  <p class="text-xs text-[var(--color-primary)] font-bold text-right">{{ fundingProgress().toFixed(1) }}% hoàn thành</p>
                 </div>
 
                 @if (round.isWhitelistOnly) {
@@ -189,19 +209,19 @@
                 <div class="space-y-1.5">
                   <label class="text-xs font-black text-slate-400 uppercase tracking-wider block">Số lượng cổ phần</label>
                   <input type="number" min="1" [(ngModel)]="buyAmount"
-                    class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all" />
+                    class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-purple-500/10 transition-all" />
                 </div>
 
-                <div class="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/30 rounded-xl p-4">
+                <div class="bg-purple-50 dark:bg-purple-950/20 border border-[var(--color-primary)]/20 rounded-xl p-4">
                   <div class="flex justify-between text-sm">
                     <span class="text-slate-600 dark:text-slate-400">Tổng thanh toán:</span>
-                    <span class="font-extrabold text-emerald-700 dark:text-emerald-400">
-                      {{ formatNumber(+activeFundingRound()!.pricePerShare * buyAmount()) }} BNB
+                    <span class="font-extrabold text-[var(--color-primary)]">
+                      {{ formatNumber(+activeFundingRound()!.pricePerShare * buyAmount()) }} {{ activeFundingRound()?.paymentTokenSymbol }}
                     </span>
                   </div>
                 </div>
 
-                <button app-button variant="success" size="lg" class="w-full"
+                <button app-button variant="primary" size="lg" class="w-full"
                   (click)="handleBuyShares()" [disabled]="!isConnected()" [loading]="buyLoading()">
                   @if (!isConnected()) {
                     Kết nối ví để mua
@@ -228,9 +248,9 @@
               @for (side of ['BUY','SELL']; track side) {
                 <button (click)="setOrderSide(side)"
                   class="flex-1 h-10 text-sm font-extrabold rounded-xl border-2 transition-all"
-                  [class.bg-emerald-600]="orderSide() === side && side === 'BUY'"
+                  [class.bg-[var(--color-primary)]]="orderSide() === side && side === 'BUY'"
                   [class.text-white]="orderSide() === side"
-                  [class.border-emerald-500]="orderSide() === side && side === 'BUY'"
+                  [class.border-[var(--color-primary)]]="orderSide() === side && side === 'BUY'"
                   [class.bg-red-600]="orderSide() === side && side === 'SELL'"
                   [class.border-red-500]="orderSide() === side && side === 'SELL'"
                   [class.border-slate-200]="orderSide() !== side"
@@ -246,17 +266,17 @@
                 <label class="text-xs font-black text-slate-400 uppercase tracking-wider block">Giá (BNB)</label>
                 <input type="text" [(ngModel)]="orderPrice"
                   placeholder="0.001"
-                  class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all" />
+                  class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-purple-500/10 transition-all" />
               </div>
               <div class="space-y-1.5">
                 <label class="text-xs font-black text-slate-400 uppercase tracking-wider block">Số lượng</label>
                 <input type="number" min="1" [(ngModel)]="orderAmount"
-                  class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all" />
+                  class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-purple-500/10 transition-all" />
               </div>
             </div>
 
             <button app-button
-              [variant]="orderSide() === 'BUY' ? 'success' : 'danger'"
+              [variant]="orderSide() === 'BUY' ? 'primary' : 'danger'"
               size="lg"
               class="w-full"
               (click)="handlePlaceOrder()"
@@ -271,10 +291,10 @@
             <h3 class="text-base font-black text-slate-700 dark:text-slate-200">Sổ lệnh</h3>
             <div class="grid grid-cols-2 gap-2">
               <div class="space-y-1.5">
-                <p class="text-xs font-black text-emerald-600 uppercase tracking-wider">Lệnh MUA</p>
+                <p class="text-xs font-black text-[var(--color-primary)] uppercase tracking-wider">Lệnh MUA</p>
                 @for (bid of orderBook().bids; track bid.id) {
-                  <div class="flex justify-between px-3 py-2 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl text-xs">
-                    <span class="font-bold text-emerald-700 dark:text-emerald-400">{{ formatNumber(bid.price) }}</span>
+                  <div class="flex justify-between px-3 py-2 bg-purple-50 dark:bg-purple-950/20 rounded-xl text-xs">
+                    <span class="font-bold text-[var(--color-primary)] dark:text-purple-400">{{ formatNumber(bid.price) }}</span>
                     <span class="text-slate-500">{{ bid.amount }}</span>
                   </div>
                 }
@@ -310,7 +330,7 @@
               <p class="text-4xl font-black text-amber-700 dark:text-amber-400">{{ formatNumber(claimableDiv()) }}</p>
               <p class="text-sm text-amber-600 font-bold mt-1">BNB</p>
             </div>
-            <button app-button variant="success" size="lg" class="w-full"
+            <button app-button variant="primary" size="lg" class="w-full"
               (click)="handleClaimDividend()"
               [disabled]="!isConnected() || +claimableDiv() === 0"
               [loading]="dividendLoading()">
@@ -349,9 +369,9 @@
                 <p class="text-xs text-slate-400">{{ selectedCompany()?.code }} Token</p>
               </div>
 
-              <div class="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/30 rounded-[15px] p-5 space-y-2">
-                <p class="text-xs font-black text-emerald-600 uppercase tracking-wider">Tỷ lệ sở hữu</p>
-                <p class="text-3xl font-black text-emerald-700 dark:text-emerald-400">
+              <div class="bg-purple-50 dark:bg-purple-950/20 border border-[var(--color-primary)]/20 rounded-[15px] p-5 space-y-2">
+                <p class="text-xs font-black text-[var(--color-primary)] uppercase tracking-wider">Tỷ lệ sở hữu</p>
+                <p class="text-3xl font-black text-[var(--color-primary)] dark:text-purple-350">
                   {{ +totalSupply() > 0 ? ((+myBalance() / +totalSupply()) * 100).toFixed(4) : '0' }}%
                 </p>
                 <p class="text-xs text-slate-400">trên tổng {{ formatNumber(totalSupply()) }} cổ phần</p>

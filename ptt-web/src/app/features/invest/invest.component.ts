@@ -1,3 +1,4 @@
+import { ActivatedRoute, Router } from '@angular/router';
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,14 +16,21 @@ const EQUITY_TOKEN_ABI = [
   'function balanceOf(address) view returns (uint256)',
   'function totalSupply() view returns (uint256)',
   'function symbol() view returns (string)',
-  'function decimals() view returns (uint8)'
+  'function decimals() view returns (uint8)',
+  'function getPastBalanceOf(address account, uint256 blockNumber) view returns (uint256)',
+  'function getPastTotalSupply(uint256 blockNumber) view returns (uint256)'
 ];
 
 // ABI khớp chính xác với FinanceManager contract
 const FUNDING_MANAGER_ABI = [
   'function roundCount() view returns (uint256)',
   'function rounds(uint256 roundId) view returns (tuple(uint256 id, string name, address shareToken, address paymentToken, address treasury, uint256 price, uint256 maxSupply, uint256 soldAmount, uint256 startTime, uint256 endTime, uint256 minPurchase, uint256 maxPurchase, bool isWhitelistOnly, bool active))',
-  'function buyShares(uint256 roundId, uint256 tokenAmount) external payable'
+  'function buyShares(uint256 roundId, uint256 tokenAmount) external payable',
+  
+  // Hàm cổ tức bổ sung
+  'function dividendCount() view returns (uint256)',
+  'function dividends(uint256 dividendId) view returns (tuple(uint256 id, string name, address shareToken, address dividendToken, uint256 totalAmount, uint256 claimedAmount, uint256 checkpointBlock, uint256 startTime, uint256 endTime, bool active))',
+  'function hasClaimed(uint256 dividendId, address account) view returns (bool)'
 ];
 
 // ABI rút gọn của ERC20 để xử lý phê duyệt (approve)
@@ -31,11 +39,6 @@ const ERC20_ABI = [
   "function decimals() external view returns (uint8)",
   "function approve(address spender, uint256 amount) external returns (bool)",
   "function allowance(address owner, address spender) external view returns (uint256)"
-];
-
-const DISTRIBUTION_MANAGER_ABI = [
-  'function claimableDividend(address investor) view returns (uint256)',
-  'function claimDividend()'
 ];
 
 const MARKETPLACE_ABI = [
@@ -91,6 +94,16 @@ export class InvestComponent implements OnInit {
   public isConnected = computed(() => this.stateService.isConnected());
   public walletAddress = computed(() => this.stateService.address());
 
+  // Tìm kiếm công ty
+  public searchTerm = signal<string>('');
+  public filteredCompanies = computed(() => {
+    const term = this.searchTerm().toLowerCase().trim();
+    if (!term) return this.companiesList();
+    return this.companiesList().filter(
+      co => co.name?.toLowerCase().includes(term) || co.code?.toLowerCase().includes(term)
+    );
+  });
+
   public setActiveTab(tab: string) {
     this.activeTab.set(tab as 'funding' | 'trade' | 'dividends' | 'portfolio');
   }
@@ -145,15 +158,43 @@ export class InvestComponent implements OnInit {
         }
       }
 
-      // Claimable dividend
-      if (company.funding_address && this.walletAddress()) {
+      // Claimable dividend - tính toán động on-chain chính xác dựa trên snapshot checkpoints
+      if (company.funding_address && this.walletAddress() && company.token_address) {
         try {
-          const dist = new ethers.Contract(company.funding_address, DISTRIBUTION_MANAGER_ABI, provider);
-          const claimable = await dist['claimableDividend'](this.walletAddress());
-          this.claimableDiv.set(ethers.formatEther(claimable));
+          const funding = new ethers.Contract(company.funding_address, FUNDING_MANAGER_ABI, provider);
+          const shareToken = new ethers.Contract(company.token_address, EQUITY_TOKEN_ABI, provider);
+          
+          const divCount = Number(await funding['dividendCount']());
+          let totalClaimable = 0n;
+
+          for (let i = 1; i <= divCount; i++) {
+            const hasClaimed = await funding['hasClaimed'](i, this.walletAddress());
+            if (!hasClaimed) {
+              const divRound = await funding['dividends'](i);
+              if (divRound.active) {
+                const nowSec = Math.floor(Date.now() / 1000);
+                if (nowSec >= Number(divRound.startTime) && nowSec <= Number(divRound.endTime)) {
+                  try {
+                    const blockNumber = Number(divRound.checkpointBlock);
+                    const userBalance = await shareToken['getPastBalanceOf'](this.walletAddress(), blockNumber);
+                    if (userBalance > 0n) {
+                      const totalShares = await shareToken['getPastTotalSupply'](blockNumber);
+                      if (totalShares > 0n) {
+                        const claimAmt = (userBalance * BigInt(divRound.totalAmount)) / totalShares;
+                        totalClaimable += claimAmt;
+                      }
+                    }
+                  } catch (blockErr) {
+                    console.warn(`Lỗi tính toán cho đợt cổ tức #${i}:`, blockErr);
+                  }
+                }
+              }
+            }
+          }
+          this.claimableDiv.set(ethers.formatEther(totalClaimable));
         } catch (divErr) {
-          console.warn('Lỗi đọc claimable dividend từ contract:', divErr);
-          this.claimableDiv.set('0');
+          console.warn('Lỗi khi tính toán tổng cổ tức claimable:', divErr);
+          this.claimableDiv.set('0.0000');
         }
       }
 
@@ -308,7 +349,7 @@ export class InvestComponent implements OnInit {
     }
   }
 
-  // Nhận cổ tức
+  // Nhận cổ tức (tự động nhận toàn bộ các đợt cổ tức chưa nhận)
   async handleClaimDividend() {
     const company = this.selectedCompany();
     if (!company || !this.isConnected()) return;
@@ -316,15 +357,34 @@ export class InvestComponent implements OnInit {
     this.dividendLoading.set(true);
     try {
       const signer = await this.stateService.web3Service.getSigner();
-      const dist = new ethers.Contract(company.funding_address, DISTRIBUTION_MANAGER_ABI, signer);
+      const funding = new ethers.Contract(company.funding_address, FUNDING_MANAGER_ABI, signer);
       const gasOverrides = await this.stateService.web3Service.getGasOverrides();
+      
+      const divCount = Number(await funding['dividendCount']());
+      let claimCount = 0;
 
-      const tx = await dist['claimDividend'](gasOverrides);
-      await tx.wait();
-      this.stateService.showToast('Đã nhận cổ tức thành công!', 'success');
-      this.claimableDiv.set('0');
+      for (let i = 1; i <= divCount; i++) {
+        const claimed = await funding['hasClaimed'](i, this.walletAddress());
+        if (!claimed) {
+          const divRound = await funding['dividends'](i);
+          if (divRound.active) {
+            this.stateService.showToast(`Đang rút cổ tức đợt #${i} (${divRound.name})...`, 'warning');
+            const tx = await funding['claimDividend'](i, gasOverrides);
+            await tx.wait();
+            claimCount++;
+          }
+        }
+      }
+
+      if (claimCount > 0) {
+        this.stateService.showToast(`Đã nhận thành công cổ tức từ ${claimCount} đợt!`, 'success');
+      } else {
+        this.stateService.showToast('Không có cổ tức khả dụng để nhận hoặc đã nhận hết!', 'warning');
+      }
+      this.claimableDiv.set('0.0000');
+      await this.loadOnChainData(company);
     } catch (e: any) {
-      this.stateService.showToast(e.reason || 'Nhận cổ tức thất bại!', 'error');
+      this.stateService.showToast(e.reason || e.message || 'Nhận cổ tức thất bại!', 'error');
     } finally {
       this.dividendLoading.set(false);
     }
