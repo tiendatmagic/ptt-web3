@@ -259,4 +259,41 @@ describe("PTT Dapp Suite", function () {
     const expectedClaim = (totalDividendAmount * 100n) / 500n; // 20% of 2 BNB = 0.4 BNB
     expect(afterBalance + gasPaid - beforeBalance).to.equal(expectedClaim);
   });
+
+  it("Should allow HĐQT to assign an Operator who can whitelist/blacklist directly without multisig", async function () {
+    const govAddress = await governance.getAddress();
+    const tokenAddress = await token.getAddress();
+
+    // 1. Assign memberA as an Operator via Board Governance (requires proposal since Board is Owner)
+    const setOperatorData = token.interface.encodeFunctionData("setOperator", [memberA.address, true]);
+    let propTx = await governance.connect(memberA).createProposal(
+      tokenAddress,
+      0,
+      setOperatorData,
+      "Set memberA as Operator",
+      0,
+      3600
+    );
+    await propTx.wait();
+    let propId = await governance.proposalCount();
+    await governance.connect(memberB).signProposal(propId);
+    await governance.executeProposal(propId);
+
+    // Verify memberA is now an operator
+    expect(await token.isOperator(memberA.address)).to.equal(true);
+
+    // 2. memberA (Operator) whitelists investorB directly (without proposal/multisig)
+    // Let's set to false first using memberA
+    await token.connect(memberA).setWhitelisted(investorB.address, false);
+    expect(await token.isWhitelisted(investorB.address)).to.equal(false);
+
+    // Now whitelist again
+    await token.connect(memberA).setWhitelisted(investorB.address, true);
+    expect(await token.isWhitelisted(investorB.address)).to.equal(true);
+
+    // 3. A non-operator, non-owner wallet (like investorA) trying to setWhitelisted should fail
+    await expect(
+      token.connect(investorA).setWhitelisted(investorB.address, false)
+    ).to.be.revertedWith("Not authorized: must be owner or operator");
+  });
 });

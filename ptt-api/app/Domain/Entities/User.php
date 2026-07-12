@@ -8,6 +8,8 @@ class User
     private ?string $name;
     private string $walletAddress;
     private ?string $email;
+    private ?string $phone;
+    private ?string $address;
     private string $kycStatus;
     private bool $isWhitelisted;
 
@@ -16,6 +18,8 @@ class User
         ?string $name,
         string $walletAddress,
         ?string $email,
+        ?string $phone = null,
+        ?string $address = null,
         string $kycStatus = 'PENDING',
         bool $isWhitelisted = false
     ) {
@@ -23,6 +27,8 @@ class User
         $this->name = $name;
         $this->walletAddress = strtolower($walletAddress);
         $this->email = $email;
+        $this->phone = $phone;
+        $this->address = $address;
         $this->kycStatus = $kycStatus;
         $this->isWhitelisted = $isWhitelisted;
     }
@@ -47,6 +53,16 @@ class User
         return $this->email;
     }
 
+    public function getPhone(): ?string
+    {
+        return $this->phone;
+    }
+
+    public function getAddress(): ?string
+    {
+        return $this->address;
+    }
+
     public function getKycStatus(): string
     {
         return $this->kycStatus;
@@ -57,10 +73,12 @@ class User
         return $this->isWhitelisted;
     }
 
-    public function updateProfile(?string $name, ?string $email): void
+    public function updateProfile(?string $name, ?string $email, ?string $phone = null, ?string $address = null): void
     {
         $this->name = $name;
         $this->email = $email;
+        $this->phone = $phone;
+        $this->address = $address;
     }
 
     public function updateKycStatus(string $status): void

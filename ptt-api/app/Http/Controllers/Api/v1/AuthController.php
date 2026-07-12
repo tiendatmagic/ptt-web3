@@ -83,11 +83,13 @@ class AuthController extends Controller
         // Tìm hoặc tạo User mới
         $user = $this->userRepository->findByWalletAddress($address);
         if (!$user) {
-            // Tự động đăng ký
+            // Tự động đăng ký với name là null (người dùng sẽ tự đặt lại họ tên sau)
             $user = new User(
                 null,
-                'User_' . substr($address, 2, 6),
+                null,
                 $address,
+                null,
+                null,
                 null
             );
             $user = $this->userRepository->save($user);
@@ -133,6 +135,8 @@ class AuthController extends Controller
                 'name' => $user->getName(),
                 'wallet_address' => $user->getWalletAddress(),
                 'email' => $user->getEmail(),
+                'phone' => $user->getPhone(),
+                'address' => $user->getAddress(),
                 'kyc_status' => $user->getKycStatus(),
                 'is_whitelisted' => $user->isWhitelisted(),
             ],
@@ -171,6 +175,8 @@ class AuthController extends Controller
                 'name' => $userModel->name,
                 'wallet_address' => $userModel->wallet_address,
                 'email' => $userModel->email,
+                'phone' => $userModel->phone,
+                'address' => $userModel->address,
                 'kyc_status' => $userModel->kyc_status,
                 'is_whitelisted' => $userModel->is_whitelisted,
             ]

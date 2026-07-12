@@ -74,17 +74,17 @@ class UserController extends Controller
     public function updateProfile(Request $request)
     {
         $request->validate([
-            'name' => 'nullable|string|max:255',
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
             'email' => 'nullable|email|max:255',
+            'address' => 'nullable|string|max:500',
         ]);
 
         $userModel = $request->user();
-        if ($request->has('name')) {
-            $userModel->name = $request->input('name');
-        }
-        if ($request->has('email')) {
-            $userModel->email = $request->input('email');
-        }
+        $userModel->name = $request->input('name');
+        $userModel->phone = $request->input('phone');
+        $userModel->email = $request->input('email');
+        $userModel->address = $request->input('address');
         $userModel->save();
 
         return response()->json([
@@ -94,6 +94,8 @@ class UserController extends Controller
                 'name' => $userModel->name,
                 'wallet_address' => $userModel->wallet_address,
                 'email' => $userModel->email,
+                'phone' => $userModel->phone,
+                'address' => $userModel->address,
                 'kyc_status' => $userModel->kyc_status,
                 'is_whitelisted' => $userModel->is_whitelisted,
             ]

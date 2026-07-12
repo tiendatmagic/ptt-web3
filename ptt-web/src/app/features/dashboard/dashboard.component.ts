@@ -13,11 +13,12 @@ import { RegisterCompanyModalComponent } from './modals/register-company-modal.c
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { TabGroupComponent } from '@shared/components/tab-group/tab-group.component';
 import { IconComponent } from '@shared/components/icon/icon.component';
+import { ShortAddressPipe } from '@shared/pipes/short-address.pipe';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, TabGroupComponent, IconComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, TabGroupComponent, IconComponent, ShortAddressPipe],
   templateUrl: './dashboard.component.html'
 })
 export class DashboardComponent implements OnInit {
@@ -54,6 +55,21 @@ export class DashboardComponent implements OnInit {
     marketplace_address: '',
     oracle_address: ''
   };
+
+  public get greetingName(): string {
+    const user = this.stateService.currentUser();
+    if (!user) return 'Nhà đầu tư Web3';
+    if (user.name && !user.name.startsWith('User_') && user.name.trim() !== '') {
+      return user.name;
+    }
+    return user.wallet_address || this.stateService.address() || 'Nhà đầu tư Web3';
+  }
+
+  public hasRealName(): boolean {
+    const user = this.stateService.currentUser();
+    if (!user || !user.name) return false;
+    return !user.name.startsWith('User_') && user.name.trim() !== '';
+  }
 
   constructor() {}
 

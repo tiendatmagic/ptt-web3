@@ -6,10 +6,16 @@
     class="relative overflow-hidden rounded-[15px] bg-gradient-to-r from-violet-600 via-violet-700 to-indigo-700 text-white px-6 py-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4"
   >
     <!-- Text -->
-    <div class="min-w-0 w-full sm:w-auto">
+    <div class="min-w-0 flex-1">
       @if (stateService.currentUser()) {
-        <h1 class="text-base sm:text-lg font-black break-words">
-          Xin chào, {{ stateService.currentUser().name || 'Nhà đầu tư Web3' }}! <app-icon name="sparkles" class="w-5 h-5 text-yellow-400 ml-1 inline-flex align-middle" />
+        <h1 class="text-base sm:text-lg font-black leading-tight flex flex-wrap items-center gap-2">
+          <span>Xin chào,</span>
+          @if (hasRealName()) {
+            <span class="text-white">{{ stateService.currentUser().name }}</span>
+          } @else {
+            <span class="font-mono text-xs sm:text-sm bg-white/15 px-2.5 py-1 rounded-lg border border-white/10 select-all tracking-tight select-text">{{ stateService.address() | appShortAddress }}</span>
+          }
+          <app-icon name="sparkles" class="w-5 h-5 text-yellow-400 shrink-0 inline-block align-middle" />
         </h1>
         <p class="text-xs sm:text-sm text-violet-200 mt-1">
           PTT Dapp · Token hóa cổ phần doanh nghiệp · Quản trị on-chain phi tập trung
@@ -454,7 +460,7 @@
               <span class="text-sm text-slate-400"
                 >Ví kết nối:
                 <span class="font-mono text-slate-500 dark:text-slate-300">{{
-                  stateService.currentUser().wallet_address
+                  stateService.currentUser().wallet_address | appShortAddress
                 }}</span></span
               >
             </div>

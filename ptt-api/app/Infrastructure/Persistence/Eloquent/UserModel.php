@@ -17,6 +17,8 @@ class UserModel extends Authenticatable
         'name',
         'wallet_address',
         'email',
+        'phone',
+        'address',
         'password',
         'kyc_status',
         'is_whitelisted',

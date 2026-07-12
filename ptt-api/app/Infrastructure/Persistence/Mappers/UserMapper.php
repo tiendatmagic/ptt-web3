@@ -14,6 +14,8 @@ class UserMapper
             $model->name,
             $model->wallet_address,
             $model->email,
+            $model->phone,
+            $model->address,
             $model->kyc_status,
             $model->is_whitelisted
         );
@@ -29,6 +31,8 @@ class UserMapper
         $model->name = $entity->getName();
         $model->wallet_address = strtolower($entity->getWalletAddress());
         $model->email = $entity->getEmail();
+        $model->phone = $entity->getPhone();
+        $model->address = $entity->getAddress();
         $model->kyc_status = $entity->getKycStatus();
         $model->is_whitelisted = $entity->isWhitelisted();
         

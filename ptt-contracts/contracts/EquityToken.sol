@@ -24,6 +24,9 @@ contract EquityToken is ERC20, Ownable, Pausable {
     mapping(address => bool) public isWhitelisted;
     mapping(address => bool) public isBlacklisted;
     
+    // Operator status (wallets authorized to manage whitelist/blacklist directly)
+    mapping(address => bool) public isOperator;
+    
     // Whitelist active check (if true, only whitelisted wallets can send/receive tokens)
     bool public isWhitelistEnabled = true;
 
@@ -32,12 +35,18 @@ contract EquityToken is ERC20, Ownable, Pausable {
 
     event WhitelistedUpdated(address indexed account, bool status);
     event BlacklistedUpdated(address indexed account, bool status);
+    event OperatorStatusUpdated(address indexed operator, bool status);
     event MaxOwnershipPercentUpdated(uint256 percent);
     event WhitelistEnabledUpdated(bool status);
     event MinterStatusUpdated(address indexed minter, bool status);
 
     modifier onlyMinterOrOwner() {
         require(msg.sender == owner() || isMinter[msg.sender], "Not authorized minter or owner");
+        _;
+    }
+
+    modifier onlyOwnerOrOperator() {
+        require(msg.sender == owner() || isOperator[msg.sender], "Not authorized: must be owner or operator");
         _;
     }
 
@@ -69,12 +78,17 @@ contract EquityToken is ERC20, Ownable, Pausable {
         _unpause();
     }
 
-    function setWhitelisted(address account, bool status) external onlyOwner {
+    function setOperator(address operator, bool status) external onlyOwner {
+        isOperator[operator] = status;
+        emit OperatorStatusUpdated(operator, status);
+    }
+
+    function setWhitelisted(address account, bool status) external onlyOwnerOrOperator {
         isWhitelisted[account] = status;
         emit WhitelistedUpdated(account, status);
     }
 
-    function setBlacklisted(address account, bool status) external onlyOwner {
+    function setBlacklisted(address account, bool status) external onlyOwnerOrOperator {
         isBlacklisted[account] = status;
         emit BlacklistedUpdated(account, status);
     }
