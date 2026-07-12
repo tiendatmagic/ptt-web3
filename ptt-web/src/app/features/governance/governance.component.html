@@ -34,7 +34,7 @@
       <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300">Danh sách Đề xuất</h2>
 
       <div class="flex-1 overflow-y-auto space-y-2.5 pr-1">
-        @for (proposal of proposalsList(); track proposal.id) {
+        @for (proposal of paginatedProposals(); track proposal.id) {
           <div
             (click)="selectProposal(proposal)"
             [class.border-primary]="selectedProposal()?.id === proposal.id"
@@ -75,6 +75,15 @@
           </div>
         }
       </div>
+
+      <app-pagination
+        [currentPage]="currentPage()"
+        [totalPages]="totalPages()"
+        [totalItems]="proposalsList().length"
+        [itemsPerPage]="itemsPerPage"
+        itemName="đề xuất"
+        (pageChange)="onPageChange($event)"
+      />
     </div>
 
     <!-- PANEL PHẢI: CHI TIẾT PROPOSAL SELECTED -->

@@ -216,7 +216,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (trade of tradesList(); track trade.id) {
+              @for (trade of paginatedTrades(); track trade.id) {
                 <tr
                   class="border-t border-slate-100 dark:border-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
                 >
@@ -282,6 +282,15 @@
             </tbody>
           </table>
         </div>
+
+        <app-pagination
+          [currentPage]="currentPageTrades()"
+          [totalPages]="totalPagesTrades()"
+          [totalItems]="tradesList().length"
+          [itemsPerPage]="tradesPerPage"
+          itemName="giao dịch"
+          (pageChange)="onTradesPageChange($event)"
+        />
       </div>
     </div>
   </div>

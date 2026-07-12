@@ -1,10 +1,11 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '@core/services/state.service';
 import { ApiService } from '@core/services/api.service';
 import { IconComponent } from '@shared/components/icon/icon.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
+import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 import { firstValueFrom } from 'rxjs';
 import { Contract } from 'ethers';
 
@@ -20,7 +21,7 @@ const BOARD_GOVERNANCE_ABI = [
 @Component({
   selector: 'app-governance',
   standalone: true,
-  imports: [CommonModule, FormsModule, IconComponent, ButtonComponent],
+  imports: [CommonModule, FormsModule, IconComponent, ButtonComponent, PaginationComponent],
   templateUrl: './governance.component.html'
 })
 export class GovernanceComponent implements OnInit {
@@ -31,6 +32,20 @@ export class GovernanceComponent implements OnInit {
   public proposalsList = signal<any[]>([]);
   public selectedProposal = signal<any | null>(null);
   public proposalSignatures = signal<any[]>([]);
+
+  // Phân trang Client-side cho danh sách Đề xuất
+  public currentPage = signal(1);
+  public itemsPerPage = 5; // Hiển thị 5 đề xuất mỗi trang cho gọn
+
+  public paginatedProposals = computed(() => {
+    const start = (this.currentPage() - 1) * this.itemsPerPage;
+    const end = start + this.itemsPerPage;
+    return this.proposalsList().slice(start, end);
+  });
+
+  public totalPages = computed(() => {
+    return Math.ceil(this.proposalsList().length / this.itemsPerPage) || 1;
+  });
 
   ngOnInit() {
     this.loadProposals();
@@ -43,9 +58,14 @@ export class GovernanceComponent implements OnInit {
     try {
       const list = await firstValueFrom(this.apiService.get<any[]>('proposals', comp.id));
       this.proposalsList.set(list || []);
+      this.currentPage.set(1); // Reset về trang 1
     } catch (e) {
       console.error('Lỗi khi tải danh sách đề xuất:', e);
     }
+  }
+
+  public onPageChange(page: number) {
+    this.currentPage.set(page);
   }
 
   public async selectProposal(proposal: any) {
@@ -146,31 +166,25 @@ export class GovernanceComponent implements OnInit {
       this.stateService.showToast('Đang gửi giao dịch execute on-chain...', 'warning');
 
       // 2. Gọi hàm executeProposal trên smart contract (chỉ nhận onchainId và gasOverrides)
-      const valueToSend = proposal.params?.value ? BigInt(proposal.params.value) : 0n;
       const gasOverrides = await this.stateService.getGasOverrides(signer);
+      const tx = await govContract['executeProposal'](onchainId, gasOverrides);
 
-      const tx = await govContract['executeProposal'](onchainId, {
-        value: valueToSend,
-        ...gasOverrides
-      });
+      this.stateService.showToast('Giao dịch thực thi đang chờ xác nhận...', 'warning');
+      await tx.wait();
 
-      this.stateService.showToast('Giao dịch thực thi đã gửi. Chờ xác nhận từ mạng lưới...', 'warning');
-      const receipt = await tx.wait();
-
-      // 3. Gửi transaction hash lên Backend để cập nhật trạng thái EXECUTED
+      // 3. Gửi request báo Backend cập nhật DB trạng thái proposal thành EXECUTED
       await firstValueFrom(
-        this.apiService.post<any>(`proposals/${proposal.id}/execute`, {
-          tx_hash: receipt.hash
-        }, comp.id)
+        this.apiService.post<any>(`proposals/${proposal.id}/execute`, {}, comp.id)
       );
 
-      this.stateService.showToast('Thực thi đề xuất và cập nhật trạng thái thành công!', 'success');
-      
+      this.stateService.showToast('Đề xuất đã được thực thi thành công on-chain!', 'success');
+
+      // Load lại dữ liệu
       await this.selectProposal(proposal);
       await this.loadProposals();
     } catch (e: any) {
       console.error(e);
-      this.stateService.showToast(e.message || 'Lỗi thực thi giao dịch blockchain!', 'error');
+      this.stateService.showToast(e.message || e.error?.message || 'Lỗi thực thi đề xuất!', 'error');
     } finally {
       this.stateService.isLoading.set(false);
     }

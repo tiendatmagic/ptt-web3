@@ -1,10 +1,11 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '@core/services/state.service';
 import { ApiService } from '@core/services/api.service';
 import { IconComponent } from '@shared/components/icon/icon.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
+import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 import { firstValueFrom } from 'rxjs';
 import { Contract } from 'ethers';
 import { ModalService } from '@core/services/modal.service';
@@ -18,7 +19,7 @@ const MARKETPLACE_ABI = [
 @Component({
   selector: 'app-marketplace',
   standalone: true,
-  imports: [CommonModule, FormsModule, IconComponent, ButtonComponent],
+  imports: [CommonModule, FormsModule, IconComponent, ButtonComponent, PaginationComponent],
   templateUrl: './marketplace.component.html'
 })
 export class MarketplaceComponent implements OnInit {
@@ -30,6 +31,20 @@ export class MarketplaceComponent implements OnInit {
   public buyOrders = signal<any[]>([]);
   public sellOrders = signal<any[]>([]);
   public tradesList = signal<any[]>([]);
+
+  // Phân trang Lịch sử giao dịch (Trades History)
+  public currentPageTrades = signal(1);
+  public tradesPerPage = 5; // Hiển thị 5 giao dịch mỗi trang cho gọn
+
+  public paginatedTrades = computed(() => {
+    const start = (this.currentPageTrades() - 1) * this.tradesPerPage;
+    const end = start + this.tradesPerPage;
+    return this.tradesList().slice(start, end);
+  });
+
+  public totalPagesTrades = computed(() => {
+    return Math.ceil(this.tradesList().length / this.tradesPerPage) || 1;
+  });
 
   // Form đặt lệnh
   public orderForm = {
@@ -55,9 +70,14 @@ export class MarketplaceComponent implements OnInit {
       // 2. Tải lịch sử giao dịch
       const trades = await firstValueFrom(this.apiService.get<any[]>('marketplace/trades', comp.id));
       this.tradesList.set(trades || []);
+      this.currentPageTrades.set(1); // Reset về trang 1
     } catch (e) {
       console.error('Lỗi khi tải dữ liệu thị trường:', e);
     }
+  }
+
+  public onTradesPageChange(page: number) {
+    this.currentPageTrades.set(page);
   }
 
   // Đặt lệnh giao dịch mới
@@ -153,10 +173,6 @@ export class MarketplaceComponent implements OnInit {
       // Chúng ta có thể lấy chúng từ các order tương ứng đã được lưu trữ chữ ký ở Backend!
       // Ở đây ta sẽ mock hoặc giả định chữ ký đã được Backend verify và pass vào qua api.
       // Để thực tế, ta truyền các chữ ký thật mà buyer/seller đã ký khi đặt lệnh:
-      const buyOrder = await firstValueFrom(this.apiService.get<any>(`marketplace/orders`, comp.id)); // tạm lấy danh sách hoặc lấy qua api
-      
-      // Chữ ký thật được gửi on-chain để Smart Contract verify ECDSA
-      // Để bypass test hoặc chạy thực tế, ta cần truyền đúng:
       const buyerSig = trade.buyer_signature || "0x"; 
       const sellerSig = trade.seller_signature || "0x";
 
