@@ -25,14 +25,14 @@ export class StateService {
   public companiesList = signal<any[]>([]);
   public isCompaniesLoading = signal<boolean>(false);
 
-  // Token trong memory — ApiService đọc để gửi Authorization header
+  // Token trong memory (signal) — dùng cho Bearer header
   public authToken = signal<string | null>(null);
 
   // Cờ session đã kiểm tra xong (tránh race condition với wallet reconnect)
   private isSessionRestored = signal<boolean>(false);
 
-  // Key localStorage — persist token qua cả tắt browser
-  // Token hết hạn server-side sau 8 tiếng, bị xóa khi logout
+  // Key lưu token trong localStorage — persist qua reload
+  // Token hết hạn server-side sau 7 ngày, bị xóa khi logout
   private readonly SESSION_KEY = 'ptt_auth_token';
 
   // ====================================================
@@ -71,10 +71,8 @@ export class StateService {
   });
 
   constructor() {
-    // Đăng ký tham chiếu vào ApiService để tránh circular dependency
-    // ApiService cần đọc authToken từ StateService khi gửi request
+    // Đăng ký tham chiếu để ApiService đọc authToken signal (tránh circular dependency)
     this.apiService.registerStateRef(this);
-
     this.setupAuthSync();
     this.checkExistingSession();
   }
@@ -109,27 +107,21 @@ export class StateService {
     }
 
     try {
-      // Bước 1: Đọc token từ localStorage (persist qua cả tắt browser)
-      // ApiService sẽ gửi token này trong Authorization header cho /auth/me
+      // Bước 1: Khôi phục token từ localStorage (persist qua reload)
       const savedToken = localStorage.getItem(this.SESSION_KEY);
       if (savedToken) {
-        this.authToken.set(savedToken); // Khôi phục vào memory để ApiService dùng
+        this.authToken.set(savedToken);
       }
 
       // Bước 2: Gọi /auth/me để xác thực token còn hiệu lực không
-      // ApiService sẽ dùng authToken signal để gửi Authorization header
       const response = await firstValueFrom(this.apiService.get<any>('auth/me'));
       if (response?.user) {
         this.currentUser.set(response.user);
-        if (response.token) {
-          this.authToken.set(response.token);
-          localStorage.setItem(this.SESSION_KEY, response.token);
-        }
         this.loadCompanies();
       } else {
-        // Token không hợp lệ — xóa
         localStorage.removeItem(this.SESSION_KEY);
         this.authToken.set(null);
+        this.currentUser.set(null);
       }
     } catch (e) {
       // Session hết hạn — xóa token cũ
@@ -163,11 +155,10 @@ export class StateService {
         })
       );
 
-      // 4. Lưu user + token vào memory và localStorage
+      // 4. Lưu user + token
       this.currentUser.set(response.user);
       if (response.token) {
         this.authToken.set(response.token);
-        // localStorage persist qua cả tắt browser, token hết hạn server-side sau 8 tiếng
         localStorage.setItem(this.SESSION_KEY, response.token);
       }
       this.showToast('Đăng nhập ví Web3 thành công!', 'success');
@@ -195,8 +186,8 @@ export class StateService {
     this.currentCompany.set(null);
     this.userPermissions.set([]);
     this.authToken.set(null);
-    localStorage.removeItem(this.SESSION_KEY); // Xóa token khỏi localStorage
-    localStorage.removeItem('ptt_selected_company_id'); // Xóa ID công ty đã chọn khỏi localStorage
+    localStorage.removeItem(this.SESSION_KEY);
+    localStorage.removeItem('ptt_selected_company_id');
   }
 
   // Tải danh sách các công ty doanh nghiệp

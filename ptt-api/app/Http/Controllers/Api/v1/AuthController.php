@@ -10,6 +10,7 @@ use App\Infrastructure\Persistence\Eloquent\UserModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
@@ -64,6 +65,11 @@ class AuthController extends Controller
         $cachedNonce = Cache::get($nonceKey);
 
         if (!$cachedNonce || !str_contains($message, "Nonce: {$cachedNonce}")) {
+            Log::warning('[Auth] Login failed: nonce expired or invalid', [
+                'ip'      => $request->ip(),
+                'address' => $address,
+                'reason'  => $cachedNonce ? 'nonce_mismatch' : 'nonce_expired',
+            ]);
             return response()->json([
                 'message' => 'Challenge session expired or invalid'
             ], 422);
@@ -72,6 +78,10 @@ class AuthController extends Controller
         // Xác thực chữ ký số
         $isValid = Web3SignatureVerifier::verify($address, $message, $signature);
         if (!$isValid) {
+            Log::warning('[Auth] Login failed: invalid wallet signature', [
+                'ip'      => $request->ip(),
+                'address' => $address,
+            ]);
             return response()->json([
                 'message' => 'Invalid wallet signature'
             ], 422);
@@ -131,16 +141,18 @@ class AuthController extends Controller
 
         return response()->json([
             'user' => [
-                'id' => $user->getId(),
-                'name' => $user->getName(),
+                'id'             => $user->getId(),
+                'name'           => $user->getName(),
                 'wallet_address' => $user->getWalletAddress(),
-                'email' => $user->getEmail(),
-                'phone' => $user->getPhone(),
-                'address' => $user->getAddress(),
-                'kyc_status' => $user->getKycStatus(),
+                'email'          => $user->getEmail(),
+                'phone'          => $user->getPhone(),
+                'address'        => $user->getAddress(),
+                'kyc_status'     => $user->getKycStatus(),
                 'is_whitelisted' => $user->isWhitelisted(),
             ],
-            'token' => $token
+            // Token trả về để frontend giữ trong memory (signal), không lưu localStorage
+            // HttpOnly cookie xử lý auth khi reload trang
+            'token' => $token,
         ])->withCookie($cookie)->withCookie($loggedInCookie);
     }
 

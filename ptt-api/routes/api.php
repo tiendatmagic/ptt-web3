@@ -11,11 +11,11 @@ use App\Http\Controllers\Api\v1\ProposalController;
 use App\Http\Controllers\Api\v1\MarketplaceController;
 use App\Http\Controllers\Api\v1\FundingDividendController;
 
-Route::prefix('v1')->group(function () {
-    // Authentication Routes
+Route::prefix('v1')->middleware('throttle:api')->group(function () {
+    // Authentication Routes — rate limited to prevent brute-force
     Route::prefix('auth')->group(function () {
-        Route::get('challenge', [AuthController::class, 'challenge']);
-        Route::post('login', [AuthController::class, 'login']);
+        Route::get('challenge', [AuthController::class, 'challenge'])->middleware('throttle:auth');
+        Route::post('login', [AuthController::class, 'login'])->middleware('throttle:auth');
         Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
         Route::get('me', [AuthController::class, 'me'])->middleware('auth:sanctum');
     });

@@ -11,7 +11,6 @@ export class ApiService {
   private readonly baseUrl = `${environment.apiBaseUrl}/v1`;
 
   // Lazy inject StateService thông qua getter để tránh circular dependency
-  // (StateService inject ApiService, ApiService cần StateService)
   private get stateService(): any {
     return (window as any).__pttStateService__;
   }
@@ -22,7 +21,8 @@ export class ApiService {
       'Content-Type': 'application/json',
     });
 
-    // Inject Authorization Bearer token từ StateService (in-memory token)
+    // Inject Bearer token từ memory (authToken signal)
+    // Memory-only, không có trong localStorage — an toàn khỏi XSS persistence
     const token = this.stateService?.authToken?.();
     if (token) {
       headers = headers.set('Authorization', `Bearer ${token}`);
@@ -74,10 +74,11 @@ export class ApiService {
   }
 
   /**
-   * Đăng ký StateService reference vào window để ApiService có thể đọc token
-   * mà không bị circular dependency. Gọi method này từ StateService constructor.
+   * Đăng ký StateService reference để ApiService đọc authToken signal
+   * mà không bị circular dependency.
    */
   public registerStateRef(stateService: any): void {
     (window as any).__pttStateService__ = stateService;
   }
+
 }

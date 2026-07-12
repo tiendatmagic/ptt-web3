@@ -28,6 +28,12 @@ class PermissionMiddleware
             return response()->json(['message' => 'Missing X-Company-Id header or company_id parameter'], 400);
         }
 
+        // Validate companyId là số nguyên dương để tránh unexpected query behavior
+        $companyId = (int) $companyId;
+        if ($companyId <= 0) {
+            return response()->json(['message' => 'Invalid company_id: must be a positive integer'], 400);
+        }
+
         // Truy vấn xem user có phải nhân viên và lấy permissions của role
         $staff = DB::table('staffs')
             ->join('roles', 'staffs.role_id', '=', 'roles.id')

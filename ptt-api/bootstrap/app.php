@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Prepend HandleCors to run FIRST before any other middleware (critical for CORS preflight)
         $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
 
+        // Add security headers to all responses
+        $middleware->append(\App\Http\Middleware\SecurityHeadersMiddleware::class);
+
         // Exclude ALL api/* routes from CSRF verification.
         // Our API uses token-based auth (HttpOnly cookie) via AppServiceProvider,
         // NOT session-based Sanctum, so CSRF is not needed and causes 419 errors.
@@ -25,7 +28,13 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'permission' => \App\Http\Middleware\PermissionMiddleware::class,
+            'throttle'   => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         ]);
+
+        // Inject Authorization Bearer từ HttpOnly cookie — PHẢI chạy TRƯỚC auth:sanctum
+        // prependToGroup đảm bảo middleware này là FIRST trong api group
+        // Cookie API routes không đi qua EncryptCookies nên giá trị cookie là plain text
+        $middleware->prependToGroup('api', \App\Http\Middleware\TokenFromCookieMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
