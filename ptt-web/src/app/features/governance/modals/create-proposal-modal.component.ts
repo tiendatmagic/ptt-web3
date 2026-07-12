@@ -183,9 +183,10 @@ export class CreateProposalModalComponent {
       );
 
       this.stateService.showToast('Giao dịch đang chờ xác nhận từ blockchain...', 'warning');
-      await tx.wait();
+      const receipt = await tx.wait();
 
       // Đọc proposalCount mới nhất làm onchain_id
+      // Contract: proposalCount++ rồi mới gán ID → proposalCount sau khi tạo = ID của proposal mới
       const proposalCount = await govContract['proposalCount']();
       const onchainId = Number(proposalCount);
 
@@ -198,7 +199,7 @@ export class CreateProposalModalComponent {
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
       };
 
-      await firstValueFrom(this.apiService.post<any>('proposals', {
+      const createResponse = await firstValueFrom(this.apiService.post<any>('proposals', {
         title: this.newProposal.title,
         description: this.newProposal.description,
         type: this.newProposal.type,
@@ -210,6 +211,20 @@ export class CreateProposalModalComponent {
         },
         expiration_date: formatDate(expirationDate)
       }, comp.id));
+
+      // 4. Contract tự động signProposal() khi createProposal() → đồng bộ chữ ký người tạo vào backend
+      // Để backend tính threshold đúng và UI hiển thị chữ ký đúng
+      try {
+        const signMessage = `Approve Proposal #${createResponse.proposal_id} for ${comp.name}\nType: ${this.newProposal.type}\nVal: ${value}`;
+        const autoSig = await signer.signMessage(signMessage);
+        await firstValueFrom(this.apiService.post<any>(`proposals/${createResponse.proposal_id}/sign`, {
+          signature: autoSig,
+          message: signMessage
+        }, comp.id));
+      } catch (sigErr) {
+        // Không chặn flow chính nếu lưu chữ ký thất bại
+        console.warn('Không thể đồng bộ chữ ký tạo đề xuất:', sigErr);
+      }
 
       this.stateService.showToast('Tạo đề xuất thành công và đã đồng bộ lên hệ thống!', 'success');
       this.modalRef.close(true);

@@ -47,6 +47,15 @@ export class GovernanceComponent implements OnInit {
     return Math.ceil(this.proposalsList().length / this.itemsPerPage) || 1;
   });
 
+  // Kiểm tra xem ví hiện tại đã ký đề xuất đang chọn chưa
+  public hasCurrentWalletSigned = computed(() => {
+    const address = this.stateService.address()?.toLowerCase();
+    if (!address) return false;
+    return this.proposalSignatures().some(
+      (sig: any) => sig.wallet_address?.toLowerCase() === address
+    );
+  });
+
   ngOnInit() {
     this.loadProposals();
   }
@@ -101,30 +110,42 @@ export class GovernanceComponent implements OnInit {
 
     const onchainId = proposal.params?.onchain_id;
     if (!onchainId) {
-      this.stateService.showToast('Đề xuất này thiếu ID on-chain, không thể biểu quyết!', 'error');
+      this.stateService.showToast('Dữ liệu on-chain chưa sẵn sàng. Vui lòng thử lại sau!', 'error');
       return;
     }
 
     try {
       this.stateService.isLoading.set(true);
 
-      // 1. Ký thông điệp off-chain để gửi lưu trữ trên Backend (phục vụ hiển thị UI)
       const walletAddress = this.stateService.address();
       const message = `Approve Proposal #${proposal.id} for ${comp.name}\nType: ${proposal.type}\nVal: ${proposal.params?.value || 0}`;
-
       const signer = await this.stateService.getSigner();
+
+      // 1. Ký thông điệp off-chain để lưu trử trên Backend
       const signature = await signer.signMessage(message);
 
-      // 2. Thực hiện giao dịch ký duyệt on-chain (signProposal) lên contract BoardGovernance
-      this.stateService.showToast('Vui lòng xác nhận giao dịch ký duyệt biểu quyết trên ví MetaMask...', 'warning');
-      const govContract = new Contract(comp.governance_address, BOARD_GOVERNANCE_ABI, signer);
-      const gasOverrides = await this.stateService.getGasOverrides(signer);
-      
-      const tx = await govContract['signProposal'](onchainId, gasOverrides);
-      this.stateService.showToast('Giao dịch ký duyệt đã gửi. Chờ xác nhận từ mạng lưới...', 'warning');
-      await tx.wait();
+      // 2. Thực hiện giao dịch ký duyệt on-chain
+      // Nếu đã ký on-chain rồi (trường hợp người tạo proposal) thì bỏ qua bước này
+      let alreadySignedOnChain = false;
+      try {
+        this.stateService.showToast('Vui lòng xác nhận giao dịch ký duyệt trên ví MetaMask...', 'warning');
+        const govContract = new Contract(comp.governance_address, BOARD_GOVERNANCE_ABI, signer);
+        const gasOverrides = await this.stateService.getGasOverrides(signer);
+        const tx = await govContract['signProposal'](onchainId, gasOverrides);
+        this.stateService.showToast('Giao dịch ký duyệt đã gửi. Chờ xác nhận từ mạng lưới...', 'warning');
+        await tx.wait();
+      } catch (onChainErr: any) {
+        const errMsg = onChainErr?.reason || onChainErr?.message || '';
+        if (errMsg.toLowerCase().includes('already signed') || errMsg.toLowerCase().includes('already voted')) {
+          // Đã ký on-chain rồi (ví dụ: người tạo), chỉ cần đồng bộ vào backend
+          alreadySignedOnChain = true;
+          this.stateService.showToast('Ví đã ký on-chain, đang đồng bộ chữ ký vào hệ thống...', 'warning');
+        } else {
+          throw onChainErr; // Lỗi khác thì thả ra
+        }
+      }
 
-      // 3. Gửi chữ ký off-chain lên Backend để cập nhật cơ sở dữ liệu
+      // 3. Gửi chữ ký off-chain lên Backend
       const response = await firstValueFrom(
         this.apiService.post<any>(`proposals/${proposal.id}/sign`, {
           signature: signature,
@@ -132,14 +153,19 @@ export class GovernanceComponent implements OnInit {
         }, comp.id)
       );
 
-      this.stateService.showToast(`Biểu quyết và ghi nhận đề xuất thành công! Trạng thái: ${response.status}`, 'success');
-      
-      // Load lại chi tiết
-      await this.selectProposal(proposal);
+      const newStatus = response.status;
+      const msg = alreadySignedOnChain
+        ? `Đã đồng bộ chữ ký! Trạng thái: ${newStatus}`
+        : `Biểu quyết thành công! Trạng thái: ${newStatus}`;
+      this.stateService.showToast(msg, 'success');
+
+      // Load lại để phản ánh status mới nhất (PENDING → APPROVED nếu đủ threshold)
       await this.loadProposals();
+      await this.selectProposal(proposal);
     } catch (e: any) {
       console.error(e);
-      this.stateService.showToast(e.message || e.error?.message || 'Từ chối ký hoặc lỗi xác thực chữ ký!', 'error');
+      const msg = e?.reason || e?.message || e?.error?.message || 'Từ chối ký hoặc lỗi xác thực!';
+      this.stateService.showToast(msg, 'error');
     } finally {
       this.stateService.isLoading.set(false);
     }

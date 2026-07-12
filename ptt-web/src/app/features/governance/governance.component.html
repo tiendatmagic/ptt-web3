@@ -29,7 +29,7 @@
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- PANEL TRÁI: DANH SÁCH PROPOSALS -->
     <div
-      class="lg:col-span-1 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-5 shadow-sm space-y-4 flex flex-col max-h-[650px]"
+      class="lg:col-span-1 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-5 shadow-sm space-y-4 flex flex-col max-h-[420px] lg:max-h-[650px]"
     >
       <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300">Danh sách Đề xuất</h2>
 
@@ -40,21 +40,21 @@
             [class.border-primary]="selectedProposal()?.id === proposal.id"
             [class.bg-slate-50]="selectedProposal()?.id === proposal.id"
             [class.dark:bg-slate-900/40]="selectedProposal()?.id === proposal.id"
-            class="p-4 rounded-xl border border-slate-100 dark:border-slate-900/80 hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-all cursor-pointer space-y-2"
+            class="p-3 rounded-xl border border-slate-100 dark:border-slate-900/80 hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-all cursor-pointer space-y-1.5"
           >
-            <div class="flex justify-between items-start gap-2">
+            <div class="flex items-center justify-between gap-2 min-w-0">
               <span
-                class="px-2 py-0.5 rounded-full text-xs font-black uppercase"
+                class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase shrink-0 whitespace-nowrap"
                 [class.bg-yellow-100]="proposal.status === 'PENDING'"
-                [class.text-yellow-600]="proposal.status === 'PENDING'"
+                [class.text-yellow-700]="proposal.status === 'PENDING'"
                 [class.bg-blue-100]="proposal.status === 'APPROVED'"
-                [class.text-blue-600]="proposal.status === 'APPROVED'"
+                [class.text-blue-700]="proposal.status === 'APPROVED'"
                 [class.bg-emerald-100]="proposal.status === 'EXECUTED'"
-                [class.text-emerald-600]="proposal.status === 'EXECUTED'"
+                [class.text-emerald-700]="proposal.status === 'EXECUTED'"
               >
                 {{ proposal.status }}
               </span>
-              <span class="text-sm font-bold text-slate-400">#{{ proposal.id }}</span>
+              <span class="text-xs font-bold text-slate-400 shrink-0">#{{ proposal.id }}</span>
             </div>
 
             <h3 class="text-xs font-black text-slate-700 dark:text-slate-200 line-clamp-1">
@@ -62,10 +62,10 @@
             </h3>
 
             <div
-              class="flex justify-between items-center text-sm text-slate-400 pt-1 border-t border-slate-100/50 dark:border-slate-900/30"
+              class="flex justify-between items-center text-[10px] text-slate-400 pt-1 border-t border-slate-100/50 dark:border-slate-900/30 min-w-0 gap-2"
             >
-              <span class="font-bold">Loại: {{ proposal.type }}</span>
-              <span>{{ proposal.created_at | date: 'dd/MM/yyyy' }}</span>
+              <span class="font-bold truncate">{{ proposal.type }}</span>
+              <span class="shrink-0">{{ proposal.created_at | date: 'dd/MM/yy' }}</span>
             </div>
           </div>
         } @empty {
@@ -88,7 +88,7 @@
 
     <!-- PANEL PHẢI: CHI TIẾT PROPOSAL SELECTED -->
     <div
-      class="lg:col-span-2 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm flex flex-col min-h-[500px]"
+      class="lg:col-span-2 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm flex flex-col min-h-[300px] lg:min-h-[500px]"
     >
       @if (selectedProposal()) {
         <div class="flex-1 flex flex-col justify-between space-y-6">
@@ -198,15 +198,23 @@
               selectedProposal().status === 'PENDING' &&
               stateService.hasPermission('proposals.sign')
             ) {
-              <button
-                app-button
-                variant="primary"
-                (click)="handleSignProposal(selectedProposal())"
-                class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2"
-              >
-                <app-icon name="shield" class="w-4 h-4" />
-                KÝ BIỂU QUYẾT (APPROVE)
-              </button>
+              <!-- Kiểm tra ví hiện tại đã ký chưa để tránh lỗi Already signed -->
+              @if (hasCurrentWalletSigned()) {
+                <div class="h-11 px-5 rounded-xl flex items-center gap-2 text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                  <app-icon name="shield" class="w-4 h-4" />
+                  ĐÃ KÝ BIỂU QUYẾT
+                </div>
+              } @else {
+                <button
+                  app-button
+                  variant="primary"
+                  (click)="handleSignProposal(selectedProposal())"
+                  class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2"
+                >
+                  <app-icon name="shield" class="w-4 h-4" />
+                  KÝ BIỂU QUYẾT (APPROVE)
+                </button>
+              }
             }
 
             @if (
