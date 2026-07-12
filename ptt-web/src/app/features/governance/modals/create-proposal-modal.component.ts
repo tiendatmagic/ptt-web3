@@ -70,7 +70,7 @@ import { CustomSelectComponent } from '../../../shared/components/custom-select/
               type="text"
               [(ngModel)]="newProposal.mintParams.to"
               placeholder="0x..."
-              class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500 font-mono text-xs"
+              class="form-input !bg-white dark:!bg-slate-950 dark:!border-slate-700/80 focus:border-violet-500 font-mono text-xs"
             />
           </div>
           <div class="form-field">
@@ -79,7 +79,7 @@ import { CustomSelectComponent } from '../../../shared/components/custom-select/
               type="number"
               [(ngModel)]="newProposal.mintParams.amount"
               placeholder="VD: 50000"
-              class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
+              class="form-input !bg-white dark:!bg-slate-950 dark:!border-slate-700/80 focus:border-violet-500"
             />
           </div>
         </div>
@@ -94,7 +94,7 @@ import { CustomSelectComponent } from '../../../shared/components/custom-select/
               type="text"
               [(ngModel)]="newProposal.burnParams.from"
               placeholder="0x..."
-              class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500 font-mono text-xs"
+              class="form-input !bg-white dark:!bg-slate-950 dark:!border-slate-700/80 focus:border-violet-500 font-mono text-xs"
             />
           </div>
           <div class="form-field">
@@ -103,7 +103,7 @@ import { CustomSelectComponent } from '../../../shared/components/custom-select/
               type="number"
               [(ngModel)]="newProposal.burnParams.amount"
               placeholder="VD: 50000"
-              class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
+              class="form-input !bg-white dark:!bg-slate-950 dark:!border-slate-700/80 focus:border-violet-500"
             />
           </div>
         </div>
@@ -118,7 +118,7 @@ import { CustomSelectComponent } from '../../../shared/components/custom-select/
               type="text"
               [(ngModel)]="newProposal.target"
               placeholder="0x..."
-              class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500 font-mono text-xs"
+              class="form-input !bg-white dark:!bg-slate-950 dark:!border-slate-700/80 focus:border-violet-500 font-mono text-xs"
             />
           </div>
           <div class="form-field">
@@ -127,7 +127,7 @@ import { CustomSelectComponent } from '../../../shared/components/custom-select/
               type="text"
               [(ngModel)]="newProposal.value"
               placeholder="VD: 0.5"
-              class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
+              class="form-input !bg-white dark:!bg-slate-950 dark:!border-slate-700/80 focus:border-violet-500"
             />
           </div>
         </div>
@@ -143,7 +143,7 @@ import { CustomSelectComponent } from '../../../shared/components/custom-select/
                 type="text"
                 [(ngModel)]="newProposal.fundingRoundParams.name"
                 placeholder="VD: Vòng Seed"
-                class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
+                class="form-input !bg-white dark:!bg-slate-950 dark:!border-slate-700/80 focus:border-violet-500"
               />
             </div>
             <div class="form-field">
@@ -152,7 +152,7 @@ import { CustomSelectComponent } from '../../../shared/components/custom-select/
                 type="text"
                 [(ngModel)]="newProposal.fundingRoundParams.share_price"
                 placeholder="VD: 0.001"
-                class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
+                class="form-input !bg-white dark:!bg-slate-950 dark:!border-slate-700/80 focus:border-violet-500"
               />
             </div>
           </div>
@@ -163,7 +163,7 @@ import { CustomSelectComponent } from '../../../shared/components/custom-select/
                 type="number"
                 [(ngModel)]="newProposal.fundingRoundParams.max_supply"
                 placeholder="VD: 100000"
-                class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
+                class="form-input !bg-white dark:!bg-slate-950 dark:!border-slate-700/80 focus:border-violet-500"
               />
             </div>
             <div class="form-field">
@@ -172,7 +172,7 @@ import { CustomSelectComponent } from '../../../shared/components/custom-select/
                 type="number"
                 [(ngModel)]="newProposal.fundingRoundParams.duration_days"
                 placeholder="VD: 30"
-                class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
+                class="form-input !bg-white dark:!bg-slate-950 dark:!border-slate-700/80 focus:border-violet-500"
               />
             </div>
           </div>
@@ -187,7 +187,7 @@ import { CustomSelectComponent } from '../../../shared/components/custom-select/
             type="text"
             [(ngModel)]="newProposal.memberParams.address"
             placeholder="0x..."
-            class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500 font-mono text-xs"
+            class="form-input !bg-white dark:!bg-slate-950 dark:!border-slate-700/80 focus:border-violet-500 font-mono text-xs"
           />
         </div>
       }
@@ -200,7 +200,7 @@ import { CustomSelectComponent } from '../../../shared/components/custom-select/
             type="number"
             [(ngModel)]="newProposal.thresholdParams.newThreshold"
             placeholder="VD: 2"
-            class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
+            class="form-input !bg-white dark:!bg-slate-950 dark:!border-slate-700/80 focus:border-violet-500"
           />
         </div>
       }

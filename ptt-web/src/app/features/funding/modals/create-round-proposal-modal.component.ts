@@ -58,7 +58,7 @@ import { CustomSelectComponent } from '../../../shared/components/custom-select/
             type="text"
             [(ngModel)]="newRound.paymentTokenAddress"
             placeholder="0x..."
-            class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500 font-mono text-xs"
+            class="form-input !bg-white dark:!bg-slate-950 dark:!border-slate-700/80 focus:border-violet-500 font-mono text-xs"
           />
           <p class="text-[10px] text-slate-400 mt-1">* Vui lòng nhập đúng địa chỉ Contract của Token stablecoin trên mạng lưới (ví dụ: USDT/USDC testnet).</p>
         </div>
