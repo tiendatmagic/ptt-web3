@@ -3670,7 +3670,7 @@ library ECDSA {
 // File contracts/Marketplace.sol
 
 // Original license: SPDX_License_Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.34;
 
 
 

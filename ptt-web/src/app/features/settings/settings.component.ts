@@ -449,7 +449,7 @@ Hãy lưu trữ cẩn thận và không chia sẻ khóa bảo mật (Private Key
         params.append('sourceCode', sourceCode);
         params.append('codeformat', 'solidity-single-file');
         params.append('contractname', contractnamePath);
-        params.append('compilerversion', 'v0.8.24+commit.e11b9ed9');
+        params.append('compilerversion', 'v0.8.34+commit.80d5c536');
         params.append('optimizationUsed', '1');
         params.append('runs', '1');
         params.append('constructorArguements', constructorArgs);
