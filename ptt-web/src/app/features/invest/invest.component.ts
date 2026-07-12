@@ -56,6 +56,8 @@ const MARKETPLACE_ABI = [
 export class InvestComponent implements OnInit {
   public stateService = inject(StateService);
   private apiService = inject(ApiService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   // Tabs
   public activeTab = signal<'funding' | 'trade' | 'dividends' | 'portfolio'>('funding');
@@ -90,6 +92,9 @@ export class InvestComponent implements OnInit {
   // Dividends
   public dividendLoading = signal(false);
 
+  // Trạng thái tải trang
+  public isPageLoading = signal(true);
+
   // Computed: đã kết nối ví chưa
   public isConnected = computed(() => this.stateService.isConnected());
   public walletAddress = computed(() => this.stateService.address());
@@ -104,6 +109,15 @@ export class InvestComponent implements OnInit {
     );
   });
 
+  // Tính chi phí mua động để hiển thị lên nút bấm mua cổ phần
+  public purchaseCostText = computed(() => {
+    const round = this.activeFundingRound();
+    if (!round) return '0 BNB';
+    const amount = this.buyAmount();
+    const total = Number(round.price) * amount;
+    return `${this.formatNumber(total)} ${round.paymentTokenSymbol}`;
+  });
+
   public setActiveTab(tab: string) {
     this.activeTab.set(tab as 'funding' | 'trade' | 'dividends' | 'portfolio');
   }
@@ -113,7 +127,30 @@ export class InvestComponent implements OnInit {
   }
 
   async ngOnInit() {
-    await this.loadCompanies();
+    this.isPageLoading.set(true);
+    try {
+      await this.loadCompanies();
+      
+      // Tự động kiểm tra query parameter để chọn công ty chia sẻ
+      this.route.queryParams.subscribe(async (params) => {
+        const coId = params['companyId'];
+        const coCode = params['companyCode'];
+        if (coId) {
+          const co = this.companiesList().find(c => c.id === Number(coId));
+          if (co) await this.selectCompany(co);
+        } else if (coCode) {
+          const co = this.companiesList().find(c => c.code?.toLowerCase() === coCode.toLowerCase());
+          if (co) await this.selectCompany(co);
+        }
+      });
+    } catch (err) {
+      console.error('Lỗi khi tải dữ liệu sàn đầu tư:', err);
+    } finally {
+      // Giả lập thêm 500ms để loading mượt mà, tránh nhấp nháy
+      setTimeout(() => {
+        this.isPageLoading.set(false);
+      }, 500);
+    }
   }
 
   // Load danh sách công ty (public API, không cần auth)
@@ -129,8 +166,27 @@ export class InvestComponent implements OnInit {
     }
   }
 
+  // Chia sẻ liên kết của công ty
+  handleShareLink(co: any) {
+    if (!co) return;
+    const shareUrl = `${window.location.origin}/invest?companyCode=${encodeURIComponent(co.code)}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      this.stateService.showToast(`Đã sao chép liên kết chia sẻ của công ty ${co.name}!`, 'success');
+    }).catch(err => {
+      this.stateService.showToast('Không thể sao chép liên kết chia sẻ!', 'error');
+    });
+  }
+
   async selectCompany(company: any) {
     this.selectedCompany.set(company);
+    
+    // Cập nhật thanh địa chỉ URL trình duyệt tự động
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { companyCode: company.code },
+      queryParamsHandling: 'merge'
+    });
+
     await Promise.all([
       this.loadOnChainData(company),
       this.loadOrderBook(company)
