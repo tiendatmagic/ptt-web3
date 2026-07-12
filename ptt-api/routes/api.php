@@ -26,6 +26,7 @@ Route::prefix('v1')->group(function () {
         Route::get('{code}', [CompanyController::class, 'show']);
         Route::post('register', [CompanyController::class, 'register'])->middleware('auth:sanctum');
         Route::put('{id}/contracts', [CompanyController::class, 'updateContracts'])->middleware('auth:sanctum');
+        Route::put('{id}', [CompanyController::class, 'update'])->middleware('auth:sanctum');
     });
 
     Route::post('contracts/verify', [CompanyController::class, 'verifyContract'])->middleware('auth:sanctum');

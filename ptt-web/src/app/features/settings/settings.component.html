@@ -63,6 +63,70 @@
       <!-- ============ CỘT TRÁI ============ -->
       <div class="space-y-6">
 
+        <!-- SECTION 0: THÔNG TIN DOANH NGHIỆP -->
+        <div class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-6 shadow-sm space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center shrink-0">
+              <app-icon name="building" class="w-4 h-4 text-violet-600" />
+            </div>
+            <div>
+              <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Thông tin doanh nghiệp</h2>
+              <p class="text-xs text-slate-400">ID: {{ stateService.currentCompany()?.id }} · CODE: {{ stateService.currentCompany()?.code }}</p>
+            </div>
+          </div>
+
+          <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+            Chỉnh sửa tên doanh nghiệp, logo hiển thị và định giá tài sản hiện tại.
+          </p>
+
+          <div class="space-y-4">
+            <div class="form-field">
+              <label>Tên doanh nghiệp</label>
+              <input
+                type="text"
+                [ngModel]="companyName()"
+                (ngModelChange)="companyName.set($event)"
+                placeholder="Nhập tên doanh nghiệp..."
+                class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-semibold outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all text-slate-800 dark:text-slate-100"
+              />
+            </div>
+
+            <div class="form-field">
+              <label>Link ảnh Logo (URL)</label>
+              <input
+                type="text"
+                [ngModel]="companyLogo()"
+                (ngModelChange)="companyLogo.set($event)"
+                placeholder="Nhập URL ảnh logo..."
+                class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-semibold outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all text-slate-800 dark:text-slate-100"
+              />
+            </div>
+
+            <div class="form-field">
+              <label>Định giá doanh nghiệp (USD)</label>
+              <input
+                type="number"
+                [ngModel]="companyValuation()"
+                (ngModelChange)="companyValuation.set($event)"
+                placeholder="Nhập định giá..."
+                class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-semibold outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all text-slate-800 dark:text-slate-100"
+              />
+            </div>
+
+            <div class="pt-1 flex justify-end">
+              <button
+                app-button
+                variant="primary"
+                size="md"
+                (click)="handleSaveCompanyInfo()"
+                [loading]="saveInfoLoading()"
+              >
+                Cập nhật thông tin
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- SECTION 1: BSC API KEY -->
         <div class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-6 shadow-sm space-y-4">
           <div class="flex items-center gap-3">
@@ -221,7 +285,17 @@
             }
           </div>
 
-          <div class="pt-1 flex justify-end">
+          <div class="pt-1 flex items-center justify-end gap-3 flex-wrap">
+            <button
+              app-button
+              variant="secondary"
+              size="md"
+              (click)="handleDownloadConfig()"
+              class="flex items-center gap-1.5"
+            >
+              <app-icon name="download" class="w-4 h-4" />
+              Tải cấu hình (.txt)
+            </button>
             <button
               app-button
               variant="primary"

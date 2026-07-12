@@ -194,6 +194,44 @@ class CompanyController extends Controller
     }
 
     /**
+     * Cập nhật thông tin cơ bản của công ty.
+     */
+    public function update(Request $request, int $id)
+    {
+        $companyModel = \App\Infrastructure\Persistence\Eloquent\CompanyModel::find($id);
+        if (!$companyModel) {
+            return response()->json([
+                'message' => 'Company not found'
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'valuation' => 'required|numeric|min:0',
+            'logo' => 'nullable|string|max:2048',
+        ]);
+
+        $companyModel->name = $validated['name'];
+        $companyModel->valuation = $validated['valuation'];
+        if (array_key_exists('logo', $validated)) {
+            $companyModel->logo = $validated['logo'];
+        }
+        $companyModel->save();
+
+        return response()->json([
+            'message' => 'Company updated successfully',
+            'company' => [
+                'id' => $companyModel->id,
+                'code' => $companyModel->code,
+                'name' => $companyModel->name,
+                'logo' => $companyModel->logo,
+                'valuation' => $companyModel->valuation,
+                'status' => $companyModel->status,
+            ]
+        ]);
+    }
+
+    /**
      * Mô phỏng verify contract trên BscScan.
      */
     public function verifyContract(Request $request)

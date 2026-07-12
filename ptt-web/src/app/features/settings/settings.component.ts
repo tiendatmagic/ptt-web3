@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -34,6 +34,12 @@ export class SettingsComponent implements OnInit {
     marketplace_address: '',
   };
 
+  // --- Company info ---
+  public companyName = signal<string>('');
+  public companyValuation = signal<number>(0);
+  public companyLogo = signal<string>('');
+  public saveInfoLoading = signal<boolean>(false);
+
   // --- Loading states ---
   public saveContractsLoading = signal(false);
   public deployAllLoading = signal(false);
@@ -47,22 +53,30 @@ export class SettingsComponent implements OnInit {
     { name: 'Marketplace (Sàn Giao dịch Cổ phần)', key: 'marketplace_address', contractKey: 'Marketplace', icon: 'sync' },
   ];
 
+  constructor() {
+    effect(() => {
+      const comp = this.stateService.currentCompany();
+      if (comp) {
+        this.editingContracts = {
+          governance_address: comp.governance_address || '',
+          token_address: comp.token_address || '',
+          funding_address: comp.funding_address || '',
+          marketplace_address: comp.marketplace_address || '',
+        };
+        this.companyName.set(comp.name || '');
+        this.companyValuation.set(comp.valuation || 0);
+        this.companyLogo.set(comp.logo || '');
+        
+        if (comp.wallet_address) {
+          this.contractOwners.set([comp.wallet_address]);
+        }
+      }
+    });
+  }
+
   ngOnInit() {
     const saved = localStorage.getItem('ptt_bscscan_api_key');
     if (saved) this.bscApiKey.set(saved);
-
-    const comp = this.stateService.currentCompany();
-    if (comp) {
-      this.editingContracts = {
-        governance_address: comp.governance_address || '',
-        token_address: comp.token_address || '',
-        funding_address: comp.funding_address || '',
-        marketplace_address: comp.marketplace_address || '',
-      };
-      if (comp.wallet_address) {
-        this.contractOwners.set([comp.wallet_address]);
-      }
-    }
   }
 
   // --- Auto Deploy ---
@@ -202,6 +216,77 @@ export class SettingsComponent implements OnInit {
       this.stateService.showToast(e.error?.message || 'Cập nhật địa chỉ thất bại!', 'error');
     } finally {
       this.saveContractsLoading.set(false);
+    }
+  }
+
+  // --- Download config ---
+  public handleDownloadConfig() {
+    const comp = this.stateService.currentCompany();
+    if (!comp) {
+      this.stateService.showToast('Không tìm thấy thông tin doanh nghiệp hiện tại!', 'error');
+      return;
+    }
+
+    const network = this.stateService.networkName() || 'Unknown Network';
+    const chainId = this.stateService.chainId() || 'Unknown Chain ID';
+
+    const configText = `CẤU HÌNH SMART CONTRACTS - ${comp.name.toUpperCase()} (ID: ${comp.id}, CODE: ${comp.code.toUpperCase()})
+--------------------------------------------------
+Mạng lưới triển khai: ${network} (Chain ID: ${chainId})
+Ngày tải xuống: ${new Date().toLocaleString('vi-VN')}
+
+ĐỊA CHỈ CÁC HỢP ĐỒNG CỐT LÕI:
+1. Board Governance (HĐQT Đa chữ ký & Treasury):
+   ${this.editingContracts['governance_address'] || 'Chưa liên kết'}
+
+2. Equity Token (Cổ phần Doanh nghiệp):
+   ${this.editingContracts['token_address'] || 'Chưa liên kết'}
+
+3. Finance Manager (Gọi vốn & Cổ tức):
+   ${this.editingContracts['funding_address'] || 'Chưa liên kết'}
+
+4. Marketplace (Sàn giao dịch Cổ phần):
+   ${this.editingContracts['marketplace_address'] || 'Chưa liên kết'}
+
+--------------------------------------------------
+* Lưu ý: Tài liệu này chứa thông tin cấu hình on-chain của doanh nghiệp.
+Hãy lưu trữ cẩn thận và không chia sẻ khóa bảo mật (Private Key) của ví.
+`;
+
+    const blob = new Blob([configText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${comp.code.toUpperCase()}_contracts_config.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+    this.stateService.showToast('Đã tải xuống cấu hình thành công!', 'success');
+  }
+
+  // --- Save Company info ---
+  public async handleSaveCompanyInfo() {
+    const comp = this.stateService.currentCompany();
+    if (!comp) return;
+
+    if (!this.companyName().trim()) {
+      this.stateService.showToast('Tên doanh nghiệp không được để trống!', 'warning');
+      return;
+    }
+
+    this.saveInfoLoading.set(true);
+    try {
+      const payload = {
+        name: this.companyName(),
+        valuation: this.companyValuation(),
+        logo: this.companyLogo(),
+      };
+      await firstValueFrom(this.apiService.put<any>(`companies/${comp.id}`, payload));
+      this.stateService.showToast('Cập nhật thông tin doanh nghiệp thành công!', 'success');
+      await this.stateService.loadCompanies();
+    } catch (e: any) {
+      this.stateService.showToast(e.error?.message || 'Cập nhật thông tin thất bại!', 'error');
+    } finally {
+      this.saveInfoLoading.set(false);
     }
   }
 
