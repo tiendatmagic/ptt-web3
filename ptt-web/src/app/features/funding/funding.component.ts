@@ -38,6 +38,9 @@ export class FundingComponent implements OnInit {
   // Cổ tức
   public dividendsList = signal<any[]>([]);
 
+  // Loading state
+  public isPageLoading = signal(true);
+
   ngOnInit() {
     this.loadFundingData();
   }
@@ -46,6 +49,7 @@ export class FundingComponent implements OnInit {
     const comp = this.stateService.currentCompany();
     if (!comp) return;
 
+    this.isPageLoading.set(true);
     try {
       // 1. Tải danh sách gọi vốn
       const rounds = await firstValueFrom(this.apiService.get<any[]>('funding', comp.id));
@@ -56,6 +60,8 @@ export class FundingComponent implements OnInit {
       this.dividendsList.set(divs || []);
     } catch (e) {
       console.error('Lỗi khi tải dữ liệu gọi vốn/cổ tức:', e);
+    } finally {
+      this.isPageLoading.set(false);
     }
   }
 

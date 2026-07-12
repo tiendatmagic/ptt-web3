@@ -32,6 +32,7 @@ export class GovernanceComponent implements OnInit {
   public proposalsList = signal<any[]>([]);
   public selectedProposal = signal<any | null>(null);
   public proposalSignatures = signal<any[]>([]);
+  public isPageLoading = signal(true);
 
   // Phân trang Client-side cho danh sách Đề xuất
   public currentPage = signal(1);
@@ -64,12 +65,15 @@ export class GovernanceComponent implements OnInit {
     const comp = this.stateService.currentCompany();
     if (!comp) return;
 
+    this.isPageLoading.set(true);
     try {
       const list = await firstValueFrom(this.apiService.get<any[]>('proposals', comp.id));
       this.proposalsList.set(list || []);
       this.currentPage.set(1); // Reset về trang 1
     } catch (e) {
       console.error('Lỗi khi tải danh sách đề xuất:', e);
+    } finally {
+      this.isPageLoading.set(false);
     }
   }
 
