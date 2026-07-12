@@ -195,6 +195,7 @@ export class StateService {
     this.userPermissions.set([]);
     this.authToken.set(null);
     localStorage.removeItem(this.SESSION_KEY); // Xóa token khỏi localStorage
+    localStorage.removeItem('ptt_selected_company_id'); // Xóa ID công ty đã chọn khỏi localStorage
   }
 
   // Tải danh sách các công ty doanh nghiệp
@@ -203,9 +204,22 @@ export class StateService {
       const list = await firstValueFrom(this.apiService.get<any[]>('companies'));
       this.companiesList.set(list || []);
       
-      // Tự động chọn công ty đầu tiên nếu chưa chọn công ty nào
-      if (list && list.length > 0 && !this.currentCompany()) {
-        this.selectCompany(list[0]);
+      const savedCompanyId = localStorage.getItem('ptt_selected_company_id');
+      
+      if (list && list.length > 0) {
+        let targetCompany = null;
+        if (savedCompanyId) {
+          targetCompany = list.find(c => String(c.id) === savedCompanyId);
+        }
+        
+        if (targetCompany) {
+          this.selectCompany(targetCompany);
+        } else {
+          this.selectCompany(list[0]);
+        }
+      } else {
+        this.currentCompany.set(null);
+        this.userPermissions.set([]);
       }
     } catch (e) {
       console.error('Lỗi tải danh sách công ty:', e);
@@ -216,6 +230,10 @@ export class StateService {
   public async selectCompany(company: any) {
     this.currentCompany.set(company);
     this.userPermissions.set([]);
+    
+    if (company && company.id) {
+      localStorage.setItem('ptt_selected_company_id', String(company.id));
+    }
     
     // Tải thông tin quyền của user trong company này
     if (this.currentUser()) {
@@ -288,6 +306,7 @@ export class StateService {
     this.currentUser.set(null);
     this.currentCompany.set(null);
     this.userPermissions.set([]);
+    localStorage.removeItem('ptt_selected_company_id'); // Xóa ID công ty đã chọn khỏi localStorage
   }
 
   public async switchNetwork(chainId: number) {

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ethers } from 'ethers';
 import { StateService } from '@core/services/state.service';
@@ -18,6 +19,7 @@ import { IconComponent } from '@shared/components/icon/icon.component';
 export class SettingsComponent implements OnInit {
   public stateService = inject(StateService);
   private apiService = inject(ApiService);
+  private router = inject(Router);
 
   // --- BSC API Key ---
   public bscApiKey = signal<string>('');
@@ -45,6 +47,10 @@ export class SettingsComponent implements OnInit {
   public deployAllLoading = signal(false);
   public verifyLoading = signal<Record<string, boolean>>({});
   public verifyStatus = signal<Record<string, string>>({});
+  
+  // --- Deletion state ---
+  public isDeletable = signal<boolean>(false);
+  public deleteLoading = signal<boolean>(false);
 
   public readonly contractList = [
     { name: 'Board Governance (HĐQT Đa chữ ký / Treasury)', key: 'governance_address', contractKey: 'BoardGovernance', icon: 'scale' },
@@ -70,6 +76,17 @@ export class SettingsComponent implements OnInit {
         if (comp.wallet_address) {
           this.contractOwners.set([comp.wallet_address]);
         }
+
+        // Check if deletable: all contract addresses must be null or empty
+        const isLinked = !!(
+          comp.governance_address ||
+          comp.token_address ||
+          comp.funding_address ||
+          comp.marketplace_address ||
+          comp.oracle_address ||
+          comp.registry_address
+        );
+        this.isDeletable.set(!isLinked);
       }
     });
   }
@@ -323,6 +340,43 @@ Hãy lưu trữ cẩn thận và không chia sẻ khóa bảo mật (Private Key
       this.stateService.showToast('Lỗi khi verify: ' + (e.message || 'Unknown'), 'error');
     } finally {
       this.verifyLoading.update(s => ({ ...s, [contractKey]: false }));
+    }
+  }
+
+  // --- Xóa doanh nghiệp nháp ---
+  public async handleDeleteCompany() {
+    const comp = this.stateService.currentCompany();
+    if (!comp) return;
+
+    const confirmMsg = `Bạn có chắc chắn muốn xóa doanh nghiệp "${comp.name}"?
+THAO TÁC NÀY KHÔNG THỂ HOÀN TÁC! Tất cả các thông tin liên quan, vai trò và nhân sự của doanh nghiệp này trên database sẽ bị xóa hoàn toàn khỏi hệ thống.`;
+    
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      this.deleteLoading.set(true);
+      this.stateService.isLoading.set(true);
+      
+      await firstValueFrom(this.apiService.delete<any>(`companies/${comp.id}`));
+      
+      this.stateService.showToast('Đã xóa doanh nghiệp nháp thành công!', 'success');
+      
+      // 1. Tải lại danh sách doanh nghiệp
+      await this.stateService.loadCompanies();
+      
+      // 2. Tự động chọn lại doanh nghiệp đầu tiên nếu có
+      const list = this.stateService.companiesList();
+      if (list.length > 0) {
+        this.stateService.selectCompany(list[0]);
+      }
+      
+      // 3. Chuyển hướng về Dashboard
+      this.router.navigate(['/dashboard']);
+    } catch (e: any) {
+      this.stateService.showToast(e.error?.message || 'Không thể xóa doanh nghiệp!', 'error');
+    } finally {
+      this.deleteLoading.set(false);
+      this.stateService.isLoading.set(false);
     }
   }
 }

@@ -234,6 +234,57 @@ class CompanyController extends Controller
     }
 
     /**
+     * Xóa doanh nghiệp nháp (chưa liên kết contracts).
+     */
+    public function destroy(Request $request, int $id)
+    {
+        $user = $request->user();
+
+        // 1. Tìm doanh nghiệp
+        $companyModel = \App\Infrastructure\Persistence\Eloquent\CompanyModel::find($id);
+        if (!$companyModel) {
+            return response()->json([
+                'message' => 'Company not found'
+            ], 404);
+        }
+
+        // 2. Kiểm tra quyền hạn: Chỉ Chủ doanh nghiệp (Owner) mới có quyền xóa
+        $isOwner = DB::table('staffs')
+            ->join('roles', 'staffs.role_id', '=', 'roles.id')
+            ->where('staffs.user_id', $user->id)
+            ->where('staffs.company_id', $id)
+            ->where('roles.name', 'Owner')
+            ->exists();
+
+        if (!$isOwner) {
+            return response()->json([
+                'message' => 'Unauthorized: Only the company Owner can delete this company'
+            ], 403);
+        }
+
+        // 3. Kiểm tra xem doanh nghiệp đã liên kết Smart Contracts hay chưa
+        if (
+            $companyModel->registry_address ||
+            $companyModel->governance_address ||
+            $companyModel->token_address ||
+            $companyModel->funding_address ||
+            $companyModel->marketplace_address ||
+            $companyModel->oracle_address
+        ) {
+            return response()->json([
+                'message' => 'Cannot delete a company that has already been linked to on-chain Smart Contracts'
+            ], 400);
+        }
+
+        // 4. Xóa doanh nghiệp (các bảng roles và staffs liên kết sẽ tự động bị xóa cascade nhờ ràng buộc khóa ngoại trong DB)
+        $companyModel->delete();
+
+        return response()->json([
+            'message' => 'Company draft deleted successfully'
+        ]);
+    }
+
+    /**
      * Mô phỏng verify contract trên BscScan.
      */
     public function verifyContract(Request $request)
