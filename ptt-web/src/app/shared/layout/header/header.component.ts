@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '@core/services/state.service';
+import { ModalService } from '@core/services/modal.service';
+import { RegisterCompanyModalComponent } from '@features/dashboard/modals/register-company-modal.component';
 
 import { IconComponent } from '@shared/components/icon/icon.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
@@ -43,6 +45,7 @@ import { POPULAR_CHAINS } from '@core/utils/blockchain.utils';
 })
 export class HeaderComponent {
   public stateService = inject(StateService);
+  private modalService = inject(ModalService);
 
   // Trạng thái hiển thị dropdown ví
   public showDropdown = signal(false);
@@ -127,5 +130,20 @@ export class HeaderComponent {
     setTimeout(async () => {
       await this.stateService.switchNetwork(chainId);
     }, 100);
+  }
+
+  public openRegisterCompanyModal(event: Event) {
+    event.stopPropagation();
+    this.showCompanyDropdown.set(false);
+    this.stateService.showMobileMenu.set(false); // đóng mobile drawer nếu đang mở
+    const ref = this.modalService.open(RegisterCompanyModalComponent, {
+      title: 'Đăng ký doanh nghiệp mới',
+      size: 'lg'
+    });
+    ref.afterClosed$.subscribe(success => {
+      if (success) {
+        this.stateService.loadCompanies();
+      }
+    });
   }
 }

@@ -102,6 +102,20 @@
                   </button>
                 }
               </div>
+              
+              <!-- Đường kẻ phân cách -->
+              <div class="h-px bg-slate-100 dark:bg-slate-800/60 my-1 mx-2"></div>
+              
+              <!-- Nút đăng ký -->
+              <div class="px-1.5 pb-1">
+                <button
+                  (click)="openRegisterCompanyModal($event)"
+                  class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-colors text-left cursor-pointer"
+                >
+                  <app-icon name="plus" class="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                  <span>Đăng ký Doanh nghiệp</span>
+                </button>
+              </div>
             </div>
           }
         </div>
@@ -389,9 +403,23 @@
                 }
                 @if (stateService.companiesList().length === 0) {
                   <div class="px-3 py-4 text-center text-xs text-slate-400">
-                    Chưa có doanh nghiệp nào.
+                     Chưa có doanh nghiệp nào.
                   </div>
                 }
+              </div>
+              
+              <!-- Đường kẻ phân cách -->
+              <div class="h-px bg-slate-100 dark:bg-slate-800/60 my-1 mx-2"></div>
+              
+              <!-- Nút đăng ký -->
+              <div class="px-1.5 pb-1">
+                <button
+                  (click)="openRegisterCompanyModal($event)"
+                  class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-colors text-left cursor-pointer"
+                >
+                  <app-icon name="plus" class="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                  <span>Đăng ký Doanh nghiệp</span>
+                </button>
               </div>
             </div>
           }
