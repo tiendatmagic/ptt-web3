@@ -9,57 +9,52 @@ import { ethers } from 'ethers';
 import { BoardGovernance, EquityToken, FinanceManager } from '../../../core/constants/contracts';
 
 import { ButtonComponent } from '@shared/components/button/button.component';
+import { CustomSelectComponent } from '../../../shared/components/custom-select/custom-select.component';
 
 @Component({
   selector: 'app-create-proposal-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, CustomSelectComponent],
   template: `
     <div class="space-y-4">
-      <div class="space-y-1">
-        <label class="text-xs font-black text-slate-400 uppercase">Tiêu đề đề xuất</label>
+      <div class="form-field">
+        <label>Tiêu đề đề xuất</label>
         <input
           type="text"
           [(ngModel)]="newProposal.title"
           placeholder="VD: Mint 1,000,000 PTT cho cổ đông mới..."
-          class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+          class="form-input focus:border-violet-500"
         />
       </div>
 
-      <div class="space-y-1">
-        <label class="text-xs font-black text-slate-400 uppercase">Mô tả</label>
+      <div class="form-field">
+        <label>Mô tả</label>
         <textarea
           [(ngModel)]="newProposal.description"
           rows="2"
           placeholder="Mô tả mục đích và phân tích tài chính của quyết định này..."
-          class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm outline-none focus:border-violet-500 transition-all"
+          class="form-textarea focus:border-violet-500"
         ></textarea>
       </div>
 
       <div class="grid grid-cols-2 gap-4">
-        <div class="space-y-1">
-          <label class="text-xs font-black text-slate-400 uppercase">Loại đề xuất</label>
-          <select
-            [(ngModel)]="newProposal.type"
-            class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
-          >
-            <option value="MINT">MINT (Phát hành cổ phần)</option>
-            <option value="BURN">BURN (Hủy cổ phần)</option>
-            <option value="WITHDRAW">WITHDRAW (Rút quỹ BNB)</option>
-            <option value="FUNDING_ROUND">FUNDING_ROUND (Tạo vòng gọi vốn)</option>
-            <option value="ADD_MEMBER">ADD_MEMBER (Thêm HĐQT)</option>
-            <option value="REMOVE_MEMBER">REMOVE_MEMBER (Xóa HĐQT)</option>
-            <option value="CHANGE_THRESHOLD">CHANGE_THRESHOLD (Đổi Threshold)</option>
-            <option value="PAUSE_TOKEN">PAUSE_TOKEN (Khóa chuyển nhượng)</option>
-            <option value="UNPAUSE_TOKEN">UNPAUSE_TOKEN (Mở khóa chuyển nhượng)</option>
-          </select>
+        <div class="form-field">
+          <label>Loại đề xuất</label>
+          <app-custom-select
+            [options]="proposalTypes"
+            valueKey="value"
+            labelKey="label"
+            [(value)]="newProposal.type"
+            placeholder="Chọn loại đề xuất..."
+            triggerClass="w-full form-input !h-[42px] !bg-slate-50 !border-slate-200/40 dark:!bg-slate-900 dark:!border-slate-800 text-sm"
+          />
         </div>
-        <div class="space-y-1">
-          <label class="text-xs font-black text-slate-400 uppercase">Hạn biểu quyết (Ngày)</label>
+        <div class="form-field">
+          <label>Hạn biểu quyết (Ngày)</label>
           <input
             type="number"
             [(ngModel)]="newProposal.expiration_days"
-            class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+            class="form-input focus:border-violet-500"
           />
         </div>
       </div>
@@ -69,22 +64,22 @@ import { ButtonComponent } from '@shared/components/button/button.component';
       <!-- 1. MINT CO PHAN -->
       @if (newProposal.type === 'MINT') {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
-          <div class="space-y-1">
-            <label class="text-xs font-black text-slate-400 uppercase">Địa chỉ ví nhận</label>
+          <div class="form-field">
+            <label>Địa chỉ ví nhận</label>
             <input
               type="text"
               [(ngModel)]="newProposal.mintParams.to"
               placeholder="0x..."
-              class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-mono text-xs outline-none focus:border-violet-500 transition-all"
+              class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500 font-mono text-xs"
             />
           </div>
-          <div class="space-y-1">
-            <label class="text-xs font-black text-slate-400 uppercase">Số lượng cổ phần</label>
+          <div class="form-field">
+            <label>Số lượng cổ phần</label>
             <input
               type="number"
               [(ngModel)]="newProposal.mintParams.amount"
               placeholder="VD: 50000"
-              class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+              class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
             />
           </div>
         </div>
@@ -93,22 +88,22 @@ import { ButtonComponent } from '@shared/components/button/button.component';
       <!-- 2. BURN CO PHAN -->
       @if (newProposal.type === 'BURN') {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
-          <div class="space-y-1">
-            <label class="text-xs font-black text-slate-400 uppercase">Địa chỉ ví bị hủy</label>
+          <div class="form-field">
+            <label>Địa chỉ ví bị hủy</label>
             <input
               type="text"
               [(ngModel)]="newProposal.burnParams.from"
               placeholder="0x..."
-              class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-mono text-xs outline-none focus:border-violet-500 transition-all"
+              class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500 font-mono text-xs"
             />
           </div>
-          <div class="space-y-1">
-            <label class="text-xs font-black text-slate-400 uppercase">Số lượng cổ phần</label>
+          <div class="form-field">
+            <label>Số lượng cổ phần</label>
             <input
               type="number"
               [(ngModel)]="newProposal.burnParams.amount"
               placeholder="VD: 50000"
-              class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+              class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
             />
           </div>
         </div>
@@ -117,22 +112,22 @@ import { ButtonComponent } from '@shared/components/button/button.component';
       <!-- 3. WITHDRAW BNB -->
       @if (newProposal.type === 'WITHDRAW') {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
-          <div class="space-y-1">
-            <label class="text-xs font-black text-slate-400 uppercase">Địa chỉ ví thụ hưởng</label>
+          <div class="form-field">
+            <label>Địa chỉ ví thụ hưởng</label>
             <input
               type="text"
               [(ngModel)]="newProposal.target"
               placeholder="0x..."
-              class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-mono text-xs outline-none focus:border-violet-500 transition-all"
+              class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500 font-mono text-xs"
             />
           </div>
-          <div class="space-y-1">
-            <label class="text-xs font-black text-slate-400 uppercase">Số lượng BNB</label>
+          <div class="form-field">
+            <label>Số lượng BNB</label>
             <input
               type="text"
               [(ngModel)]="newProposal.value"
               placeholder="VD: 0.5"
-              class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+              class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
             />
           </div>
         </div>
@@ -142,42 +137,42 @@ import { ButtonComponent } from '@shared/components/button/button.component';
       @if (newProposal.type === 'FUNDING_ROUND') {
         <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20 space-y-3">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-1">
-              <label class="text-xs font-black text-slate-400 uppercase">Tên vòng gọi vốn</label>
+            <div class="form-field">
+              <label>Tên vòng gọi vốn</label>
               <input
                 type="text"
                 [(ngModel)]="newProposal.fundingRoundParams.name"
                 placeholder="VD: Vòng Seed"
-                class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+                class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
               />
             </div>
-            <div class="space-y-1">
-              <label class="text-xs font-black text-slate-400 uppercase">Giá cổ phần (BNB)</label>
+            <div class="form-field">
+              <label>Giá cổ phần (BNB)</label>
               <input
                 type="text"
                 [(ngModel)]="newProposal.fundingRoundParams.share_price"
                 placeholder="VD: 0.001"
-                class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+                class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
               />
             </div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-1">
-              <label class="text-xs font-black text-slate-400 uppercase">Số lượng cổ phần bán tối đa</label>
+            <div class="form-field">
+              <label>Số lượng chào bán</label>
               <input
                 type="number"
                 [(ngModel)]="newProposal.fundingRoundParams.max_supply"
                 placeholder="VD: 100000"
-                class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+                class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
               />
             </div>
-            <div class="space-y-1">
-              <label class="text-xs font-black text-slate-400 uppercase">Thời gian bán (Ngày)</label>
+            <div class="form-field">
+              <label>Thời gian bán (Ngày)</label>
               <input
                 type="number"
                 [(ngModel)]="newProposal.fundingRoundParams.duration_days"
                 placeholder="VD: 30"
-                class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+                class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
               />
             </div>
           </div>
@@ -186,26 +181,26 @@ import { ButtonComponent } from '@shared/components/button/button.component';
 
       <!-- 5. ADD / REMOVE MEMBER HĐQT -->
       @if (newProposal.type === 'ADD_MEMBER' || newProposal.type === 'REMOVE_MEMBER') {
-        <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20 space-y-1">
-          <label class="text-xs font-black text-slate-400 uppercase">Địa chỉ ví thành viên HĐQT</label>
+        <div class="form-field bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
+          <label>Địa chỉ ví thành viên HĐQT</label>
           <input
             type="text"
             [(ngModel)]="newProposal.memberParams.address"
             placeholder="0x..."
-            class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-mono text-xs outline-none focus:border-violet-500 transition-all"
+            class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500 font-mono text-xs"
           />
         </div>
       }
 
       <!-- 6. CHANGE THRESHOLD -->
       @if (newProposal.type === 'CHANGE_THRESHOLD') {
-        <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20 space-y-1">
-          <label class="text-xs font-black text-slate-400 uppercase">Số chữ ký tối thiểu mới</label>
+        <div class="form-field bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
+          <label>Số chữ ký tối thiểu mới</label>
           <input
             type="number"
             [(ngModel)]="newProposal.thresholdParams.newThreshold"
             placeholder="VD: 2"
-            class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+            class="form-input !bg-white dark:!bg-slate-900 dark:!border-slate-800 focus:border-violet-500"
           />
         </div>
       }
@@ -244,6 +239,18 @@ export class CreateProposalModalComponent {
   private apiService = inject(ApiService);
 
   public isLoading = signal(false);
+
+  public proposalTypes = [
+    { value: 'MINT', label: 'MINT (Phát hành cổ phần)' },
+    { value: 'BURN', label: 'BURN (Hủy cổ phần)' },
+    { value: 'WITHDRAW', label: 'WITHDRAW (Rút quỹ BNB)' },
+    { value: 'FUNDING_ROUND', label: 'FUNDING_ROUND (Mở gọi vốn)' },
+    { value: 'ADD_MEMBER', label: 'ADD_MEMBER (Thêm HĐQT)' },
+    { value: 'REMOVE_MEMBER', label: 'REMOVE_MEMBER (Xóa HĐQT)' },
+    { value: 'CHANGE_THRESHOLD', label: 'CHANGE_THRESHOLD (Đổi Threshold)' },
+    { value: 'PAUSE_TOKEN', label: 'PAUSE_TOKEN (Khóa chuyển nhượng)' },
+    { value: 'UNPAUSE_TOKEN', label: 'UNPAUSE_TOKEN (Mở khóa chuyển nhượng)' }
+  ];
 
   public newProposal = {
     title: '',
@@ -298,21 +305,23 @@ export class CreateProposalModalComponent {
       // 1. Phân loại và encode calldata tương ứng
       if (this.newProposal.type === 'WITHDRAW') {
         target = this.newProposal.target;
-        value = ethers.parseEther(this.newProposal.value).toString();
-        calldata = '0x';
+        value = ethers.parseEther(this.newProposal.value.toString()).toString();
+        // Rút BNB đơn giản gửi trực tiếp tới địa chỉ target với value BNB
       } else if (this.newProposal.type === 'MINT') {
         target = comp.token_address;
         const tokenInterface = new ethers.Interface(EquityToken.abi);
+        const amountWei = ethers.parseUnits(this.newProposal.mintParams.amount.toString(), 18);
         calldata = tokenInterface.encodeFunctionData('mint', [
           this.newProposal.mintParams.to,
-          ethers.parseUnits(this.newProposal.mintParams.amount.toString(), 18)
+          amountWei
         ]);
       } else if (this.newProposal.type === 'BURN') {
         target = comp.token_address;
         const tokenInterface = new ethers.Interface(EquityToken.abi);
-        calldata = tokenInterface.encodeFunctionData('burn', [
+        const amountWei = ethers.parseUnits(this.newProposal.burnParams.amount.toString(), 18);
+        calldata = tokenInterface.encodeFunctionData('burnFrom', [
           this.newProposal.burnParams.from,
-          ethers.parseUnits(this.newProposal.burnParams.amount.toString(), 18)
+          amountWei
         ]);
       } else if (this.newProposal.type === 'PAUSE_TOKEN') {
         target = comp.token_address;
@@ -325,33 +334,45 @@ export class CreateProposalModalComponent {
       } else if (this.newProposal.type === 'ADD_MEMBER') {
         target = comp.governance_address;
         const govInterface = new ethers.Interface(BoardGovernance.abi);
-        calldata = govInterface.encodeFunctionData('addMember', [this.newProposal.memberParams.address]);
+        calldata = govInterface.encodeFunctionData('addMember', [
+          this.newProposal.memberParams.address
+        ]);
       } else if (this.newProposal.type === 'REMOVE_MEMBER') {
         target = comp.governance_address;
         const govInterface = new ethers.Interface(BoardGovernance.abi);
-        calldata = govInterface.encodeFunctionData('removeMember', [this.newProposal.memberParams.address]);
+        calldata = govInterface.encodeFunctionData('removeMember', [
+          this.newProposal.memberParams.address
+        ]);
       } else if (this.newProposal.type === 'CHANGE_THRESHOLD') {
         target = comp.governance_address;
         const govInterface = new ethers.Interface(BoardGovernance.abi);
-        calldata = govInterface.encodeFunctionData('changeThreshold', [this.newProposal.thresholdParams.newThreshold]);
+        calldata = govInterface.encodeFunctionData('changeThreshold', [
+          this.newProposal.thresholdParams.newThreshold
+        ]);
       } else if (this.newProposal.type === 'FUNDING_ROUND') {
         if (!comp.funding_address) {
-          this.stateService.showToast('Địa chỉ FinanceManager của công ty chưa cấu hình!', 'error');
+          this.stateService.showToast('Không tìm thấy địa chỉ FinanceManager của công ty!', 'error');
           this.isLoading.set(false);
           return;
         }
         target = comp.funding_address;
         const financeInterface = new ethers.Interface(FinanceManager.abi);
-        
+
+        // Quy đổi giá và max supply sang Wei
+        const priceWei = ethers.parseEther(this.newProposal.fundingRoundParams.share_price.toString());
+        const maxSupplyWei = ethers.parseUnits(this.newProposal.fundingRoundParams.max_supply.toString(), 18);
+        const startTime = Math.floor(Date.now() / 1000);
+        const endTime = startTime + this.newProposal.fundingRoundParams.duration_days * 86400;
+
         const params = {
           name: this.newProposal.fundingRoundParams.name,
           shareToken: comp.token_address,
-          paymentToken: ethers.ZeroAddress, // BNB làm đồng tiền thanh toán mặc định
-          treasury: comp.governance_address, // Quỹ BNB chảy về ví két sắt BoardGovernance
-          price: ethers.parseEther(this.newProposal.fundingRoundParams.share_price.toString()),
-          maxSupply: ethers.parseUnits(this.newProposal.fundingRoundParams.max_supply.toString(), 18),
-          startTime: Math.floor(Date.now() / 1000), // bắt đầu ngay lập tức
-          endTime: Math.floor(Date.now() / 1000) + this.newProposal.fundingRoundParams.duration_days * 86400,
+          paymentToken: ethers.ZeroAddress, // mặc định BNB
+          treasury: comp.governance_address, // Quỹ rút về két sắt HĐQT
+          price: priceWei,
+          maxSupply: maxSupplyWei,
+          startTime: startTime,
+          endTime: endTime,
           minPurchase: 0,
           maxPurchase: 0,
           isWhitelistOnly: false
@@ -360,20 +381,13 @@ export class CreateProposalModalComponent {
         calldata = financeInterface.encodeFunctionData('createFundingRound', [params]);
       }
 
-      // Xác thực dữ liệu
-      if (!target || !ethers.isAddress(target)) {
-        this.stateService.showToast('Địa chỉ ví đích (Target) không hợp lệ!', 'error');
-        this.isLoading.set(false);
-        return;
-      }
-
-      this.stateService.showToast('Vui lòng xác nhận giao dịch tạo đề xuất trên ví MetaMask...', 'warning');
+      this.stateService.showToast('Đang gửi đề xuất HĐQT lên blockchain...', 'warning');
       const gasOverrides = await this.stateService.getGasOverrides(signer);
       
-      const delaySeconds = 0; // Cho phép thực thi ngay sau khi đủ chữ ký
-      const durationSeconds = this.newProposal.expiration_days * 86400; // giây
+      const delaySeconds = 0;
+      const durationSeconds = this.newProposal.expiration_days * 86400;
 
-      // Gọi transaction createProposal on-chain
+      // 2. Gọi contract createProposal
       const tx = await govContract['createProposal'](
         target,
         value,
@@ -384,14 +398,14 @@ export class CreateProposalModalComponent {
         gasOverrides
       );
 
-      this.stateService.showToast('Giao dịch đã gửi. Đang chờ xác nhận từ mạng lưới...', 'warning');
+      this.stateService.showToast('Giao dịch đang chờ xác nhận từ blockchain...', 'warning');
       await tx.wait();
 
-      // Lấy onchain_id bằng cách đọc proposalCount hiện tại
+      // Đọc proposalCount mới nhất làm onchain_id
       const proposalCount = await govContract['proposalCount']();
       const onchainId = Number(proposalCount);
 
-      // Lưu thông tin đồng bộ về database Backend
+      // 3. Đồng bộ hóa với Backend DB
       const expirationDate = new Date();
       expirationDate.setDate(expirationDate.getDate() + this.newProposal.expiration_days);
 
@@ -408,11 +422,11 @@ export class CreateProposalModalComponent {
         expiration_date: expirationDate.toISOString()
       }, comp.id));
 
-      this.stateService.showToast('Đã tạo đề xuất on-chain và ghi nhận đồng bộ thành công!', 'success');
+      this.stateService.showToast('Tạo đề xuất thành công và đã đồng bộ lên hệ thống!', 'success');
       this.modalRef.close(true);
     } catch (e: any) {
       console.error(e);
-      this.stateService.showToast(e.message || e.error?.message || 'Lỗi xảy ra trong quá trình giao dịch!', 'error');
+      this.stateService.showToast(e.message || e.error?.message || 'Có lỗi xảy ra khi tạo đề xuất!', 'error');
     } finally {
       this.isLoading.set(false);
     }

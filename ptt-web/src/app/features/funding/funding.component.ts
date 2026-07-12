@@ -10,6 +10,7 @@ import { firstValueFrom } from 'rxjs';
 import { Contract, parseEther, ethers } from 'ethers';
 
 import { ModalService } from '@core/services/modal.service';
+import { CreateRoundProposalModalComponent } from './modals/create-round-proposal-modal.component';
 
 // ABI rút gọn của FinanceManager để quản lý Gọi vốn & Cổ tức
 const FINANCE_MANAGER_ABI = [
@@ -127,10 +128,17 @@ export class FundingComponent implements OnInit {
     }
   }
 
-  // Tạo đề xuất gọi vốn mới chuyển sang Governance
+  // Đăng ký vòng gọi vốn mới qua Modal đề xuất HĐQT
   public openCreateRoundModal() {
-    this.stateService.showToast('Vui lòng tạo đề xuất FUNDING_ROUND tại trang Hội đồng Quản trị để mở vòng gọi vốn mới.', 'warning');
-    this.router.navigate(['/governance']);
+    const ref = this.modalService.open(CreateRoundProposalModalComponent, {
+      title: 'Tạo đề xuất vòng gọi vốn mới',
+      size: 'md'
+    });
+    ref.afterClosed$.subscribe(success => {
+      if (success) {
+        this.loadFundingData();
+      }
+    });
   }
 
   // Rút cổ tức (Claim Dividend)

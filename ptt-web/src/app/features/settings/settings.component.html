@@ -135,7 +135,7 @@
                 [ngModel]="companyName()"
                 (ngModelChange)="companyName.set($event)"
                 placeholder="Nhập tên doanh nghiệp..."
-                class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-semibold outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all text-slate-800 dark:text-slate-100"
+                class="form-input focus:border-violet-500"
               />
             </div>
 
@@ -146,7 +146,7 @@
                 [ngModel]="companyLogo()"
                 (ngModelChange)="companyLogo.set($event)"
                 placeholder="Nhập URL ảnh logo..."
-                class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-semibold outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all text-slate-800 dark:text-slate-100"
+                class="form-input focus:border-violet-500"
               />
             </div>
 
@@ -157,7 +157,7 @@
                 [ngModel]="companyValuation()"
                 (ngModelChange)="companyValuation.set($event)"
                 placeholder="Nhập định giá..."
-                class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-semibold outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all text-slate-800 dark:text-slate-100"
+                class="form-input focus:border-violet-500"
               />
             </div>
 
@@ -215,7 +215,7 @@
               type="text"
               [(ngModel)]="newOwnerAddr"
               placeholder="Nhập địa chỉ ví 0x..."
-              class="flex-1 min-w-0 h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 font-mono text-xs outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all"
+              class="form-input focus:border-violet-500 font-mono text-xs"
             />
             <button
               app-button
@@ -264,7 +264,7 @@
                 labelKey="label"
                 [value]="minSignatures()"
                 (valueChange)="minSignatures.set($event)"
-                class="w-full"
+                triggerClass="w-full form-input !h-[42px] !bg-slate-50 !border-slate-200/40 dark:!bg-slate-900 dark:!border-slate-800 text-sm"
               />
               <p class="text-[10px] text-slate-400">
                 Số lượng chữ ký tối thiểu cần thiết từ HĐQT để các đề xuất (Proposal) được phê duyệt
@@ -328,7 +328,7 @@
                   [(ngModel)]="editingContracts[c.key]"
                   placeholder="Chưa liên kết địa chỉ hợp đồng (0x...)"
                   [disabled]="isContractLinked(c.key)"
-                  class="w-full h-10 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-mono text-xs outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all text-slate-800 dark:text-slate-100 disabled:bg-slate-100 dark:disabled:bg-slate-900/60 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed"
+                  class="form-input focus:border-violet-500 font-mono text-xs disabled:bg-slate-100 dark:disabled:bg-slate-900/60 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed"
                 />
               </div>
             }

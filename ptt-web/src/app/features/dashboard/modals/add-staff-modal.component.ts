@@ -1,4 +1,4 @@
-import { Component, Inject, inject, signal } from '@angular/core';
+import { Component, Inject, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '@core/services/state.service';
@@ -7,37 +7,37 @@ import { ModalRef, MODAL_DATA } from '@core/services/modal-ref';
 import { firstValueFrom } from 'rxjs';
 
 import { ButtonComponent } from '@shared/components/button/button.component';
+import { CustomSelectComponent } from '../../../shared/components/custom-select/custom-select.component';
 
 @Component({
   selector: 'app-add-staff-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, CustomSelectComponent],
   template: `
     <div class="space-y-4">
-      <div class="space-y-1.5">
-        <label class="text-xs font-black text-slate-400 uppercase tracking-wider block">Địa chỉ ví (Wallet Address)</label>
+      <div class="form-field">
+        <label>Địa chỉ ví (Wallet Address)</label>
         <input
           type="text"
           [(ngModel)]="newStaffWallet"
           placeholder="0x..."
-          class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 font-mono text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all"
+          class="form-input focus:border-violet-500 font-mono text-xs"
         />
       </div>
 
-      <div class="space-y-1.5">
-        <label class="text-xs font-black text-slate-400 uppercase tracking-wider block">Vai trò</label>
-        <select
-          [(ngModel)]="newStaffRoleId"
-          class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-semibold outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all"
-        >
-          <option value="" disabled selected>Chọn vai trò...</option>
-          @for (role of data.roles; track role.id) {
-            <option [value]="role.id">{{ getRoleDisplayName(role.name) }}</option>
-          }
-        </select>
+      <div class="form-field">
+        <label>Vai trò</label>
+        <app-custom-select
+          [options]="roleOptions()"
+          valueKey="id"
+          labelKey="name"
+          [(value)]="newStaffRoleId"
+          placeholder="Chọn vai trò..."
+          triggerClass="w-full form-input !h-[42px] !bg-slate-50 !border-slate-200/40 dark:!bg-slate-900 dark:!border-slate-800 text-sm"
+        />
       </div>
 
-      <div class="pt-4 border-t border-slate-100 dark:border-slate-800/60 flex justify-end gap-3">
+      <div class="pt-4 border-t border-slate-100 dark:border-slate-800/60 flex justify-end gap-3 select-none">
         <button
           app-button
           variant="cancel"
@@ -68,6 +68,14 @@ export class AddStaffModalComponent {
   public isLoading = signal(false);
 
   constructor(@Inject(MODAL_DATA) public data: { roles: any[] }) {}
+
+  // Convert roles list to options compatible with custom-select
+  public roleOptions = computed(() => {
+    return (this.data.roles || []).map(role => ({
+      id: role.id.toString(), // custom-select làm việc tốt nhất với string values
+      name: this.getRoleDisplayName(role.name)
+    }));
+  });
 
   public getRoleDisplayName(name: string): string {
     const map: Record<string, string> = {

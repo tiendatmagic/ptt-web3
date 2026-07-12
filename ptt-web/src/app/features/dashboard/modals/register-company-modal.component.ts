@@ -15,36 +15,36 @@ import { ButtonComponent } from '@shared/components/button/button.component';
   template: `
     <div class="space-y-4">
       <div class="grid grid-cols-2 gap-3">
-        <div class="space-y-1.5">
-          <label class="text-xs font-black text-slate-400 uppercase tracking-wider block">Tên công ty</label>
+        <div class="form-field">
+          <label>Tên công ty</label>
           <input
             type="text"
             [(ngModel)]="newCompany.name"
             placeholder="Tên đầy đủ..."
-            class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+            class="form-input focus:border-violet-500"
           />
         </div>
-        <div class="space-y-1.5">
-          <label class="text-xs font-black text-slate-400 uppercase tracking-wider block">Mã cổ phần</label>
+        <div class="form-field">
+          <label>Mã cổ phần</label>
           <input
             type="text"
             [(ngModel)]="newCompany.code"
             placeholder="VD: PTT"
-            class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-semibold outline-none focus:border-violet-500 transition-all uppercase"
+            class="form-input focus:border-violet-500 uppercase"
           />
         </div>
       </div>
 
-      <div class="space-y-1.5">
-        <label class="text-xs font-black text-slate-400 uppercase tracking-wider block">Định giá công ty ($ USD)</label>
+      <div class="form-field">
+        <label>Định giá công ty ($ USD)</label>
         <input
           type="number"
           [(ngModel)]="newCompany.valuation"
-          class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-semibold outline-none focus:border-violet-500 transition-all"
+          class="form-input focus:border-violet-500"
         />
       </div>
 
-      <div class="pt-4 border-t border-slate-100 dark:border-slate-800/60 flex justify-end gap-3">
+      <div class="pt-4 border-t border-slate-100 dark:border-slate-800/60 flex justify-end gap-3 select-none">
         <button
           app-button
           variant="cancel"
