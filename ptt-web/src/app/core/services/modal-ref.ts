@@ -32,4 +32,5 @@ export interface ConfirmConfig {
   cancelText?: string;
   confirmButtonClass?: string;
   isSubmitting?: boolean;
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
 }

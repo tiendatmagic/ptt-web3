@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { ethers } from 'ethers';
 import { StateService } from '@core/services/state.service';
 import { ApiService } from '@core/services/api.service';
+import { ModalService } from '@core/services/modal.service';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { CONTRACTS_DATA } from '../../core/constants/contracts-data';
 import { IconComponent } from '@shared/components/icon/icon.component';
@@ -20,6 +21,7 @@ export class SettingsComponent implements OnInit {
   public stateService = inject(StateService);
   private apiService = inject(ApiService);
   private router = inject(Router);
+  private modalService = inject(ModalService);
 
   // --- BSC API Key ---
   public bscApiKey = signal<string>('');
@@ -344,39 +346,47 @@ Hãy lưu trữ cẩn thận và không chia sẻ khóa bảo mật (Private Key
   }
 
   // --- Xóa doanh nghiệp nháp ---
-  public async handleDeleteCompany() {
+  public handleDeleteCompany() {
     const comp = this.stateService.currentCompany();
     if (!comp) return;
 
-    const confirmMsg = `Bạn có chắc chắn muốn xóa doanh nghiệp "${comp.name}"?
-THAO TÁC NÀY KHÔNG THỂ HOÀN TÁC! Tất cả các thông tin liên quan, vai trò và nhân sự của doanh nghiệp này trên database sẽ bị xóa hoàn toàn khỏi hệ thống.`;
-    
-    if (!confirm(confirmMsg)) return;
+    const confirmRef = this.modalService.confirm({
+      title: 'Xóa doanh nghiệp nháp',
+      description: `Bạn có chắc chắn muốn xóa doanh nghiệp "${comp.name}" không?`,
+      descriptionHtml: '<div class="text-xs text-red-500 font-bold mt-2">THAO TÁC NÀY KHÔNG THỂ HOÀN TÁC! Tất cả thông tin doanh nghiệp, vai trò và thành viên sẽ bị xóa hoàn toàn khỏi cơ sở dữ liệu.</div>',
+      confirmText: 'XÓA DOANH NGHIỆP',
+      cancelText: 'HỦY BỎ',
+      confirmButtonClass: 'btn-danger'
+    });
 
-    try {
-      this.deleteLoading.set(true);
-      this.stateService.isLoading.set(true);
-      
-      await firstValueFrom(this.apiService.delete<any>(`companies/${comp.id}`));
-      
-      this.stateService.showToast('Đã xóa doanh nghiệp nháp thành công!', 'success');
-      
-      // 1. Tải lại danh sách doanh nghiệp
-      await this.stateService.loadCompanies();
-      
-      // 2. Tự động chọn lại doanh nghiệp đầu tiên nếu có
-      const list = this.stateService.companiesList();
-      if (list.length > 0) {
-        this.stateService.selectCompany(list[0]);
+    confirmRef.afterClosed$.subscribe(async (confirmed) => {
+      if (confirmed) {
+        try {
+          this.deleteLoading.set(true);
+          this.stateService.isLoading.set(true);
+          
+          await firstValueFrom(this.apiService.delete<any>(`companies/${comp.id}`));
+          
+          this.stateService.showToast('Đã xóa doanh nghiệp nháp thành công!', 'success');
+          
+          // 1. Tải lại danh sách doanh nghiệp
+          await this.stateService.loadCompanies();
+          
+          // 2. Tự động chọn lại doanh nghiệp đầu tiên nếu có
+          const list = this.stateService.companiesList();
+          if (list.length > 0) {
+            this.stateService.selectCompany(list[0]);
+          }
+          
+          // 3. Chuyển hướng về Dashboard
+          this.router.navigate(['/dashboard']);
+        } catch (e: any) {
+          this.stateService.showToast(e.error?.message || 'Không thể xóa doanh nghiệp!', 'error');
+        } finally {
+          this.deleteLoading.set(false);
+          this.stateService.isLoading.set(false);
+        }
       }
-      
-      // 3. Chuyển hướng về Dashboard
-      this.router.navigate(['/dashboard']);
-    } catch (e: any) {
-      this.stateService.showToast(e.error?.message || 'Không thể xóa doanh nghiệp!', 'error');
-    } finally {
-      this.deleteLoading.set(false);
-      this.stateService.isLoading.set(false);
-    }
+    });
   }
 }

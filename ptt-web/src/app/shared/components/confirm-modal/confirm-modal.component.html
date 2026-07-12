@@ -52,7 +52,7 @@
       type="button"
       (click)="onCancel()"
       [disabled]="isSubmitting"
-      class="flex-1"
+      class="flex-1 whitespace-nowrap"
     >
       {{ cancelText }}
     </button>
@@ -62,7 +62,7 @@
       type="button"
       (click)="onConfirm()"
       [loading]="isSubmitting"
-      class="flex-1 shadow-md"
+      class="flex-1 shadow-md whitespace-nowrap"
     >
       <span>{{ confirmText }}</span>
     </button>

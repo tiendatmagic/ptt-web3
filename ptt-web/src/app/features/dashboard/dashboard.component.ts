@@ -147,24 +147,34 @@ export class DashboardComponent implements OnInit {
   }
 
   // Vô hiệu hóa nhân viên
-  public async handleDeactivateStaff(staffId: number) {
+  public handleDeactivateStaff(staffId: number) {
     const comp = this.stateService.currentCompany();
     if (!comp) return;
 
-    if (!confirm('Bạn có chắc chắn muốn ngừng kích hoạt nhân sự này không?')) return;
+    const confirmRef = this.modalService.confirm({
+      title: 'Ngừng kích hoạt nhân sự',
+      description: 'Bạn có chắc chắn muốn ngừng kích hoạt nhân sự này không?',
+      confirmText: 'NGỪNG KÍCH HOẠT',
+      cancelText: 'HỦY BỎ',
+      confirmButtonClass: 'btn-danger'
+    });
 
-    try {
-      this.stateService.isLoading.set(true);
-      await firstValueFrom(this.apiService.delete<any>(`staffs/${staffId}`, comp.id));
-      this.stateService.showToast('Đã ngừng kích hoạt nhân viên!', 'success');
-      
-      // Tải lại danh sách
-      await this.loadStaffsData();
-    } catch (e: any) {
-      this.stateService.showToast(e.error?.message || 'Có lỗi xảy ra!', 'error');
-    } finally {
-      this.stateService.isLoading.set(false);
-    }
+    confirmRef.afterClosed$.subscribe(async (confirmed) => {
+      if (confirmed) {
+        try {
+          this.stateService.isLoading.set(true);
+          await firstValueFrom(this.apiService.delete<any>(`staffs/${staffId}`, comp.id));
+          this.stateService.showToast('Đã ngừng kích hoạt nhân viên!', 'success');
+          
+          // Tải lại danh sách
+          await this.loadStaffsData();
+        } catch (e: any) {
+          this.stateService.showToast(e.error?.message || 'Có lỗi xảy ra!', 'error');
+        } finally {
+          this.stateService.isLoading.set(false);
+        }
+      }
+    });
   }
 
   // Đăng ký công ty từ card chính

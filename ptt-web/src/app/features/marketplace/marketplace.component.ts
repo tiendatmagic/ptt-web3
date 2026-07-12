@@ -7,6 +7,7 @@ import { IconComponent } from '@shared/components/icon/icon.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { firstValueFrom } from 'rxjs';
 import { Contract } from 'ethers';
+import { ModalService } from '@core/services/modal.service';
 
 // ABI rút gọn của Marketplace contract phục vụ settleTrade
 const MARKETPLACE_ABI = [
@@ -23,6 +24,7 @@ const MARKETPLACE_ABI = [
 export class MarketplaceComponent implements OnInit {
   public stateService = inject(StateService);
   private apiService = inject(ApiService);
+  private modalService = inject(ModalService);
 
   // Sổ lệnh
   public buyOrders = signal<any[]>([]);
@@ -104,23 +106,32 @@ export class MarketplaceComponent implements OnInit {
     }
   }
 
-  // Hủy lệnh
-  public async handleCancelOrder(orderId: number) {
+  public handleCancelOrder(orderId: number) {
     const comp = this.stateService.currentCompany();
     if (!comp) return;
 
-    if (!confirm('Bạn có chắc chắn muốn hủy lệnh giao dịch này không?')) return;
+    const confirmRef = this.modalService.confirm({
+      title: 'Hủy lệnh giao dịch',
+      description: 'Bạn có chắc chắn muốn hủy lệnh giao dịch này không?',
+      confirmText: 'HỦY LỆNH',
+      cancelText: 'QUAY LẠI',
+      confirmButtonClass: 'btn-danger'
+    });
 
-    try {
-      this.stateService.isLoading.set(true);
-      await firstValueFrom(this.apiService.post<any>(`marketplace/orders/${orderId}/cancel`, {}, comp.id));
-      this.stateService.showToast('Đã hủy lệnh thành công!', 'success');
-      await this.loadMarketplaceData();
-    } catch (e: any) {
-      this.stateService.showToast(e.error?.message || 'Có lỗi xảy ra!', 'error');
-    } finally {
-      this.stateService.isLoading.set(false);
-    }
+    confirmRef.afterClosed$.subscribe(async (confirmed) => {
+      if (confirmed) {
+        try {
+          this.stateService.isLoading.set(true);
+          await firstValueFrom(this.apiService.post<any>(`marketplace/orders/${orderId}/cancel`, {}, comp.id));
+          this.stateService.showToast('Đã hủy lệnh thành công!', 'success');
+          await this.loadMarketplaceData();
+        } catch (e: any) {
+          this.stateService.showToast(e.error?.message || 'Có lỗi xảy ra!', 'error');
+        } finally {
+          this.stateService.isLoading.set(false);
+        }
+      }
+    });
   }
 
   // Thực thi Settlement On-chain (Settle Trade)
