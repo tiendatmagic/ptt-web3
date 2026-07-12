@@ -174,8 +174,8 @@ class ProposalController extends Controller
             ->where('staffs.company_id', $companyId)
             ->where('staffs.status', 'ACTIVE')
             ->where(function ($query) {
-                $query->where('roles.name', 'Chủ quán')
-                      ->orWhere('roles.name', 'Quản lý');
+                $query->where('roles.name', 'Owner')
+                      ->orWhere('roles.name', 'Board Member');
             })
             ->count();
 

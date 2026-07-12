@@ -99,20 +99,20 @@ class CompanyController extends Controller
             $savedCompany = $this->companyRepository->save($company);
             $companyId = $savedCompany->getId();
 
-            // 2. Tạo các vai trò mặc định cho công ty
-            // Role CEO (Chủ quán) - Full quyền
+            // 2. Create default roles for the company
+            // Role: Owner - Full permissions
             $ceoRoleId = DB::table('roles')->insertGetId([
                 'company_id' => $companyId,
-                'name' => 'Chủ quán',
+                'name' => 'Owner',
                 'permissions' => json_encode(['*']),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            // Role Quản lý (Manager)
+            // Role: Board Member (Thành viên HĐQT)
             DB::table('roles')->insert([
                 'company_id' => $companyId,
-                'name' => 'Quản lý',
+                'name' => 'Board Member',
                 'permissions' => json_encode([
                     'staffs.view', 'staffs.create', 'staffs.edit',
                     'proposals.view', 'proposals.create', 'proposals.sign',
@@ -122,33 +122,7 @@ class CompanyController extends Controller
                 'updated_at' => now(),
             ]);
 
-            // Role Thu ngân (Cashier)
-            DB::table('roles')->insert([
-                'company_id' => $companyId,
-                'name' => 'Thu ngân',
-                'permissions' => json_encode([
-                    'proposals.view',
-                    'funding.view',
-                    'marketplace.view'
-                ]),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // Role Kế toán (Accountant)
-            DB::table('roles')->insert([
-                'company_id' => $companyId,
-                'name' => 'Kế toán',
-                'permissions' => json_encode([
-                    'dividends.view', 'dividends.create', 'dividends.execute',
-                    'proposals.view', 'proposals.create',
-                    'funding.view', 'marketplace.view'
-                ]),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // 3. Gắn User tạo công ty làm CEO (Chủ quán)
+            // 3. Assign the company creator as Owner
             DB::table('staffs')->insert([
                 'user_id' => $user->id,
                 'company_id' => $companyId,

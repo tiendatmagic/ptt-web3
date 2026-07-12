@@ -249,3 +249,27 @@ body.dark .btn-danger-light:hover {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Đảm bảo người dùng có thể bôi đen để copy thông tin ví, contract,... */
+body, app-root, main, div, p, span, a, td, th, input, textarea {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+/* Chỉ chặn bôi đen ở các menu layout và các nút bấm để trải nghiệm mượt */
+.select-none, 
+button, 
+app-sidebar, 
+app-header, 
+.tab-group, 
+app-tab-group,
+app-icon, 
+svg {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+

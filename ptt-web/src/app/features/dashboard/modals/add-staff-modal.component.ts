@@ -32,7 +32,7 @@ import { ButtonComponent } from '@shared/components/button/button.component';
         >
           <option value="" disabled selected>Chọn vai trò...</option>
           @for (role of data.roles; track role.id) {
-            <option [value]="role.id">{{ role.name }}</option>
+            <option [value]="role.id">{{ getRoleDisplayName(role.name) }}</option>
           }
         </select>
       </div>
@@ -68,6 +68,21 @@ export class AddStaffModalComponent {
   public isLoading = signal(false);
 
   constructor(@Inject(MODAL_DATA) public data: { roles: any[] }) {}
+
+  public getRoleDisplayName(name: string): string {
+    const map: Record<string, string> = {
+      'Owner': 'Chủ HĐQT',
+      'Board Member': 'Thành viên HĐQT',
+      'Chủ quán': 'Chủ HĐQT',
+      'Quản lý': 'Thành viên HĐQT',
+      'Manager': 'Thành viên HĐQT',
+      'Thu ngân': 'Nhân viên',
+      'Cashier': 'Nhân viên',
+      'Kế toán': 'Kế toán',
+      'Accountant': 'Kế toán'
+    };
+    return map[name] || name;
+  }
 
   onCancel() {
     this.modalRef.close();

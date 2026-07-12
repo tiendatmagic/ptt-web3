@@ -1,4 +1,4 @@
-<div class="w-full px-4 sm:px-6 py-5 space-y-5 select-none">
+<div class="w-full px-4 sm:px-6 py-5 space-y-5">
   <!-- ====================================================
        WELCOME BANNER — compact, cân đối
   ===================================================== -->
@@ -26,18 +26,12 @@
     <div class="shrink-0">
       @if (!stateService.isConnected()) {
         <button
-          app-button
-          variant="secondary"
-          size="sm"
           (click)="stateService.connectWallet()"
+          class="flex items-center gap-2 bg-white text-violet-700 font-extrabold text-sm px-4 py-2 rounded-xl shadow-lg hover:bg-violet-50 active:scale-95 transition-all duration-150 shrink-0"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2.5"
-              d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"
-            />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+              d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
           </svg>
           KẾT NỐI VÍ
         </button>
@@ -50,18 +44,11 @@
         </div>
       } @else {
         <button
-          app-button
-          variant="secondary"
-          size="sm"
           (click)="openRegisterCompany()"
+          class="flex items-center gap-2 bg-white text-violet-700 font-extrabold text-sm px-4 py-2 rounded-xl shadow-lg hover:bg-violet-50 active:scale-95 transition-all duration-150 shrink-0"
         >
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2.5"
-              d="M12 4v16m8-8H4"
-            />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
           </svg>
           Đăng ký Doanh nghiệp
         </button>
@@ -81,102 +68,82 @@
        KHI ĐÃ CHỌN CÔNG TY: 3 cột dashboard
   ===================================================== -->
   @if (stateService.currentUser() && stateService.currentCompany()) {
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      <!-- PANEL TRÁI: Thông tin công ty + Contracts -->
-      <div
-        class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-5 shadow-sm space-y-4"
-      >
-        <!-- Company header -->
-        <div class="flex items-center gap-3">
-          <div
-            class="w-10 h-10 shrink-0 rounded-xl bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center"
-          >
-            <svg
-              class="w-5 h-5 text-violet-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-              />
-            </svg>
-          </div>
-          <div class="min-w-0">
-            <h2
-              class="text-sm font-extrabold text-slate-800 dark:text-white truncate leading-tight"
-            >
-              {{ stateService.currentCompany().name }}
-            </h2>
-            <span class="text-sm font-bold text-violet-500 uppercase tracking-wider">
-              {{ stateService.currentCompany().code }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Stats -->
-        <div class="grid grid-cols-2 gap-2.5">
-          <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3 space-y-0.5">
-            <span class="text-xs font-black text-slate-400 uppercase tracking-wider block"
-              >Định giá</span
-            >
-            <span class="text-xs font-black text-slate-800 dark:text-white">
-              ${{ stateService.currentCompany().valuation | number: '1.0-0' }}
-            </span>
-          </div>
-          <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3 space-y-0.5">
-            <span class="text-xs font-black text-slate-400 uppercase tracking-wider block"
-              >Trạng thái</span
-            >
-            <span class="text-sm font-black text-emerald-600 dark:text-emerald-400">
-              {{ stateService.currentCompany().status }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Contracts -->
-        <div class="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800/60">
-          <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest pt-1">
-            Smart Contracts
-          </h3>
-
-          @for (
-            contract of [
-              { label: 'Equity Token', key: 'token_address' },
-              { label: 'Board Governance', key: 'governance_address' },
-              { label: 'Treasury', key: 'treasury_address' },
-              { label: 'Marketplace', key: 'marketplace_address' },
-            ];
-            track contract.key
-          ) {
-            <div
-              class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-2.5 border border-slate-100 dark:border-slate-800/40"
-            >
-              <span class="text-xs font-black text-slate-400 uppercase block mb-0.5">{{
-                contract.label
-              }}</span>
-              <a
-                [href]="
-                  'https://testnet.bscscan.com/address/' +
-                  stateService.currentCompany()[contract.key]
-                "
-                target="_blank"
-                class="font-mono text-xs text-violet-500 hover:text-violet-700 hover:underline break-all leading-tight block truncate"
-              >
-                {{ stateService.currentCompany()[contract.key] || '—' }}
-              </a>
+    <div class="space-y-5">
+      
+      <!-- KHỐI TỔNG QUAN DOANH NGHIỆP & CONTRACTS (Full Width) -->
+      <div class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-6 shadow-sm space-y-5">
+        
+        <!-- Header Info & Stats (Hàng ngang) -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-5 pb-5 border-b border-slate-100 dark:border-slate-800/60">
+          
+          <!-- Company Name & Code -->
+          <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 shrink-0 rounded-2xl bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center">
+              <svg class="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
             </div>
-          }
+            <div class="min-w-0">
+              <h2 class="text-base font-extrabold text-slate-800 dark:text-white truncate leading-tight">
+                {{ stateService.currentCompany().name }}
+              </h2>
+              <span class="text-sm font-bold text-violet-500 uppercase tracking-widest block mt-0.5">
+                {{ stateService.currentCompany().code }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Stats (Valuation & Status) -->
+          <div class="flex gap-4 sm:gap-6">
+            <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl px-5 py-3 space-y-0.5 border border-slate-100 dark:border-slate-800/20">
+              <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Định giá</span>
+              <span class="text-sm font-black text-slate-800 dark:text-white">
+                ${{ stateService.currentCompany().valuation | number: '1.0-0' }}
+              </span>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl px-5 py-3 space-y-0.5 border border-slate-100 dark:border-slate-800/20">
+              <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Trạng thái</span>
+              <span class="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                ● {{ stateService.currentCompany().status }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contracts (Grid ngang trải rộng) -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Smart Contracts deployed (BSC Testnet)</h3>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            @for (
+              contract of [
+                { label: 'Equity Token', key: 'token_address', icon: '🪙' },
+                { label: 'Board Governance', key: 'governance_address', icon: '🏛️' },
+                { label: 'Treasury', key: 'treasury_address', icon: '🏦' },
+                { label: 'Marketplace', key: 'marketplace_address', icon: '🔁' }
+              ];
+              track contract.key
+            ) {
+              <div class="bg-slate-50 dark:bg-slate-900/30 rounded-xl p-4 border border-slate-100 dark:border-slate-800/40 space-y-1.5 hover:border-violet-500/20 transition-all duration-200">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-sm">{{ contract.icon }}</span>
+                  <span class="text-xs font-black text-slate-400 uppercase tracking-wider">{{ contract.label }}</span>
+                </div>
+                <a
+                  [href]="'https://testnet.bscscan.com/address/' + stateService.currentCompany()[contract.key]"
+                  target="_blank"
+                  class="font-mono text-xs text-violet-500 hover:text-violet-750 hover:underline break-all leading-tight block select-all"
+                >
+                  {{ stateService.currentCompany()[contract.key] || '—' }}
+                </a>
+              </div>
+            }
+          </div>
         </div>
       </div>
 
-      <!-- PANEL PHẢI: Tabs -->
-      <div
-        class="lg:col-span-2 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] shadow-sm flex flex-col"
-      >
+      <!-- KHỐI TABS NỘI DUNG (Full Width) -->
+      <div class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] shadow-sm flex flex-col">
         <app-tab-group
           [options]="tabOptions()"
           [activeValue]="activeTab()"
@@ -351,7 +318,7 @@
                         <span
                           class="px-2 py-0.5 rounded-full text-sm font-bold bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400"
                         >
-                          {{ staff.role_name }}
+                          {{ getRoleDisplayName(staff.role_name) }}
                         </span>
                       </td>
                       <td class="px-4 py-3">
@@ -366,7 +333,7 @@
                       @if (stateService.hasPermission('staffs.edit')) {
                         <td class="px-4 py-3 text-right">
                           @if (
-                            staff.role_name !== 'Chủ quán' &&
+                            staff.role_name !== 'Owner' &&
                             staff.user_id !== stateService.currentUser().id
                           ) {
                             <button
@@ -393,168 +360,6 @@
                 </tbody>
               </table>
             </div>
-          </div>
-        }
-
-        <!-- Tab: Settings -->
-        @if (activeTab() === 'settings') {
-          <div class="p-6 space-y-6 flex-1 max-h-[600px] overflow-y-auto">
-            <!-- Section 1: BSC API Key (BscScan) -->
-            <div class="space-y-3.5">
-              <div class="flex items-center gap-2">
-                <div class="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center shrink-0">
-                  <svg class="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                  </svg>
-                </div>
-                <h3 class="text-sm font-black text-slate-700 dark:text-slate-200">API Key BscScan (Lưu tại Browser)</h3>
-              </div>
-              <p class="text-sm text-slate-400">
-                Nhập API Key của bạn để verify mã nguồn contract tự động trên BscScan Testnet. API Key này được lưu trữ hoàn toàn trên trình duyệt của bạn (localStorage), không lưu trữ trên máy chủ của chúng tôi.
-              </p>
-              <div class="flex gap-2.5">
-                <input
-                  type="password"
-                  #apiKeyInput
-                  [value]="bscApiKey()"
-                  placeholder="Nhập BscScan API Key..."
-                  class="flex-1 h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-semibold outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all"
-                />
-                @if (bscApiKey()) {
-                  <button
-                    app-button
-                    variant="danger-light"
-                    (click)="clearBscApiKey()"
-                  >
-                    Xóa Key
-                  </button>
-                }
-                <button
-                  app-button
-                  variant="primary"
-                  (click)="saveBscApiKey(apiKeyInput.value)"
-                >
-                  Lưu Key
-                </button>
-              </div>
-            </div>
-
-            <!-- Section 2: Owner List Configuration -->
-            <div class="space-y-3.5 pt-6 border-t border-slate-100 dark:border-slate-800/60">
-              <div class="flex items-center gap-2">
-                <div class="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center shrink-0">
-                  <svg class="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 0-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </div>
-                <h3 class="text-sm font-black text-slate-700 dark:text-slate-200">Danh sách Owner của hệ thống Contracts</h3>
-              </div>
-              <p class="text-sm text-slate-400">
-                Các địa chỉ ví dưới đây sẽ được gán quyền quản trị (Owner) hoặc thành viên đa chữ ký khi deploy các contracts mới.
-              </p>
-              
-              <div class="flex gap-2.5">
-                <input
-                  type="text"
-                  [(ngModel)]="newOwnerAddr"
-                  placeholder="Nhập địa chỉ ví 0x..."
-                  class="flex-1 h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 font-mono text-xs outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all"
-                />
-                <button
-                  app-button
-                  variant="primary"
-                  (click)="addOwner()"
-                  [disabled]="!newOwnerAddr"
-                >
-                  Thêm Owner
-                </button>
-              </div>
-
-              <!-- Danh sách Owner đã thêm -->
-              <div class="bg-slate-50 dark:bg-slate-900/30 rounded-[15px] border border-slate-100 dark:border-slate-800/40 p-4 space-y-2">
-                @for (owner of contractOwners(); track owner) {
-                  <div class="flex items-center justify-between gap-3 bg-white dark:bg-slate-950 px-3.5 py-2.5 border border-slate-150 dark:border-slate-800/60 rounded-xl">
-                    <span class="font-mono text-xs text-slate-650 dark:text-slate-350 truncate">{{ owner }}</span>
-                    @if (contractOwners().length > 1) {
-                      <button (click)="removeOwner(owner)" class="text-red-500 hover:text-red-700 font-bold text-xs shrink-0 transition-colors">
-                        Xóa
-                      </button>
-                    }
-                  </div>
-                }
-              </div>
-            </div>
-
-            <!-- Section 3: Smart Contracts Configuration -->
-            <div class="space-y-3.5 pt-6 border-t border-slate-100 dark:border-slate-800/60">
-              <div class="flex items-center gap-2">
-                <div class="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center shrink-0">
-                  <svg class="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                  </svg>
-                </div>
-                <h3 class="text-sm font-black text-slate-700 dark:text-slate-200">Liên kết địa chỉ Smart Contracts</h3>
-              </div>
-              <p class="text-sm text-slate-400">
-                Nhập địa chỉ của các Smart Contracts mà doanh nghiệp của bạn đã triển khai lên mạng BSC Testnet.
-              </p>
-
-              <div class="space-y-4">
-                @for (c of [
-                  { name: 'Board Governance (HĐQT Đa chữ ký / Treasury)', key: 'governance_address', contractKey: 'BoardGovernance', canVerify: true },
-                  { name: 'Equity Token (Cổ phần Doanh nghiệp)', key: 'token_address', contractKey: 'EquityToken', canVerify: true },
-                  { name: 'Finance Manager (Gọi vốn & Cổ tức)', key: 'funding_address', contractKey: 'FinanceManager', canVerify: true },
-                  { name: 'Marketplace (Sàn Giao dịch Cổ phần)', key: 'marketplace_address', contractKey: 'Marketplace', canVerify: true }
-                ]; track c.key) {
-                  <div class="bg-slate-50 dark:bg-slate-900/30 rounded-[15px] border border-slate-100 dark:border-slate-800/40 p-4 space-y-3">
-                    <div class="flex items-center justify-between gap-4">
-                      <span class="text-sm font-black text-slate-700 dark:text-slate-200">{{ c.name }}</span>
-                      
-                      @if (c.canVerify && editingContracts[c.key]) {
-                        <!-- Verify Action -->
-                        <button
-                          app-button
-                          variant="secondary"
-                          size="sm"
-                          (click)="handleVerify(c.contractKey, editingContracts[c.key], c.name)"
-                          [loading]="verifyLoading()[c.contractKey]"
-                        >
-                          @if (verifyStatus()[c.contractKey] === 'verified') {
-                            <span>✓ Đã Verify</span>
-                          } @else if (verifyStatus()[c.contractKey] === 'submitted') {
-                            <span>Đã Submit (Chờ)</span>
-                          } @else {
-                            <span>Verify Source</span>
-                          }
-                        </button>
-                      }
-                    </div>
-
-                    <div class="w-full">
-                      <input
-                        type="text"
-                        [(ngModel)]="editingContracts[c.key]"
-                        placeholder="Chưa liên kết địa chỉ hợp đồng (0x...)"
-                        class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-mono text-xs outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/10 transition-all text-slate-800 dark:text-slate-100"
-                      />
-                    </div>
-                  </div>
-                }
-
-                <div class="pt-2 flex justify-end">
-                  <button
-                    app-button
-                    variant="primary"
-                    size="md"
-                    (click)="handleSaveContracts()"
-                    [loading]="saveContractsLoading()"
-                  >
-                    Lưu cấu hình Smart Contracts
-                  </button>
-                </div>
-              </div>
-            </div>
-
           </div>
         }
       </div>
