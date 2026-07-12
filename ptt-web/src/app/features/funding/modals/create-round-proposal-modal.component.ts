@@ -199,15 +199,27 @@ export class CreateRoundProposalModalComponent {
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
       };
 
+      const paySymbol = this.newRound.paymentMethod === 'ERC20' ? (this.detectedTokenSymbol() || 'USDT') : 'BNB';
+      const payDecimals = tokenDecimals;
+      const payAddress = paymentToken;
+
       await firstValueFrom(this.apiService.post<any>('proposals', {
         title: proposalTitle,
-        description: `Mở vòng gọi vốn ${this.newRound.name} thanh toán bằng ${this.newRound.paymentMethod}. Giá ${this.newRound.share_price} / Share, giới hạn chào bán ${this.newRound.max_supply} cổ phần.`,
+        description: `Mở vòng gọi vốn ${this.newRound.name} thanh toán bằng ${paySymbol}. Giá ${this.newRound.share_price} / Share, giới hạn chào bán ${this.newRound.max_supply} cổ phần.`,
         type: 'FUNDING_ROUND',
         params: {
           target,
           value,
           calldata,
-          onchain_id: onchainId
+          onchain_id: onchainId,
+          // Lưu chi tiết vòng gọi vốn để khi execute tự động đồng bộ sang ACTIVE
+          name: this.newRound.name,
+          share_price: this.newRound.share_price,
+          max_supply: this.newRound.max_supply,
+          duration_days: this.newRound.duration_days,
+          payment_token_address: payAddress,
+          payment_token_symbol: paySymbol,
+          payment_token_decimals: payDecimals
         },
         expiration_date: formatDate(expirationDate)
       }, comp.id));
@@ -225,7 +237,10 @@ export class CreateRoundProposalModalComponent {
         share_price: parseFloat(this.newRound.share_price),
         target_amount: targetAmount,
         start_date: formatDate(startDate),
-        end_date: formatDate(endDate)
+        end_date: formatDate(endDate),
+        payment_token_address: payAddress,
+        payment_token_symbol: paySymbol,
+        payment_token_decimals: payDecimals
       }, comp.id));
 
       this.stateService.showToast('Đã đề xuất vòng gọi vốn thành công! Chờ HĐQT ký duyệt biểu quyết.', 'success');

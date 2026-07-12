@@ -7,7 +7,7 @@ import { IconComponent } from '@shared/components/icon/icon.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 import { firstValueFrom } from 'rxjs';
-import { Contract } from 'ethers';
+import { Contract, ethers } from 'ethers';
 
 import { ModalService } from '@core/services/modal.service';
 import { CreateProposalModalComponent } from './modals/create-proposal-modal.component';
@@ -239,6 +239,10 @@ export class GovernanceComponent implements OnInit {
           endDate.setDate(endDate.getDate() + durationDays);
           const fmt = (d: Date) => d.toISOString().slice(0, 19).replace('T', ' ');
 
+          const paymentTokenAddress = p.payment_token_address || ethers.ZeroAddress;
+          const paymentTokenSymbol = p.payment_token_symbol || 'BNB';
+          const paymentTokenDecimals = p.payment_token_decimals || 18;
+
           await firstValueFrom(
             this.apiService.post<any>('funding', {
               name: p.name || proposal.title,
@@ -247,6 +251,9 @@ export class GovernanceComponent implements OnInit {
               start_date: fmt(startDate),
               end_date: fmt(endDate),
               onchain_round_id: onchainId,
+              payment_token_address: paymentTokenAddress,
+              payment_token_symbol: paymentTokenSymbol,
+              payment_token_decimals: paymentTokenDecimals,
               status: 'ACTIVE'   // Tạo trực tiếp ACTIVE vì đã execute on-chain
             }, comp.id)
           );

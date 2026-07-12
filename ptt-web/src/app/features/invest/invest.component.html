@@ -139,7 +139,7 @@
                 <div class="grid grid-cols-2 gap-3">
                   <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3.5 space-y-1">
                     <span class="text-xs font-black text-slate-400 uppercase block">Giá / cổ phần</span>
-                    <span class="text-lg font-black text-slate-800 dark:text-white">{{ formatNumber(round.pricePerShare) }} BNB</span>
+                    <span class="text-lg font-black text-slate-800 dark:text-white">{{ formatNumber(round.price) }} {{ round.paymentTokenSymbol }}</span>
                   </div>
                   <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3.5 space-y-1">
                     <span class="text-xs font-black text-slate-400 uppercase block">Trạng thái</span>
@@ -152,8 +152,8 @@
                 <!-- Progress bar -->
                 <div class="space-y-2">
                   <div class="flex justify-between text-xs text-slate-400">
-                    <span>Đã huy động: {{ formatNumber(round.raisedAmount) }} BNB</span>
-                    <span>Mục tiêu: {{ formatNumber(round.targetAmount) }} BNB</span>
+                    <span>Đã bán: {{ formatNumber(round.soldAmount) }} Share</span>
+                    <span>Chào bán tối đa: {{ formatNumber(round.maxSupply) }} Share</span>
                   </div>
                   <div class="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"

@@ -25,6 +25,14 @@ const FUNDING_MANAGER_ABI = [
   'function buyShares(uint256 roundId, uint256 tokenAmount) external payable'
 ];
 
+// ABI rút gọn của ERC20 để xử lý phê duyệt (approve)
+const ERC20_ABI = [
+  "function symbol() external view returns (string)",
+  "function decimals() external view returns (uint8)",
+  "function approve(address spender, uint256 amount) external returns (bool)",
+  "function allowance(address owner, address spender) external view returns (uint256)"
+];
+
 const DISTRIBUTION_MANAGER_ABI = [
   'function claimableDividend(address investor) view returns (uint256)',
   'function claimDividend()'
@@ -153,12 +161,35 @@ export class InvestComponent implements OnInit {
           for (let i = count; i >= 1; i--) {
             const r = await funding['rounds'](i);
             if (r.active) {
+              const isERC20 = r.paymentToken !== ethers.ZeroAddress;
+              let tokenSymbol = 'BNB';
+              let tokenDecimals = 18;
+
+              if (isERC20) {
+                try {
+                  const tokenContract = new ethers.Contract(r.paymentToken, ERC20_ABI, provider);
+                  const [sym, dec] = await Promise.all([
+                    tokenContract['symbol'](),
+                    tokenContract['decimals']()
+                  ]);
+                  tokenSymbol = sym;
+                  tokenDecimals = Number(dec);
+                } catch (tokErr) {
+                  console.warn('Lỗi đọc metadata payment token:', tokErr);
+                  tokenSymbol = 'USDT';
+                  tokenDecimals = 18;
+                }
+              }
+
               found = {
                 id: Number(r.id),
                 name: r.name,
-                price: ethers.formatEther(r.price),           // BNB/token
-                maxSupply: ethers.formatEther(r.maxSupply),   // max tokens
-                soldAmount: ethers.formatEther(r.soldAmount), // tokens đã bán
+                paymentToken: r.paymentToken,
+                paymentTokenSymbol: tokenSymbol,
+                paymentTokenDecimals: tokenDecimals,
+                price: ethers.formatUnits(r.price, tokenDecimals),
+                maxSupply: ethers.formatEther(r.maxSupply),   // tokens cổ phần luôn 18 decimals
+                soldAmount: ethers.formatEther(r.soldAmount), // tokens cổ phần luôn 18 decimals
                 isWhitelistOnly: r.isWhitelistOnly,
                 active: r.active,
                 startTime: Number(r.startTime),
@@ -199,19 +230,43 @@ export class InvestComponent implements OnInit {
     this.buyLoading.set(true);
     try {
       const signer = await this.stateService.web3Service.getSigner();
+      const userAddress = await signer.getAddress();
       const funding = new ethers.Contract(company.funding_address, FUNDING_MANAGER_ABI, signer);
 
       // Token amount (18 decimals)
       const tokenAmount = ethers.parseEther(this.buyAmount().toString());
-      // Chi phí BNB = amount * price/token
-      const pricePerToken = ethers.parseEther(round.price);
-      const value = (tokenAmount * pricePerToken) / ethers.parseEther('1');
+      // Chi phí = amount * price/token
+      const pricePerToken = ethers.parseUnits(round.price, round.paymentTokenDecimals);
+      const cost = (tokenAmount * pricePerToken) / ethers.parseEther('1');
 
+      const isERC20 = round.paymentToken !== ethers.ZeroAddress;
       const gasOverrides = await this.stateService.web3Service.getGasOverrides();
 
-      // Gọi buyShares(roundId, tokenAmount) với ETH/BNB = value
-      const tx = await funding['buyShares'](round.id, tokenAmount, { ...gasOverrides, value });
-      await tx.wait();
+      if (isERC20) {
+        // Hỗ trợ thanh toán bằng Token ERC20
+        const tokenContract = new ethers.Contract(round.paymentToken, ERC20_ABI, signer);
+        const formattedCost = ethers.formatUnits(cost, round.paymentTokenDecimals);
+
+        this.stateService.showToast(`Kiểm tra quyền sử dụng ${round.paymentTokenSymbol}...`, 'warning');
+        const allowance = await tokenContract['allowance'](userAddress, company.funding_address);
+        if (BigInt(allowance) < cost) {
+          this.stateService.showToast(`Vui lòng phê duyệt (Approve) chi tiêu ${formattedCost} ${round.paymentTokenSymbol}...`, 'warning');
+          const approveTx = await tokenContract['approve'](company.funding_address, cost, gasOverrides);
+          await approveTx.wait();
+          this.stateService.showToast('Đã phê duyệt thành công!', 'warning');
+        }
+
+        this.stateService.showToast(`Đang gửi giao dịch mua cổ phần (${formattedCost} ${round.paymentTokenSymbol})...`, 'warning');
+        const tx = await funding['buyShares'](round.id, tokenAmount, { ...gasOverrides, value: 0 });
+        await tx.wait();
+      } else {
+        // Hỗ trợ thanh toán bằng BNB
+        const formattedCost = ethers.formatEther(cost);
+        this.stateService.showToast(`Chi phí cần thanh toán: ${formattedCost} BNB. Đang gửi giao dịch...`, 'warning');
+        const tx = await funding['buyShares'](round.id, tokenAmount, { ...gasOverrides, value: cost });
+        await tx.wait();
+      }
+
       this.stateService.showToast(`Mua thành công ${this.buyAmount()} cổ phần!`, 'success');
       await this.loadOnChainData(company);
     } catch (e: any) {
@@ -270,8 +325,8 @@ export class InvestComponent implements OnInit {
   // Progress bar phần trăm đã gọi vốn
   fundingProgress(): number {
     const r = this.activeFundingRound();
-    if (!r || +r.targetAmount === 0) return 0;
-    return Math.min(100, (+r.raisedAmount / +r.targetAmount) * 100);
+    if (!r || +r.maxSupply === 0) return 0;
+    return Math.min(100, (+r.soldAmount / +r.maxSupply) * 100);
   }
 
   // Format số lớn

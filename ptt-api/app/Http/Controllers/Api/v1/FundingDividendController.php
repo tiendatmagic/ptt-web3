@@ -44,6 +44,9 @@ class FundingDividendController extends Controller
             'end_date' => 'nullable|date|after:start_date',
             'status' => 'nullable|string|in:DRAFT,ACTIVE,COMPLETED,CANCELLED',
             'onchain_round_id' => 'nullable|integer',
+            'payment_token_address' => 'nullable|string|max:255',
+            'payment_token_symbol' => 'nullable|string|max:50',
+            'payment_token_decimals' => 'nullable|integer|min:0|max:36',
         ]);
 
         $companyId = $request->header('X-Company-Id');
@@ -53,6 +56,9 @@ class FundingDividendController extends Controller
             'company_id' => $companyId,
             'name' => $request->input('name'),
             'share_price' => $request->input('share_price'),
+            'payment_token_address' => $request->input('payment_token_address'),
+            'payment_token_symbol' => $request->input('payment_token_symbol', 'BNB'),
+            'payment_token_decimals' => $request->input('payment_token_decimals', 18),
             'target_amount' => $request->input('target_amount'),
             'raised_amount' => 0,
             'start_date' => $request->input('start_date'),

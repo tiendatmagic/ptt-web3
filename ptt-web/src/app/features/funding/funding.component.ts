@@ -19,6 +19,14 @@ const FINANCE_MANAGER_ABI = [
   "function claimDividend(uint256 dividendId) external"
 ];
 
+// ABI rút gọn của ERC20 để xử lý phê duyệt (approve)
+const ERC20_ABI = [
+  "function symbol() external view returns (string)",
+  "function decimals() external view returns (uint8)",
+  "function approve(address spender, uint256 amount) external returns (bool)",
+  "function allowance(address owner, address spender) external view returns (uint256)"
+];
+
 @Component({
   selector: 'app-funding',
   standalone: true,
@@ -87,33 +95,76 @@ export class FundingComponent implements OnInit {
 
       // 1. Lấy signer và khởi tạo contract FinanceManager
       const signer = await this.stateService.getSigner();
+      const userAddress = await signer.getAddress();
       const financeContract = new Contract(comp.funding_address, FINANCE_MANAGER_ABI, signer);
 
       // 2. Đọc thông tin round từ contract để lấy giá price chính xác
       const roundInfo = await financeContract['rounds'](round.id);
-      const price = roundInfo.price; // Giá cổ phần bằng Wei (ví dụ: 0.001 BNB)
+      const price = roundInfo.price;
+      const paymentToken = roundInfo.paymentToken;
 
       const tokenAmount = parseEther(this.purchaseAmount); // Số lượng cổ phần quy đổi sang Wei (18 decimals)
-      const cost = (tokenAmount * BigInt(price)) / 1000000000000000000n;   // Chi phí BNB = (amount * price) / 10^18
+      const cost = (tokenAmount * BigInt(price)) / 1000000000000000000n;
 
-      this.stateService.showToast(`Chi phí cần thanh toán: ${ethers.formatEther(cost)} BNB. Đang gửi giao dịch...`, 'warning');
+      const isERC20 = paymentToken !== ethers.ZeroAddress;
       const gasOverrides = await this.stateService.getGasOverrides(signer);
 
-      // 3. Gọi hàm buyShares on-chain
-      const tx = await financeContract['buyShares'](round.id, tokenAmount, {
-        value: cost,
-        ...gasOverrides
-      });
+      if (isERC20) {
+        // FLOW THANH TOÁN BẰNG TOKEN ERC20
+        const tokenContract = new Contract(paymentToken, ERC20_ABI, signer);
+        const [tokenSymbol, tokenDecimals] = await Promise.all([
+          tokenContract['symbol'](),
+          tokenContract['decimals']()
+        ]);
 
-      this.stateService.showToast('Giao dịch đang chờ xác nhận từ mạng lưới...', 'warning');
-      await tx.wait();
+        const formattedCost = ethers.formatUnits(cost, tokenDecimals);
+        this.stateService.showToast(`Kiểm tra quyền sử dụng ${tokenSymbol}...`, 'warning');
+
+        // Kiểm tra allowance hiện tại
+        const allowance = await tokenContract['allowance'](userAddress, comp.funding_address);
+        if (BigInt(allowance) < cost) {
+          this.stateService.showToast(`Vui lòng xác nhận phê duyệt (Approve) chi tiêu ${formattedCost} ${tokenSymbol}...`, 'warning');
+          const approveTx = await tokenContract['approve'](comp.funding_address, cost, gasOverrides);
+          await approveTx.wait();
+          this.stateService.showToast('Đã phê duyệt thành công! Tiến hành giao dịch mua cổ phần...', 'warning');
+        }
+
+        this.stateService.showToast(`Đang gửi giao dịch mua cổ phần (${formattedCost} ${tokenSymbol})...`, 'warning');
+        // Đối với ERC20, không gửi BNB kèm theo (value = 0)
+        const tx = await financeContract['buyShares'](round.id, tokenAmount, {
+          value: 0,
+          ...gasOverrides
+        });
+        this.stateService.showToast('Giao dịch đang chờ xác nhận từ mạng lưới...', 'warning');
+        await tx.wait();
+      } else {
+        // FLOW THANH TOÁN BẰNG BNB (NATIVE)
+        const formattedCost = ethers.formatEther(cost);
+        this.stateService.showToast(`Chi phí cần thanh toán: ${formattedCost} BNB. Đang gửi giao dịch...`, 'warning');
+        
+        const tx = await financeContract['buyShares'](round.id, tokenAmount, {
+          value: cost,
+          ...gasOverrides
+        });
+        this.stateService.showToast('Giao dịch đang chờ xác nhận từ mạng lưới...', 'warning');
+        await tx.wait();
+      }
 
       // 4. Tính toán số tiền đã huy động được (raised_amount) để đồng bộ về Backend
       // Lấy soldAmount thực tế sau giao dịch
       const updatedRoundInfo = await financeContract['rounds'](round.id);
       const soldAmount = updatedRoundInfo.soldAmount;
       const raisedWei = (BigInt(soldAmount) * BigInt(price)) / 1000000000000000000n;
-      const raisedEth = Number(ethers.formatEther(raisedWei));
+      
+      // Quy đổi raised amount theo đúng decimals của payment token
+      let raisedEth = 0;
+      if (isERC20) {
+        const tokenContract = new Contract(paymentToken, ERC20_ABI, signer);
+        const tokenDecimals = await tokenContract['decimals']();
+        raisedEth = Number(ethers.formatUnits(raisedWei, tokenDecimals));
+      } else {
+        raisedEth = Number(ethers.formatEther(raisedWei));
+      }
 
       // 5. Cập nhật Backend
       await firstValueFrom(
