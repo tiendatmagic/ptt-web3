@@ -52,7 +52,7 @@
             <div class="flex justify-between items-start">
               <div>
                 <h3 class="text-xs font-black text-slate-800 dark:text-white">{{ round.name }}</h3>
-                <span class="text-sm font-bold text-slate-400">Giá cổ phần: {{ round.share_price }} {{ round.payment_token_symbol || 'BNB' }}/Share</span>
+                <span class="text-sm font-bold text-slate-400">Tỷ giá: {{ round.share_price }} {{ round.payment_token_symbol || 'BNB' }} = 1 {{ stateService.currentCompany()?.code || 'PTT' }}</span>
               </div>
               <span class="px-2 py-0.5 rounded-full text-xs font-black uppercase"
                 [class.bg-yellow-100]="round.status === 'DRAFT'" [class.text-yellow-600]="round.status === 'DRAFT'"

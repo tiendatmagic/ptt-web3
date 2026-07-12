@@ -138,8 +138,8 @@
               <div class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                   <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3.5 space-y-1">
-                    <span class="text-xs font-black text-slate-400 uppercase block">Giá / cổ phần</span>
-                    <span class="text-lg font-black text-slate-800 dark:text-white">{{ formatNumber(round.price) }} {{ round.paymentTokenSymbol }}</span>
+                    <span class="text-xs font-black text-slate-400 uppercase block">Tỷ giá mua</span>
+                    <span class="text-lg font-black text-slate-800 dark:text-white">{{ formatNumber(round.price) }} {{ round.paymentTokenSymbol }} = 1 {{ selectedCompany()?.code || 'PTT' }}</span>
                   </div>
                   <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3.5 space-y-1">
                     <span class="text-xs font-black text-slate-400 uppercase block">Trạng thái</span>
