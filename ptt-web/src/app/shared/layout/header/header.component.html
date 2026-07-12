@@ -60,22 +60,33 @@
       <!-- Chọn doanh nghiệp (Dropdown) -->
       @if (stateService.currentUser()) {
         <div class="relative shrink-0">
-          <button
-            app-button
-            variant="cancel"
-            (click)="toggleCompanyDropdown($event)"
-            class="h-10 px-3 lg:px-4 rounded-xl flex items-center gap-1.5 lg:gap-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 shrink-0"
-          >
-            <app-icon name="home" class="w-4 h-4 text-primary shrink-0" />
-            <span class="inline-block text-sm font-bold text-slate-700 dark:text-slate-200 truncate max-w-[80px] lg:max-w-[140px] whitespace-nowrap align-middle">
-              {{
-                stateService.currentCompany()
-                  ? stateService.currentCompany().name
-                  : 'Chọn Doanh Nghiệp'
-              }}
-            </span>
-            <app-icon name="chevron-down" class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-          </button>
+          @if (stateService.isCompaniesLoading()) {
+            <div
+              class="h-10 px-3 lg:px-4 rounded-xl flex items-center gap-1.5 lg:gap-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 shrink-0 animate-pulse select-none"
+            >
+              <div class="w-3.5 h-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0"></div>
+              <span class="inline-block text-xs font-bold text-slate-400 whitespace-nowrap align-middle">
+                Đang tải...
+              </span>
+            </div>
+          } @else {
+            <button
+              app-button
+              variant="cancel"
+              (click)="toggleCompanyDropdown($event)"
+              class="h-10 px-3 lg:px-4 rounded-xl flex items-center gap-1.5 lg:gap-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 shrink-0"
+            >
+              <app-icon name="home" class="w-4 h-4 text-primary shrink-0" />
+              <span class="inline-block text-sm font-bold text-slate-700 dark:text-slate-200 truncate max-w-[80px] lg:max-w-[140px] whitespace-nowrap align-middle">
+                {{
+                  stateService.currentCompany()
+                    ? stateService.currentCompany().name
+                    : 'Chọn Doanh Nghiệp'
+                }}
+              </span>
+              <app-icon name="chevron-down" class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            </button>
+          }
 
           @if (showCompanyDropdown()) {
             <div
@@ -367,24 +378,33 @@
         <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2">Doanh nghiệp đang chọn</label>
         
         <div class="relative">
-          <button
-            app-button
-            variant="cancel"
-            (click)="toggleCompanyDropdown($event)"
-            class="w-full h-11 px-4 rounded-xl flex items-center justify-between border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900"
-          >
-            <div class="flex items-center gap-2 min-w-0">
-              <app-icon name="home" class="w-4 h-4 text-primary shrink-0" />
-              <span class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
-                {{
-                  stateService.currentCompany()
-                    ? stateService.currentCompany().name
-                    : 'Chọn Doanh Nghiệp'
-                }}
-              </span>
+          @if (stateService.isCompaniesLoading()) {
+            <div
+              class="w-full h-11 px-4 rounded-xl flex items-center gap-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 animate-pulse select-none"
+            >
+              <div class="w-3.5 h-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0"></div>
+              <span class="text-xs font-bold text-slate-400">Đang tải...</span>
             </div>
-            <app-icon name="chevron-down" class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-          </button>
+          } @else {
+            <button
+              app-button
+              variant="cancel"
+              (click)="toggleCompanyDropdown($event)"
+              class="w-full h-11 px-4 rounded-xl flex items-center justify-between border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900"
+            >
+              <div class="flex items-center gap-2 min-w-0">
+                <app-icon name="home" class="w-4 h-4 text-primary shrink-0" />
+                <span class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
+                  {{
+                    stateService.currentCompany()
+                      ? stateService.currentCompany().name
+                      : 'Chọn Doanh Nghiệp'
+                  }}
+                </span>
+              </div>
+              <app-icon name="chevron-down" class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            </button>
+          }
 
           @if (showCompanyDropdown()) {
             <div

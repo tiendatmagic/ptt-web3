@@ -23,6 +23,7 @@ export class StateService {
   public currentCompany = signal<any | null>(null);
   public userPermissions = signal<string[]>([]);
   public companiesList = signal<any[]>([]);
+  public isCompaniesLoading = signal<boolean>(false);
 
   // Token trong memory — ApiService đọc để gửi Authorization header
   public authToken = signal<string | null>(null);
@@ -200,6 +201,7 @@ export class StateService {
 
   // Tải danh sách các công ty doanh nghiệp
   public async loadCompanies() {
+    this.isCompaniesLoading.set(true);
     try {
       const list = await firstValueFrom(this.apiService.get<any[]>('companies'));
       this.companiesList.set(list || []);
@@ -223,6 +225,8 @@ export class StateService {
       }
     } catch (e) {
       console.error('Lỗi tải danh sách công ty:', e);
+    } finally {
+      this.isCompaniesLoading.set(false);
     }
   }
 

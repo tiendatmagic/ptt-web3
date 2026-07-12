@@ -5,7 +5,28 @@
 <app-header></app-header>
 
 <div class="md:pl-72 min-h-screen transition-all duration-300">
-  <router-outlet></router-outlet>
+  @if (stateService.isCompaniesLoading()) {
+    <div class="space-y-6 p-6 sm:p-8 animate-pulse">
+      <!-- Title skeleton -->
+      <div class="h-7 bg-slate-200 dark:bg-slate-800/40 rounded-xl w-64 mb-1.5"></div>
+      <div class="h-4 bg-slate-200 dark:bg-slate-800/40 rounded-xl w-96"></div>
+
+      <!-- Cards grid skeleton -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
+        <div class="h-36 bg-slate-200 dark:bg-slate-800/40 rounded-[15px]"></div>
+        <div class="h-36 bg-slate-200 dark:bg-slate-800/40 rounded-[15px]"></div>
+        <div class="h-36 bg-slate-200 dark:bg-slate-800/40 rounded-[15px]"></div>
+      </div>
+
+      <!-- Main content panel skeleton -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
+        <div class="lg:col-span-2 h-96 bg-slate-200 dark:bg-slate-800/40 rounded-[15px]"></div>
+        <div class="lg:col-span-1 h-96 bg-slate-200 dark:bg-slate-800/40 rounded-[15px]"></div>
+      </div>
+    </div>
+  } @else {
+    <router-outlet></router-outlet>
+  }
 </div>
 
 <!-- TOAST NOTIFICATION CONTAINER -->
