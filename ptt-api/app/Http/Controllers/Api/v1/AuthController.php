@@ -112,31 +112,34 @@ class AuthController extends Controller
         $token = $userModel->createToken('auth_token')->plainTextToken;
 
         // Save token to HttpOnly cookie (valid 7 days = 1 week)
-        // SameSite=None required for cross-origin requests (dev: :4200 -> :8000)
+        // SameSite=None chỉ dùng trên production HTTPS (bắt buộc phải có Secure=true)
+        // Dev HTTP: dùng Lax — localhost:4200 → localhost:8000 là same-site (cùng host, khác port)
         $isProduction = config('app.env') === 'production';
+        $sameSite = $isProduction ? 'None' : 'Lax';
+
         $cookie = cookie(
             'auth_token',
             $token,
-            10080, // minutes = 7 days (1 week)
+            10080, // minutes = 7 days
             '/',
             null,
-            $isProduction, // secure: true in production (HTTPS)
-            true,          // httpOnly: JS cannot access this cookie
-            false,         // raw
-            'None'         // sameSite=None: required for cross-origin withCredentials
+            $isProduction, // secure: true chỉ trên production (HTTPS)
+            true,          // httpOnly: true — JS không đọc được
+            false,
+            $sameSite
         );
 
-        // Secondary cookie (readable by JS) so frontend can detect login state
+        // Secondary cookie (readable by JS) để frontend detect trạng thái login
         $loggedInCookie = cookie(
             'auth_logged_in',
             'true',
-            10080, // 7 days, matches auth_token
+            10080,
             '/',
             null,
             $isProduction,
-            false, // httpOnly=false so Angular can read it
+            false, // httpOnly=false — Angular có thể đọc
             false,
-            'None'
+            $sameSite
         );
 
         return response()->json([
@@ -150,9 +153,7 @@ class AuthController extends Controller
                 'kyc_status'     => $user->getKycStatus(),
                 'is_whitelisted' => $user->isWhitelisted(),
             ],
-            // Token trả về để frontend giữ trong memory (signal), không lưu localStorage
-            // HttpOnly cookie xử lý auth khi reload trang
-            'token' => $token,
+            // Auth qua HttpOnly cookie auth_token — không expose token trong response
         ])->withCookie($cookie)->withCookie($loggedInCookie);
     }
 

@@ -25,15 +25,8 @@ export class StateService {
   public companiesList = signal<any[]>([]);
   public isCompaniesLoading = signal<boolean>(false);
 
-  // Token trong memory (signal) — dùng cho Bearer header
-  public authToken = signal<string | null>(null);
-
   // Cờ session đã kiểm tra xong (tránh race condition với wallet reconnect)
   private isSessionRestored = signal<boolean>(false);
-
-  // Key lưu token trong localStorage — persist qua reload
-  // Token hết hạn server-side sau 7 ngày, bị xóa khi logout
-  private readonly SESSION_KEY = 'ptt_auth_token';
 
   // ====================================================
   // DELEGATED UI STATE
@@ -71,8 +64,6 @@ export class StateService {
   });
 
   constructor() {
-    // Đăng ký tham chiếu để ApiService đọc authToken signal (tránh circular dependency)
-    this.apiService.registerStateRef(this);
     this.setupAuthSync();
     this.checkExistingSession();
   }
@@ -107,26 +98,17 @@ export class StateService {
     }
 
     try {
-      // Bước 1: Khôi phục token từ localStorage (persist qua reload)
-      const savedToken = localStorage.getItem(this.SESSION_KEY);
-      if (savedToken) {
-        this.authToken.set(savedToken);
-      }
-
-      // Bước 2: Gọi /auth/me để xác thực token còn hiệu lực không
+      // Gọi /auth/me — TokenFromCookieMiddleware tự inject Bearer từ HttpOnly cookie
+      // Cookie được gửi tự động qua withCredentials, không cần token trong JS
       const response = await firstValueFrom(this.apiService.get<any>('auth/me'));
       if (response?.user) {
         this.currentUser.set(response.user);
         this.loadCompanies();
       } else {
-        localStorage.removeItem(this.SESSION_KEY);
-        this.authToken.set(null);
         this.currentUser.set(null);
       }
     } catch (e) {
-      // Session hết hạn — xóa token cũ
-      localStorage.removeItem(this.SESSION_KEY);
-      this.authToken.set(null);
+      // Session hết hạn hoặc cookie hết hiệu lực
       this.currentUser.set(null);
     } finally {
       this.isSessionRestored.set(true);
@@ -155,12 +137,8 @@ export class StateService {
         })
       );
 
-      // 4. Lưu user + token
+      // 4. Lưu thông tin user — auth qua HttpOnly cookie, không cần token trong JS
       this.currentUser.set(response.user);
-      if (response.token) {
-        this.authToken.set(response.token);
-        localStorage.setItem(this.SESSION_KEY, response.token);
-      }
       this.showToast('Đăng nhập ví Web3 thành công!', 'success');
 
       // Tải danh sách công ty
@@ -185,8 +163,6 @@ export class StateService {
     this.currentUser.set(null);
     this.currentCompany.set(null);
     this.userPermissions.set([]);
-    this.authToken.set(null);
-    localStorage.removeItem(this.SESSION_KEY);
     localStorage.removeItem('ptt_selected_company_id');
   }
 

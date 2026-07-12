@@ -10,23 +10,14 @@ export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiBaseUrl}/v1`;
 
-  // Lazy inject StateService thông qua getter để tránh circular dependency
-  private get stateService(): any {
-    return (window as any).__pttStateService__;
-  }
-
+  // Auth 100% qua HttpOnly cookie auth_token
+  // TokenFromCookieMiddleware phía backend tự inject vào Authorization Bearer
+  // Frontend chỉ cần withCredentials: true để browser tự gửi cookie
   private getHeaders(companyId?: string | number): HttpHeaders {
     let headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',
     });
-
-    // Inject Bearer token từ memory (authToken signal)
-    // Memory-only, không có trong localStorage — an toàn khỏi XSS persistence
-    const token = this.stateService?.authToken?.();
-    if (token) {
-      headers = headers.set('Authorization', `Bearer ${token}`);
-    }
 
     if (companyId) {
       headers = headers.set('X-Company-Id', companyId.toString());
@@ -72,13 +63,4 @@ export class ApiService {
       withCredentials: true
     });
   }
-
-  /**
-   * Đăng ký StateService reference để ApiService đọc authToken signal
-   * mà không bị circular dependency.
-   */
-  public registerStateRef(stateService: any): void {
-    (window as any).__pttStateService__ = stateService;
-  }
-
 }

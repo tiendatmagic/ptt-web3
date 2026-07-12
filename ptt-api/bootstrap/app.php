@@ -19,9 +19,14 @@ return Application::configure(basePath: dirname(__DIR__))
         // Add security headers to all responses
         $middleware->append(\App\Http\Middleware\SecurityHeadersMiddleware::class);
 
-        // Exclude ALL api/* routes from CSRF verification.
-        // Our API uses token-based auth (HttpOnly cookie) via AppServiceProvider,
-        // NOT session-based Sanctum, so CSRF is not needed and causes 419 errors.
+        // Exclude auth cookies khỏi encryption:
+        // TokenFromCookieMiddleware cần đọc plain text value để inject vào Authorization header
+        // Cookie vẫn an toàn: HttpOnly (JS không đọc được) + Secure=true khi production (HTTPS)
+        $middleware->encryptCookies(except: [
+            'auth_token',
+            'auth_logged_in',
+        ]);
+
         $middleware->validateCsrfTokens(except: [
             'api/*',
         ]);
