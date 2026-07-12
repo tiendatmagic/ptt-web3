@@ -21,7 +21,7 @@ const EQUITY_TOKEN_ABI = [
 // ABI khớp chính xác với FinanceManager contract
 const FUNDING_MANAGER_ABI = [
   'function roundCount() view returns (uint256)',
-  'function rounds(uint256 roundId) view returns (uint256 id, string name, address shareToken, address paymentToken, address treasury, uint256 price, uint256 maxSupply, uint256 soldAmount, uint256 startTime, uint256 endTime, uint256 minPurchase, uint256 maxPurchase, bool isWhitelistOnly, bool active)',
+  'function rounds(uint256 roundId) view returns (tuple(uint256 id, string name, address shareToken, address paymentToken, address treasury, uint256 price, uint256 maxSupply, uint256 soldAmount, uint256 startTime, uint256 endTime, uint256 minPurchase, uint256 maxPurchase, bool isWhitelistOnly, bool active))',
   'function buyShares(uint256 roundId, uint256 tokenAmount) external payable'
 ];
 
@@ -124,10 +124,11 @@ export class InvestComponent implements OnInit {
     ]);
   }
 
-  // Đọc data trực tiếp từ Smart Contracts (không cần backend auth)
+  // Đọc data trực tiếp từ Smart Contracts (không phụ thuộc vào mạng lưới ví đang chọn)
   async loadOnChainData(company: any) {
     try {
-      const provider = new ethers.BrowserProvider((window as any).ethereum);
+      // Sử dụng Public RPC của BSC Testnet ổn định (không bị chặn bởi extension/client)
+      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com');
 
       // EquityToken balance + total supply
       if (company.token_address && company.token_address !== '—') {
@@ -146,9 +147,14 @@ export class InvestComponent implements OnInit {
 
       // Claimable dividend
       if (company.funding_address && this.walletAddress()) {
-        const dist = new ethers.Contract(company.funding_address, DISTRIBUTION_MANAGER_ABI, provider);
-        const claimable = await dist['claimableDividend'](this.walletAddress());
-        this.claimableDiv.set(ethers.formatEther(claimable));
+        try {
+          const dist = new ethers.Contract(company.funding_address, DISTRIBUTION_MANAGER_ABI, provider);
+          const claimable = await dist['claimableDividend'](this.walletAddress());
+          this.claimableDiv.set(ethers.formatEther(claimable));
+        } catch (divErr) {
+          console.warn('Lỗi đọc claimable dividend từ contract:', divErr);
+          this.claimableDiv.set('0');
+        }
       }
 
       // Active funding round — contract dùng roundCount() + rounds(id), không có activeRoundId()
@@ -188,10 +194,12 @@ export class InvestComponent implements OnInit {
                 paymentTokenSymbol: tokenSymbol,
                 paymentTokenDecimals: tokenDecimals,
                 price: ethers.formatUnits(r.price, tokenDecimals),
+                pricePerShare: ethers.formatUnits(r.price, tokenDecimals), // để tương thích nếu template vẫn dùng
                 maxSupply: ethers.formatEther(r.maxSupply),   // tokens cổ phần luôn 18 decimals
                 soldAmount: ethers.formatEther(r.soldAmount), // tokens cổ phần luôn 18 decimals
                 isWhitelistOnly: r.isWhitelistOnly,
                 active: r.active,
+                isActive: r.active, // để khớp với round.isActive trong template HTML
                 startTime: Number(r.startTime),
                 endTime: Number(r.endTime)
               };
