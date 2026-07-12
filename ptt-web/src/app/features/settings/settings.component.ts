@@ -7,11 +7,12 @@ import { StateService } from '@core/services/state.service';
 import { ApiService } from '@core/services/api.service';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { CONTRACTS_DATA } from '../../core/constants/contracts-data';
+import { IconComponent } from '@shared/components/icon/icon.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, IconComponent],
   templateUrl: './settings.component.html'
 })
 export class SettingsComponent implements OnInit {
@@ -35,14 +36,15 @@ export class SettingsComponent implements OnInit {
 
   // --- Loading states ---
   public saveContractsLoading = signal(false);
+  public deployAllLoading = signal(false);
   public verifyLoading = signal<Record<string, boolean>>({});
   public verifyStatus = signal<Record<string, string>>({});
 
   public readonly contractList = [
-    { name: 'Board Governance (HĐQT Đa chữ ký / Treasury)', key: 'governance_address', contractKey: 'BoardGovernance', icon: '🏛️' },
-    { name: 'Equity Token (Cổ phần Doanh nghiệp)', key: 'token_address', contractKey: 'EquityToken', icon: '🪙' },
-    { name: 'Finance Manager (Gọi vốn & Cổ tức)', key: 'funding_address', contractKey: 'FinanceManager', icon: '💼' },
-    { name: 'Marketplace (Sàn Giao dịch Cổ phần)', key: 'marketplace_address', contractKey: 'Marketplace', icon: '🔁' },
+    { name: 'Board Governance (HĐQT Đa chữ ký / Treasury)', key: 'governance_address', contractKey: 'BoardGovernance', icon: 'scale' },
+    { name: 'Equity Token (Cổ phần Doanh nghiệp)', key: 'token_address', contractKey: 'EquityToken', icon: 'ethereum' },
+    { name: 'Finance Manager (Gọi vốn & Cổ tức)', key: 'funding_address', contractKey: 'FinanceManager', icon: 'financials' },
+    { name: 'Marketplace (Sàn Giao dịch Cổ phần)', key: 'marketplace_address', contractKey: 'Marketplace', icon: 'sync' },
   ];
 
   ngOnInit() {
@@ -60,6 +62,93 @@ export class SettingsComponent implements OnInit {
       if (comp.wallet_address) {
         this.contractOwners.set([comp.wallet_address]);
       }
+    }
+  }
+
+  // --- Auto Deploy ---
+  public async handleDeployAll() {
+    const signer = await this.stateService.getSigner();
+    if (!signer) {
+      this.stateService.showToast('Vui lòng kết nối ví Metamask trước!', 'warning');
+      return;
+    }
+
+    const owners = this.contractOwners();
+    if (owners.length === 0) {
+      this.stateService.showToast('Vui lòng thêm ít nhất một ví quản trị (Owner)!', 'warning');
+      return;
+    }
+
+    const comp = this.stateService.currentCompany();
+    if (!comp) {
+      this.stateService.showToast('Không tìm thấy thông tin công ty hiện tại!', 'error');
+      return;
+    }
+
+    this.deployAllLoading.set(true);
+    this.stateService.showToast('Bắt đầu deploy hệ thống 4 contracts. Vui lòng duyệt từng giao dịch trên Metamask...', 'warning');
+
+    try {
+      // 1. Deploy BoardGovernance
+      this.stateService.showToast('[1/4] Đang deploy Board Governance (HĐQT Multisig)...', 'warning');
+      const govFactory = new ethers.ContractFactory(
+        CONTRACTS_DATA['BoardGovernance'].abi,
+        CONTRACTS_DATA['BoardGovernance'].bytecode,
+        signer
+      );
+      // threshold ban đầu mặc định là 1 để dễ thao tác ban đầu
+      const govContract = await govFactory.deploy(owners, 1);
+      await govContract.waitForDeployment();
+      const govAddr = await govContract.getAddress();
+      this.editingContracts['governance_address'] = govAddr;
+      this.stateService.showToast('✓ Deploy Board Governance thành công: ' + govAddr, 'success');
+
+      // 2. Deploy EquityToken
+      this.stateService.showToast('[2/4] Đang deploy Equity Token (Cổ phần)...', 'warning');
+      const tokenFactory = new ethers.ContractFactory(
+        CONTRACTS_DATA['EquityToken'].abi,
+        CONTRACTS_DATA['EquityToken'].bytecode,
+        signer
+      );
+      const tokenContract = await tokenFactory.deploy(comp.name, comp.code, govAddr);
+      await tokenContract.waitForDeployment();
+      const tokenAddr = await tokenContract.getAddress();
+      this.editingContracts['token_address'] = tokenAddr;
+      this.stateService.showToast('✓ Deploy Equity Token thành công: ' + tokenAddr, 'success');
+
+      // 3. Deploy FinanceManager
+      this.stateService.showToast('[3/4] Đang deploy Finance Manager (Gọi vốn & Cổ tức)...', 'warning');
+      const financeFactory = new ethers.ContractFactory(
+        CONTRACTS_DATA['FinanceManager'].abi,
+        CONTRACTS_DATA['FinanceManager'].bytecode,
+        signer
+      );
+      const financeContract = await financeFactory.deploy(tokenAddr, govAddr);
+      await financeContract.waitForDeployment();
+      const financeAddr = await financeContract.getAddress();
+      this.editingContracts['funding_address'] = financeAddr;
+      this.stateService.showToast('✓ Deploy Finance Manager thành công: ' + financeAddr, 'success');
+
+      // 4. Deploy Marketplace
+      this.stateService.showToast('[4/4] Đang deploy Marketplace (Sàn giao dịch)...', 'warning');
+      const marketplaceFactory = new ethers.ContractFactory(
+        CONTRACTS_DATA['Marketplace'].abi,
+        CONTRACTS_DATA['Marketplace'].bytecode,
+        signer
+      );
+      const marketplaceContract = await marketplaceFactory.deploy(tokenAddr, govAddr);
+      await marketplaceContract.waitForDeployment();
+      const marketplaceAddr = await marketplaceContract.getAddress();
+      this.editingContracts['marketplace_address'] = marketplaceAddr;
+      this.stateService.showToast('✓ Deploy Marketplace thành công: ' + marketplaceAddr, 'success');
+
+      this.stateService.showToast('Hoàn tất deploy 4 contracts! Vui lòng nhấn "Lưu cấu hình Smart Contracts" để hoàn tất liên kết vào hệ thống.', 'success');
+
+    } catch (e: any) {
+      console.error(e);
+      this.stateService.showToast('Lỗi khi deploy: ' + (e.message || 'Unknown'), 'error');
+    } finally {
+      this.deployAllLoading.set(false);
     }
   }
 

@@ -12,11 +12,12 @@ import { AddStaffModalComponent } from './modals/add-staff-modal.component';
 import { RegisterCompanyModalComponent } from './modals/register-company-modal.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { TabGroupComponent } from '@shared/components/tab-group/tab-group.component';
+import { IconComponent } from '@shared/components/icon/icon.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, TabGroupComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, TabGroupComponent, IconComponent],
   templateUrl: './dashboard.component.html'
 })
 export class DashboardComponent implements OnInit {

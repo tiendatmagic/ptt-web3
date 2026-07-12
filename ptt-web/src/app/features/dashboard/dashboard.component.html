@@ -9,7 +9,7 @@
     <div class="min-w-0">
       @if (stateService.currentUser()) {
         <h1 class="text-base sm:text-lg font-black truncate">
-          Xin chào, {{ stateService.currentUser().name || 'Nhà đầu tư Web3' }}! 👋
+          Xin chào, {{ stateService.currentUser().name || 'Nhà đầu tư Web3' }}! <app-icon name="sparkles" class="w-5 h-5 text-yellow-400 ml-1 inline-flex align-middle" />
         </h1>
         <p class="text-sm text-violet-200 mt-0.5 hidden sm:block">
           PTT Dapp · Token hóa cổ phần doanh nghiệp · Quản trị on-chain phi tập trung
@@ -117,16 +117,16 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             @for (
               contract of [
-                { label: 'Equity Token', key: 'token_address', icon: '🪙' },
-                { label: 'Board Governance', key: 'governance_address', icon: '🏛️' },
-                { label: 'Treasury', key: 'treasury_address', icon: '🏦' },
-                { label: 'Marketplace', key: 'marketplace_address', icon: '🔁' }
+                { label: 'Equity Token', key: 'token_address', icon: 'ethereum' },
+                { label: 'Board Governance', key: 'governance_address', icon: 'scale' },
+                { label: 'Treasury', key: 'treasury_address', icon: 'bank' },
+                { label: 'Marketplace', key: 'marketplace_address', icon: 'sync' }
               ];
               track contract.key
             ) {
               <div class="bg-slate-50 dark:bg-slate-900/30 rounded-xl p-4 border border-slate-100 dark:border-slate-800/40 space-y-1.5 hover:border-violet-500/20 transition-all duration-200">
                 <div class="flex items-center gap-1.5">
-                  <span class="text-sm">{{ contract.icon }}</span>
+                  <app-icon [name]="contract.icon" class="w-4 h-4 text-violet-500 shrink-0" />
                   <span class="text-xs font-black text-slate-400 uppercase tracking-wider">{{ contract.label }}</span>
                 </div>
                 <a
