@@ -19,12 +19,10 @@ return new class extends Migration
             $table->string('name');
             $table->string('logo')->nullable();
             $table->decimal('valuation', 24, 4)->default(0);
-            $table->string('registry_address', 42)->nullable();
             $table->string('governance_address', 42)->nullable();
             $table->string('token_address', 42)->nullable();
             $table->string('funding_address', 42)->nullable();
             $table->string('marketplace_address', 42)->nullable();
-            $table->string('oracle_address', 42)->nullable();
             $table->string('status')->default('ACTIVE'); // ACTIVE, SUSPENDED
             $table->timestamps();
         });

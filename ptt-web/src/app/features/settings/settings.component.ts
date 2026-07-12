@@ -230,6 +230,8 @@ export class SettingsComponent implements OnInit {
         for (const item of contractsToVerify) {
           try {
             await this.handleVerify(item.key, item.address, item.name);
+            // Tránh BscScan Rate Limit: Chờ 3.5 giây trước khi verify contract tiếp theo
+            await new Promise(resolve => setTimeout(resolve, 3500));
           } catch (err) {
             console.error(`Lỗi tự động verify ${item.name}:`, err);
           }
@@ -406,7 +408,7 @@ Hãy lưu trữ cẩn thận và không chia sẻ khóa bảo mật (Private Key
       } else {
         // 2. Nếu chưa verify, tải mã nguồn và tính toán constructor arguments gửi verify thực tế
         const fileName = contractKey.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
-        const sourceRes = await fetch(`/assets/contracts/${fileName}.flat.sol`);
+        const sourceRes = await fetch(`/assets/contracts/${fileName}.flat.sol?t=${new Date().getTime()}`);
         if (!sourceRes.ok) {
           throw new Error(`Không tìm thấy tệp mã nguồn của hợp đồng ${contractName} trong Assets!`);
         }

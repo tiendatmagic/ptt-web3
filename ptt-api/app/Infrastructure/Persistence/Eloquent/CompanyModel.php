@@ -18,12 +18,10 @@ class CompanyModel extends Model
         'name',
         'logo',
         'valuation',
-        'registry_address',
         'governance_address',
         'token_address',
         'funding_address',
         'marketplace_address',
-        'oracle_address',
         'status',
     ];
 

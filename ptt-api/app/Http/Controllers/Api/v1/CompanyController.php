@@ -65,12 +65,10 @@ class CompanyController extends Controller
             'name' => $company->getName(),
             'logo' => $company->getLogo(),
             'valuation' => $company->getValuation(),
-            'registry_address' => $company->getRegistryAddress(),
             'governance_address' => $company->getGovernanceAddress(),
             'token_address' => $company->getTokenAddress(),
             'funding_address' => $company->getFundingAddress(),
             'marketplace_address' => $company->getMarketplaceAddress(),
-            'oracle_address' => $company->getOracleAddress(),
             'status' => $company->getStatus(),
         ]);
     }
@@ -92,12 +90,10 @@ class CompanyController extends Controller
                 $request->input('name'),
                 $request->input('logo'),
                 $request->input('valuation'),
-                $request->input('registry_address'),
                 $request->input('governance_address'),
                 $request->input('token_address'),
                 $request->input('funding_address'),
-                $request->input('marketplace_address'),
-                $request->input('oracle_address')
+                $request->input('marketplace_address')
             );
 
             $savedCompany = $this->companyRepository->save($company);
@@ -146,7 +142,6 @@ class CompanyController extends Controller
                 'uuid' => $company->getUuid(),
                 'code' => $company->getCode(),
                 'name' => $company->getName(),
-                'registry_address' => $company->getRegistryAddress(),
                 'token_address' => $company->getTokenAddress(),
             ]
         ], 201);
@@ -165,12 +160,10 @@ class CompanyController extends Controller
         }
 
         $validated = $request->validate([
-            'registry_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'governance_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'token_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'funding_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'marketplace_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
-            'oracle_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
         ]);
 
         foreach ($validated as $key => $value) {
@@ -186,12 +179,10 @@ class CompanyController extends Controller
                 $exists = DB::table('companies')
                     ->where('id', '!=', $id)
                     ->where(function ($query) use ($value) {
-                        $query->where('registry_address', $value)
-                            ->orWhere('governance_address', $value)
+                        $query->where('governance_address', $value)
                             ->orWhere('token_address', $value)
                             ->orWhere('funding_address', $value)
-                            ->orWhere('marketplace_address', $value)
-                            ->orWhere('oracle_address', $value);
+                            ->orWhere('marketplace_address', $value);
                     })
                     ->exists();
 
@@ -213,12 +204,10 @@ class CompanyController extends Controller
                 'uuid' => $companyModel->uuid,
                 'code' => $companyModel->code,
                 'name' => $companyModel->name,
-                'registry_address' => $companyModel->registry_address,
                 'governance_address' => $companyModel->governance_address,
                 'token_address' => $companyModel->token_address,
                 'funding_address' => $companyModel->funding_address,
                 'marketplace_address' => $companyModel->marketplace_address,
-                'oracle_address' => $companyModel->oracle_address,
             ]
         ]);
     }
@@ -292,12 +281,10 @@ class CompanyController extends Controller
 
         // 3. Kiểm tra xem doanh nghiệp đã liên kết Smart Contracts hay chưa
         if (
-            $companyModel->registry_address ||
             $companyModel->governance_address ||
             $companyModel->token_address ||
             $companyModel->funding_address ||
-            $companyModel->marketplace_address ||
-            $companyModel->oracle_address
+            $companyModel->marketplace_address
         ) {
             return response()->json([
                 'message' => 'Cannot delete a company that has already been linked to on-chain Smart Contracts'
