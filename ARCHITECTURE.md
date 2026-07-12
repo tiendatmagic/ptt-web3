@@ -1,6 +1,6 @@
-# PTT Web3 - Tài Liệu Đặc Tả Kiến Trúc Hệ Thống (ARCHITECTURE.md)
+# PTT DApp - Tài Liệu Đặc Tả Kiến Trúc Hệ Thống (ARCHITECTURE.md)
 
-Tài liệu này đặc tả chi tiết kiến trúc hiện tại của dự án **PTT Web3** (cả Backend và Frontend) nhằm phục vụ các AI Agent và lập trình viên phát triển hệ thống một cách nhất quán, tuân thủ đúng các mô hình thiết kế đã thiết lập.
+Tài liệu này đặc tả chi tiết kiến trúc hiện tại của dự án **PTT DApp** (cả Backend và Frontend) nhằm phục vụ các AI Agent và lập trình viên phát triển hệ thống một cách nhất quán, tuân thủ đúng các mô hình thiết kế đã thiết lập.
 
 ---
 

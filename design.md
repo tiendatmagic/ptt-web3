@@ -1,6 +1,6 @@
 # Hướng dẫn Thiết kế Giao diện & Hệ thống Style (Design System Specification)
 
-Tài liệu này đặc tả toàn bộ quy chuẩn thiết kế giao diện UI/UX của dự án **PTT Web3**, áp dụng đồng bộ trên cả 3 phân hệ: **Web POS Admin (Hệ thống quản trị và bán hàng)**, **Blockchain Explorer (Trình khám phá khối nội bộ)**, và **Website Storefront (Cửa hàng công khai dành cho khách hàng)**.
+Tài liệu này đặc tả toàn bộ quy chuẩn thiết kế giao diện UI/UX của dự án **PTT DApp**, áp dụng đồng bộ trên cả 3 phân hệ: **Web POS Admin (Hệ thống quản trị và bán hàng)**, **Blockchain Explorer (Trình khám phá khối nội bộ)**, và **Website Storefront (Cửa hàng công khai dành cho khách hàng)**.
 
 ---
 
