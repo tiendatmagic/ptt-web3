@@ -123,7 +123,7 @@ export class SettingsComponent implements OnInit {
         CONTRACTS_DATA['FinanceManager'].bytecode,
         signer
       );
-      const financeContract = await financeFactory.deploy(tokenAddr, govAddr);
+      const financeContract = await financeFactory.deploy(govAddr);
       await financeContract.waitForDeployment();
       const financeAddr = await financeContract.getAddress();
       this.editingContracts['funding_address'] = financeAddr;
@@ -136,7 +136,7 @@ export class SettingsComponent implements OnInit {
         CONTRACTS_DATA['Marketplace'].bytecode,
         signer
       );
-      const marketplaceContract = await marketplaceFactory.deploy(tokenAddr, govAddr);
+      const marketplaceContract = await marketplaceFactory.deploy(govAddr, govAddr);
       await marketplaceContract.waitForDeployment();
       const marketplaceAddr = await marketplaceContract.getAddress();
       this.editingContracts['marketplace_address'] = marketplaceAddr;
