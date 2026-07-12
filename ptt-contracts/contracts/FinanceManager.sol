@@ -69,7 +69,30 @@ contract FinanceManager is Ownable {
     event DividendClaimed(uint256 indexed dividendId, address indexed shareholder, uint256 amount);
     event DividendRoundStatusUpdated(uint256 indexed dividendId, bool active);
 
+    address public operator;
+
+    event OperatorUpdated(address indexed previousOperator, address indexed newOperator);
+    event RoundPriceUpdated(uint256 indexed roundId, uint256 newPrice);
+
+    modifier onlyOwnerOrOperator() {
+        require(msg.sender == owner() || msg.sender == operator, "Not owner or operator");
+        _;
+    }
+
     constructor(address initialOwner) Ownable(initialOwner) {}
+
+    function setOperator(address _operator) external onlyOwner {
+        address oldOperator = operator;
+        operator = _operator;
+        emit OperatorUpdated(oldOperator, _operator);
+    }
+
+    function updateRoundPrice(uint256 roundId, uint256 newPrice) external onlyOwnerOrOperator {
+        require(roundId <= roundCount && roundId > 0, "Round does not exist");
+        require(newPrice > 0, "Invalid price");
+        rounds[roundId].price = newPrice;
+        emit RoundPriceUpdated(roundId, newPrice);
+    }
 
     // --- FUNDING ROUND CONFIGURATION (GOVERNANCE) ---
 

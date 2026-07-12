@@ -9,8 +9,6 @@ describe("PTT Dapp Suite", function () {
   let investorA;
   let investorB;
   
-  let registry;
-  
   let governance;
   let token;
   let financeManager;
@@ -24,14 +22,9 @@ describe("PTT Dapp Suite", function () {
 
   before(async function () {
     [deployer, memberA, memberB, memberC, investorA, investorB] = await ethers.getSigners();
-
-    // 1. Deploy CompanyRegistry
-    const CompanyRegistry = await ethers.getContractFactory("CompanyRegistry");
-    registry = await CompanyRegistry.deploy();
-    await registry.waitForDeployment();
   });
 
-  it("Should deploy and register a company and link all contracts", async function () {
+  it("Should deploy and link all contracts", async function () {
     const initialBoard = [memberA.address, memberB.address, memberC.address];
     const threshold = 2; // 2/3 signatures
 
@@ -58,24 +51,6 @@ describe("PTT Dapp Suite", function () {
     marketplace = await Marketplace.deploy(govAddr, govAddr);
     await marketplace.waitForDeployment();
     const marketAddr = await marketplace.getAddress();
-
-    // 5. Register company details in CompanyRegistry
-    await registry.registerCompany(
-      companyCode,
-      companyName,
-      govAddr,
-      tokenAddr,
-      govAddr, // treasury = governance
-      financeAddr, // fundingManager = financeManager
-      financeAddr, // distributionManager = financeManager
-      marketAddr,
-      ethers.ZeroAddress // oracle not used
-    );
-
-    // Read details from registry
-    const company = await registry.getCompanyByCode(companyCode);
-    expect(company.registered).to.equal(true);
-    expect(company.name).to.equal(companyName);
 
     expect(await governance.threshold()).to.equal(2n);
     expect(await token.owner()).to.equal(govAddr);
@@ -295,5 +270,41 @@ describe("PTT Dapp Suite", function () {
     await expect(
       token.connect(investorA).setWhitelisted(investorB.address, false)
     ).to.be.revertedWith("Not authorized: must be owner or operator");
+  });
+
+  it("Should allow HĐQT to assign an Operator in FinanceManager who can update round price directly", async function () {
+    const govAddress = await governance.getAddress();
+    const financeAddress = await financeManager.getAddress();
+
+    // 1. Assign memberA as an Operator of FinanceManager via Board Governance proposal
+    const setOperatorData = financeManager.interface.encodeFunctionData("setOperator", [memberA.address]);
+    let propTx = await governance.connect(memberA).createProposal(
+      financeAddress,
+      0,
+      setOperatorData,
+      "Set memberA as Operator of FinanceManager",
+      0,
+      3600
+    );
+    await propTx.wait();
+    let propId = await governance.proposalCount();
+    await governance.connect(memberB).signProposal(propId);
+    await governance.executeProposal(propId);
+
+    // Verify memberA is now the operator
+    expect(await financeManager.operator()).to.equal(memberA.address);
+
+    // 2. memberA (Operator) updates round price directly
+    const roundId = 1;
+    const newPrice = ethers.parseEther("0.02"); // change to 0.02 BNB/Token
+    
+    await financeManager.connect(memberA).updateRoundPrice(roundId, newPrice);
+    const round = await financeManager.rounds(roundId);
+    expect(round.price).to.equal(newPrice);
+
+    // 3. A non-operator trying to update price should fail
+    await expect(
+      financeManager.connect(investorA).updateRoundPrice(roundId, ethers.parseEther("0.03"))
+    ).to.be.revertedWith("Not owner or operator");
   });
 });
