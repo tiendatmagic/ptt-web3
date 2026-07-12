@@ -180,6 +180,28 @@ class CompanyController extends Controller
                     'message' => "Cannot modify or remove " . str_replace('_', ' ', $key) . " once it has been linked."
                 ], 400);
             }
+
+            // Chống copy/scam chéo: Đảm bảo địa chỉ liên kết mới là duy nhất trên toàn hệ thống (không trùng với bất kỳ công ty nào khác)
+            if (!empty($value)) {
+                $exists = DB::table('companies')
+                    ->where('id', '!=', $id)
+                    ->where(function ($query) use ($value) {
+                        $query->where('registry_address', $value)
+                            ->orWhere('governance_address', $value)
+                            ->orWhere('token_address', $value)
+                            ->orWhere('funding_address', $value)
+                            ->orWhere('marketplace_address', $value)
+                            ->orWhere('oracle_address', $value);
+                    })
+                    ->exists();
+
+                if ($exists) {
+                    return response()->json([
+                        'message' => "The contract address {$value} has already been linked to another company."
+                    ], 422);
+                }
+            }
+            
             $companyModel->$key = $value;
         }
         $companyModel->save();
