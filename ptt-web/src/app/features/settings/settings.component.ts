@@ -7,7 +7,6 @@ import { ethers } from 'ethers';
 import { StateService } from '@core/services/state.service';
 import { ApiService } from '@core/services/api.service';
 import { ModalService } from '@core/services/modal.service';
-import { EtherscanVerifyService } from '@core/services/etherscan-verify.service';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { BoardGovernance, EquityToken, FinanceManager, Marketplace } from '../../core/constants/contracts';
 import { IconComponent } from '@shared/components/icon/icon.component';
@@ -24,7 +23,6 @@ export class SettingsComponent implements OnInit {
   private apiService = inject(ApiService);
   private router = inject(Router);
   private modalService = inject(ModalService);
-  private verifyService = inject(EtherscanVerifyService);
 
   // --- Contract owners ---
   public contractOwners = signal<string[]>([]);
@@ -202,7 +200,6 @@ export class SettingsComponent implements OnInit {
       this.editingContracts['governance_address'] = govAddr;
       this.stateService.clearToasts();
       this.stateService.showToast('✓ Deploy Board Governance thành công: ' + govAddr, 'success');
-      this.autoVerify(govAddr, 'BoardGovernance', BoardGovernance.sourceCode, chainId);
 
       // 2. Deploy EquityToken
       this.stateService.clearToasts();
@@ -214,7 +211,6 @@ export class SettingsComponent implements OnInit {
       this.editingContracts['token_address'] = tokenAddr;
       this.stateService.clearToasts();
       this.stateService.showToast('✓ Deploy Equity Token thành công: ' + tokenAddr, 'success');
-      this.autoVerify(tokenAddr, 'EquityToken', EquityToken.sourceCode, chainId);
 
       // 3. Deploy FinanceManager
       this.stateService.clearToasts();
@@ -226,7 +222,6 @@ export class SettingsComponent implements OnInit {
       this.editingContracts['funding_address'] = financeAddr;
       this.stateService.clearToasts();
       this.stateService.showToast('✓ Deploy Finance Manager thành công: ' + financeAddr, 'success');
-      this.autoVerify(financeAddr, 'FinanceManager', FinanceManager.sourceCode, chainId);
 
       // 4. Deploy Marketplace
       this.stateService.clearToasts();
@@ -238,7 +233,6 @@ export class SettingsComponent implements OnInit {
       this.editingContracts['marketplace_address'] = marketplaceAddr;
       this.stateService.clearToasts();
       this.stateService.showToast('✓ Deploy Marketplace thành công: ' + marketplaceAddr, 'success');
-      this.autoVerify(marketplaceAddr, 'Marketplace', Marketplace.sourceCode, chainId);
 
       // Tự động lưu cấu hình contract ngay sau khi deploy đủ 4 contracts
       await this.handleSaveContracts();
@@ -252,30 +246,6 @@ export class SettingsComponent implements OnInit {
     } finally {
       this.deployAllLoading.set(false);
     }
-  }
-
-  /** Tự động verify contract trên Explorer sau khi deploy (background, không block UI) */
-  private autoVerify(address: string, contractName: string, sourceCode: string, chainId: number | null) {
-    if (!chainId || !sourceCode) return;
-
-    // Chờ 8 giây để Block Explorer kịp đồng bộ hóa bytecode của contract vừa deploy
-    setTimeout(() => {
-      this.verifyService.submitVerify({ contractAddress: address, contractName, sourceCode, chainId })
-        .then(result => {
-          if (result.success && result.guid) {
-            return this.verifyService.pollVerifyStatus(result.guid, chainId).then(status => {
-              if (status.verified) {
-                this.stateService.showToast(`✅ ${contractName} đã được verify thành công trên Explorer!`, 'success');
-              } else {
-                this.stateService.showToast(`⚠️ Verify ${contractName}: ${status.message}`, 'warning');
-              }
-            });
-          }
-          this.stateService.showToast(`⚠️ Gửi verify ${contractName} thất bại: ${result.message}`, 'warning');
-          return Promise.resolve();
-        })
-        .catch(err => console.warn(`[Verify] ${contractName} error:`, err));
-    }, 8000);
   }
 
   // --- Owners ---
