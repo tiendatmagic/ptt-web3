@@ -1,4 +1,4 @@
-<div class="w-full px-4 sm:px-6 py-5 space-y-5">
+<div class="w-full px-4 sm:px-6 py-5 space-y-5 overflow-x-hidden">
   <!-- ====================================================
        WELCOME BANNER — compact, cân đối
   ===================================================== -->
@@ -81,10 +81,10 @@
       >
         <!-- Header Info & Stats (Hàng ngang) -->
         <div
-          class="flex flex-col md:flex-row md:items-center justify-between gap-5 pb-5 border-b border-slate-100 dark:border-slate-800/60"
+          class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100 dark:border-slate-800/60 flex-wrap"
         >
           <!-- Company Name & Code -->
-          <div class="flex items-center gap-3.5">
+          <div class="flex items-center gap-3.5 min-w-0 flex-1">
             <div
               class="w-11 h-11 shrink-0 rounded-2xl bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center"
             >
@@ -128,7 +128,7 @@
           </div>
 
           <!-- Stats (Valuation & Status) -->
-          <div class="flex gap-4 sm:gap-6">
+          <div class="flex gap-3 flex-wrap shrink-0">
             <div
               class="bg-slate-50 dark:bg-slate-900/40 rounded-xl px-5 py-3 space-y-0.5 border border-slate-100 dark:border-slate-800/20"
             >
@@ -183,9 +183,10 @@
                     stateService.currentCompany()[contract.key]
                   "
                   target="_blank"
-                  class="font-mono text-xs text-violet-500 hover:text-violet-750 hover:underline break-all leading-tight block select-all"
+                  [title]="stateService.currentCompany()[contract.key]"
+                  class="font-mono text-xs text-violet-500 hover:text-violet-700 hover:underline leading-tight block truncate"
                 >
-                  {{ stateService.currentCompany()[contract.key] || '—' }}
+                  {{ stateService.currentCompany()[contract.key] | appShortAddress }}
                 </a>
               </div>
             }
@@ -312,23 +313,17 @@
         <!-- Tab: Staffs -->
         @if (activeTab() === 'staffs') {
           <div class="p-5 flex flex-col flex-1">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-sm font-black text-slate-700 dark:text-slate-200">
-                Thành viên nội bộ
-              </h3>
-              @if (stateService.hasPermission('staffs.create')) {
-                <button app-button variant="primary" size="sm" (click)="openAddStaff()">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2.5"
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Thêm thành viên
-                </button>
-              }
+            <div class="flex items-start justify-between mb-4 gap-3">
+              <div class="flex flex-col gap-1">
+                <h3 class="text-sm font-black text-slate-700 dark:text-slate-200">
+                  Thành viên HĐQT
+                </h3>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                  Danh sách lấy trực tiếp từ Smart Contract.
+                  Để thêm / xóa thành viên, vui lòng tạo đề xuất tại
+                  <a routerLink="/governance" class="text-[var(--color-primary)] font-bold hover:underline">Hội đồng Quản trị</a>.
+                </p>
+              </div>
             </div>
 
             <div
@@ -339,9 +334,9 @@
                   <tr
                     class="bg-slate-50 dark:bg-slate-900/50 text-slate-400 font-extrabold uppercase text-xs tracking-wider"
                   >
-                    <th class="px-4 py-3">Họ tên / Ví</th>
-                    <th class="px-4 py-3">Vai trò</th>
-                    <th class="px-4 py-3">Trạng thái</th>
+                    <th class="px-4 py-3 w-full">Họ tên / Ví</th>
+                    <th class="px-4 py-3 whitespace-nowrap">Vai trò</th>
+                    <th class="px-4 py-3 whitespace-nowrap hidden sm:table-cell">Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -349,39 +344,47 @@
                     <tr
                       class="border-t border-slate-100 dark:border-slate-800/40 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors"
                     >
-                      <td class="px-4 py-3">
-                        <div class="flex flex-col gap-0.5">
+                      <!-- Cột Họ tên / Ví -->
+                      <td class="px-4 py-3 max-w-0">
+                        <div class="flex flex-col gap-0.5 min-w-0">
                           @if (getStaffDisplayName(staff)) {
-                            <span class="font-extrabold text-slate-700 dark:text-slate-200">{{
+                            <span class="font-extrabold text-slate-700 dark:text-slate-200 truncate">{{
                               getStaffDisplayName(staff)
                             }}</span>
                             <span
-                              class="text-[10px] font-mono text-slate-400 break-all select-all font-semibold"
-                              >{{ staff.wallet_address }}</span
+                              class="text-[10px] font-mono text-slate-400 font-semibold truncate"
+                              [title]="staff.wallet_address"
+                              >{{ staff.wallet_address | appShortAddress }}</span
                             >
                           } @else {
                             <span
-                              class="font-extrabold font-mono text-slate-700 dark:text-slate-200 break-all select-all"
-                              >{{ staff.wallet_address }}</span
+                              class="font-bold font-mono text-slate-700 dark:text-slate-200 truncate"
+                              [title]="staff.wallet_address"
+                              >{{ staff.wallet_address | appShortAddress }}</span
                             >
                           }
+                          <!-- Trạng thái inline trên mobile -->
+                          <span
+                            class="sm:hidden text-[10px] font-extrabold mt-0.5"
+                            [class.text-emerald-500]="staff.status === 'ACTIVE'"
+                            [class.text-slate-400]="staff.status !== 'ACTIVE'"
+                          >
+                            {{ staff.status === 'ACTIVE' ? '● Kích hoạt' : '○ Dừng' }}
+                          </span>
                         </div>
                       </td>
-                      <td class="px-4 py-3">
-                        <div class="flex items-center gap-1.5 flex-wrap">
+                      <!-- Cột Vai trò -->
+                      <td class="px-4 py-3 whitespace-nowrap">
+                        <div class="flex items-center gap-1.5">
                           <span
-                            class="px-2 py-0.5 rounded-full text-xs font-bold bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400"
+                            class="px-2 py-0.5 rounded-full text-xs font-bold bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 whitespace-nowrap"
                           >
                             {{ getRoleDisplayName(staff.role_name) }}
                           </span>
-                          @if (
-                            stateService.currentCompany()?.governance_address &&
-                            stateService.currentCompany()?.governance_address !==
-                              '0x0000000000000000000000000000000000000000'
-                          ) {}
                         </div>
                       </td>
-                      <td class="px-4 py-3">
+                      <!-- Cột Trạng thái (ẩn trên mobile, đã hiện inline trong cột tên) -->
+                      <td class="px-4 py-3 whitespace-nowrap hidden sm:table-cell">
                         <span
                           class="font-extrabold text-sm"
                           [class.text-emerald-500]="staff.status === 'ACTIVE'"
@@ -393,7 +396,7 @@
                     </tr>
                   } @empty {
                     <tr>
-                      <td colspan="4" class="px-4 py-8 text-center text-sm text-slate-400">
+                      <td colspan="3" class="px-4 py-8 text-center text-sm text-slate-400">
                         Chưa có thành viên nào. Nhấn "Thêm thành viên" để bắt đầu.
                       </td>
                     </tr>

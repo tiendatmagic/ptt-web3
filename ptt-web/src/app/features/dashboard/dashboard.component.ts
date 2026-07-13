@@ -84,51 +84,8 @@ export class DashboardComponent implements OnInit {
 
     try {
       if (this.stateService.hasPermission('staffs.view')) {
-        const staffs = await firstValueFrom(this.apiService.get<any[]>('staffs', comp.id));
-        
-        const roles = await firstValueFrom(this.apiService.get<any[]>('roles', comp.id));
-        this.rolesList.set(roles || []);
 
-        // Lọc trùng và gộp vai trò của nhân sự từ database
-        const uniqueStaffsMap = new Map<string, any>();
-        if (staffs) {
-          for (const s of staffs) {
-            const addr = s.wallet_address?.toLowerCase();
-            if (!addr) continue;
-            
-            if (uniqueStaffsMap.has(addr)) {
-              const existing = uniqueStaffsMap.get(addr);
-              if (s.role_name && !existing.roles.includes(s.role_name)) {
-                existing.roles.push(s.role_name);
-              }
-              if (s.status === 'ACTIVE') {
-                existing.status = 'ACTIVE';
-              }
-            } else {
-              uniqueStaffsMap.set(addr, {
-                ...s,
-                roles: s.role_name ? [s.role_name] : []
-              });
-            }
-          }
-        }
-
-        const deduplicatedStaffs = Array.from(uniqueStaffsMap.values()).map(s => {
-          s.roles.sort((a: string, b: string) => {
-            const getPriority = (r: string) => {
-              if (['Owner', 'Chủ quán'].includes(r)) return 3;
-              if (['Board Member', 'Quản lý', 'Manager'].includes(r)) return 2;
-              return 1;
-            };
-            return getPriority(b) - getPriority(a);
-          });
-          return {
-            ...s,
-            role_name: s.roles.join(', ')
-          };
-        });
-
-        // Nếu đã deploy governance_address -> Đọc trực tiếp từ Smart Contract và đối chiếu
+        // Nếu đã deploy governance_address → lấy thành viên từ on-chain là nguồn chân lý duy nhất
         if (comp.governance_address && comp.governance_address !== ethers.ZeroAddress) {
           try {
             const provider = this.stateService.getProvider();
@@ -139,57 +96,83 @@ export class DashboardComponent implements OnInit {
                 provider
               );
               const members: string[] = await govContract['getMembers']();
-              const onchainSet = new Set(members.map(m => m.toLowerCase()));
-              
-              const merged: any[] = [];
-              let nextId = 1;
 
-              // 1. Duyệt qua danh sách staffs từ DB (đã lọc trùng), đối chiếu với on-chain
-              if (deduplicatedStaffs) {
-                for (const dbStaff of deduplicatedStaffs) {
-                  const cleanAddr = dbStaff.wallet_address?.toLowerCase();
-                  const isOnChain = cleanAddr ? onchainSet.has(cleanAddr) : false;
-                  
-                  merged.push({
-                    id: nextId++,
-                    user_id: dbStaff.user_id,
-                    name: dbStaff.name,
-                    wallet_address: dbStaff.wallet_address,
-                    role_name: dbStaff.role_name,
-                    status: dbStaff.status,
-                    is_onchain: isOnChain
-                  });
-
-                  if (cleanAddr) {
-                    onchainSet.delete(cleanAddr);
+              // Tải dữ liệu DB để làm giàu thông tin (tên, vai trò)
+              let dbMap = new Map<string, any>();
+              try {
+                const staffs = await firstValueFrom(this.apiService.get<any[]>('staffs', comp.id));
+                if (staffs) {
+                  for (const s of staffs) {
+                    const addr = s.wallet_address?.toLowerCase();
+                    if (!addr) continue;
+                    if (dbMap.has(addr)) {
+                      const existing = dbMap.get(addr);
+                      if (s.role_name && !existing.roles.includes(s.role_name)) {
+                        existing.roles.push(s.role_name);
+                      }
+                    } else {
+                      dbMap.set(addr, { ...s, roles: s.role_name ? [s.role_name] : [] });
+                    }
                   }
                 }
-              }
+              } catch (_) {}
 
-              // 2. Thêm các thành viên có trên Smart Contract mà chưa được đồng bộ về DB
-              for (const addr of members) {
-                if (onchainSet.has(addr.toLowerCase())) {
-                  merged.push({
-                    id: nextId++,
-                    user_id: null,
-                    name: '',
-                    wallet_address: addr,
-                    role_name: 'Board Member',
-                    status: 'ACTIVE',
-                    is_onchain: true
-                  });
-                }
-              }
+              // Chỉ hiển thị đúng danh sách hiện tại trên Smart Contract
+              const merged = members.map((addr, idx) => {
+                const key = addr.toLowerCase();
+                const db = dbMap.get(key);
+                const roles = db?.roles || [];
+                roles.sort((a: string, b: string) => {
+                  const getPriority = (r: string) => {
+                    if (['Owner', 'Chủ quán'].includes(r)) return 3;
+                    if (['Board Member', 'Quản lý', 'Manager'].includes(r)) return 2;
+                    return 1;
+                  };
+                  return getPriority(b) - getPriority(a);
+                });
+                return {
+                  id: idx + 1,
+                  user_id: db?.user_id || null,
+                  name: db?.name || '',
+                  wallet_address: addr,
+                  role_name: roles.length > 0 ? roles.join(', ') : 'Board Member',
+                  status: 'ACTIVE', // Đang trên on-chain → chắc chắn đang hoạt động
+                  is_onchain: true
+                };
+              });
 
               this.staffsList.set(merged);
               return;
             }
           } catch (contractErr) {
-            console.warn('Lỗi khi đọc thành viên từ contract, đối chiếu thất bại, dùng fallback:', contractErr);
+            console.warn('Lỗi khi đọc thành viên từ contract, dùng fallback DB:', contractErr);
           }
         }
 
-        // Fallback: nếu chưa deploy hoặc lỗi, hiển thị từ DB (đã lọc trùng)
+        // Fallback: chưa deploy hoặc lỗi → lấy từ DB, chỉ hiển thị ACTIVE
+        const staffs = await firstValueFrom(this.apiService.get<any[]>('staffs', comp.id));
+        const roles = await firstValueFrom(this.apiService.get<any[]>('roles', comp.id));
+        this.rolesList.set(roles || []);
+
+        const uniqueStaffsMap = new Map<string, any>();
+        if (staffs) {
+          for (const s of staffs) {
+            const addr = s.wallet_address?.toLowerCase();
+            if (!addr || s.status !== 'ACTIVE') continue;
+            if (uniqueStaffsMap.has(addr)) {
+              const existing = uniqueStaffsMap.get(addr);
+              if (s.role_name && !existing.roles.includes(s.role_name)) {
+                existing.roles.push(s.role_name);
+              }
+            } else {
+              uniqueStaffsMap.set(addr, { ...s, roles: s.role_name ? [s.role_name] : [] });
+            }
+          }
+        }
+        const deduplicatedStaffs = Array.from(uniqueStaffsMap.values()).map(s => ({
+          ...s,
+          role_name: s.roles.join(', ')
+        }));
         this.staffsList.set(deduplicatedStaffs);
       }
     } catch (e) {
