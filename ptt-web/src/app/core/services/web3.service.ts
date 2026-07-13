@@ -3,7 +3,7 @@ import { createAppKit, type AppKit } from '@reown/appkit';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
 import { mainnet, arbitrum, arbitrumSepolia, bsc, bscTestnet } from '@reown/appkit/networks';
 import { ApiController } from '@reown/appkit-controllers';
-import { BrowserProvider, formatEther } from 'ethers';
+import { BrowserProvider, formatEther, JsonRpcProvider } from 'ethers';
 import { environment } from '@environments/environment';
 import { ThemeService } from './theme.service';
 import { ToastService } from './toast.service';
@@ -304,11 +304,18 @@ export class Web3Service {
 
   // Lấy Ethers Provider phục vụ giao dịch đọc
   public getProvider() {
-    const walletProvider = this.modal.getWalletProvider();
-    if (!walletProvider) {
-      throw new Error('Ví chưa được kết nối');
+    const walletProvider = this.modal?.getWalletProvider();
+    if (walletProvider) {
+      return new BrowserProvider(walletProvider as any);
     }
-    return new BrowserProvider(walletProvider as any);
+    
+    // Fallback sang Public JsonRpcProvider khi ví chưa kết nối
+    const currentChainId = this.chainId();
+    const chainConfig = POPULAR_CHAINS.find(c => Number(c.chainId) === Number(currentChainId))
+      || POPULAR_CHAINS.find(c => Number(c.chainId) === 97); // Mặc định lấy BSC Testnet (97)
+      
+    const rpcUrl = chainConfig ? chainConfig.rpcUrl : 'https://bsc-testnet-rpc.publicnode.com';
+    return new JsonRpcProvider(rpcUrl);
   }
 
   // Lấy gas overrides dựa trên cài đặt tốc độ giao dịch của người dùng

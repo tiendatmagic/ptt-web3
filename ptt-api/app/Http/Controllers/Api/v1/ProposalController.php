@@ -79,7 +79,8 @@ class ProposalController extends Controller
         return response()->json([
             'proposal' => $proposal,
             'signatures' => $signatures,
-            'threshold' => $threshold
+            'threshold' => $threshold,
+            'total_members' => $boardMembersCount
         ]);
     }
 

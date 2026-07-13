@@ -168,10 +168,31 @@ export class GovernanceComponent implements OnInit {
 
   public getTxExplorerUrl(txHash: string): string {
     if (!txHash) return '';
-    const chainId = this.stateService.chainId();
+    let chainId = this.stateService.chainId();
+    if (!chainId) {
+      chainId = 97; // Mặc định BSC Testnet khi chưa kết nối ví
+    }
     const popular = POPULAR_CHAINS.find(c => Number(c.chainId) === Number(chainId));
-    const baseExplorer = popular ? popular.explorerUrl : 'https://bscscan.com';
+    const baseExplorer = popular ? popular.explorerUrl : 'https://testnet.bscscan.com';
     return `${baseExplorer}/tx/${txHash}`;
+  }
+
+  public getChainName(): string {
+    let chainId = this.stateService.chainId();
+    if (!chainId) {
+      chainId = 97; // Mặc định BSC Testnet khi chưa kết nối ví
+    }
+    const popular = POPULAR_CHAINS.find(c => Number(c.chainId) === Number(chainId));
+    return popular ? popular.name : 'BSC Testnet';
+  }
+
+  public formatValue(valueWei: any): string {
+    if (!valueWei) return '0';
+    try {
+      return ethers.formatEther(valueWei.toString());
+    } catch (e) {
+      return '0';
+    }
   }
 
   // Tải chi tiết đề xuất
@@ -205,11 +226,11 @@ export class GovernanceComponent implements OnInit {
         } catch (contractErr) {
           console.warn('[Governance] Lỗi đọc blockchain, dùng fallback từ backend:', contractErr);
           this.proposalThreshold.set(detail.threshold || 1);
-          this.proposalTotalMembers.set(detail.signatures?.length || 1);
+          this.proposalTotalMembers.set(detail.total_members || 1);
         }
       } else {
         this.proposalThreshold.set(detail.threshold || 1);
-        this.proposalTotalMembers.set(detail.signatures?.length || 1);
+        this.proposalTotalMembers.set(detail.total_members || 1);
       }
     } catch (e) {
       console.error('Lỗi tải chi tiết đề xuất:', e);

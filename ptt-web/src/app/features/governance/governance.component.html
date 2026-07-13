@@ -205,9 +205,9 @@
                   </span>
                 </div>
                 <div class="flex flex-col gap-0.5">
-                  <span class="font-bold text-slate-400">Value (Wei):</span>
+                  <span class="font-bold text-slate-400">Lượng Coin gửi kèm (Value):</span>
                   <span class="font-mono font-semibold text-slate-700 dark:text-slate-200">
-                    {{ selectedProposal().params?.value || '0' }} WEI
+                    {{ formatValue(selectedProposal().params?.value) }} {{ stateService.chainSymbol() || 'BNB' }}
                   </span>
                 </div>
               </div>
@@ -217,7 +217,7 @@
             @if (selectedProposal().tx_hash) {
               <div class="space-y-1">
                 <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
-                  Mã giao dịch thực thi (TxHash)
+                  Mã giao dịch thực thi (TxHash — Mạng {{ getChainName() }})
                 </h4>
                 <div
                   class="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20 text-xs"
@@ -236,10 +236,27 @@
             }
 
             <!-- Signatures list -->
-            <div class="space-y-2">
-              <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
-                Chữ ký biểu quyết (Đã ký: {{ proposalSignatures().length }} / Yêu cầu tối thiểu: {{ proposalThreshold() }} chữ ký từ {{ proposalTotalMembers() }} thành viên HĐQT)
-              </h4>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 select-none">
+                <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
+                  Trạng thái biểu quyết
+                </h4>
+                @if (proposalSignatures().length >= proposalThreshold()) {
+                  <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+                    Đủ điều kiện thực thi ({{ proposalSignatures().length }}/{{ proposalThreshold() }})
+                  </span>
+                } @else {
+                  <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
+                    Thiếu {{ proposalThreshold() - proposalSignatures().length }} chữ ký nữa ({{ proposalSignatures().length }}/{{ proposalThreshold() }})
+                  </span>
+                }
+              </div>
+
+              <!-- Chi tiết thông số -->
+              <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between px-1 shrink-0 pb-1">
+                <span>Ngưỡng chữ ký yêu cầu: <strong class="text-slate-700 dark:text-slate-200">{{ proposalThreshold() }} chữ ký</strong></span>
+                <span>Thành viên HĐQT: <strong class="text-slate-700 dark:text-slate-200">{{ proposalTotalMembers() }} người</strong></span>
+              </div>
               <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
                 @for (sig of proposalSignatures(); track sig.id) {
                   <div
