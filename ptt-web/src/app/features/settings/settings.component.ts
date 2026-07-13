@@ -215,25 +215,9 @@ export class SettingsComponent implements OnInit {
       this.stateService.clearToasts();
       this.stateService.showToast('✓ Deploy Board Governance thành công: ' + govAddr, 'success');
 
-      // 2. Deploy EquityToken (tạm thời đặt deployer/signer làm owner để cấu hình whitelist)
+      // 2. Deploy FinanceManager
       this.stateService.clearToasts();
-      this.stateService.showToast('[2/4] Đang deploy Equity Token (Cổ phần)...', 'warning');
-      const deployerAddr = await signer.getAddress();
-      const tokenFactory = new ethers.ContractFactory(EquityToken.abi, EquityToken.bytecode, signer);
-      const tokenContract = await tokenFactory.deploy(
-        this.tokenName().trim() || comp.name,
-        this.tokenSymbol().trim() || comp.code,
-        deployerAddr
-      );
-      await tokenContract.waitForDeployment();
-      const tokenAddr = await tokenContract.getAddress();
-      this.editingContracts['token_address'] = tokenAddr;
-      this.stateService.clearToasts();
-      this.stateService.showToast('✓ Deploy Equity Token thành công: ' + tokenAddr, 'success');
-
-      // 3. Deploy FinanceManager
-      this.stateService.clearToasts();
-      this.stateService.showToast('[3/4] Đang deploy Finance Manager (Gọi vốn & Cổ tức)...', 'warning');
+      this.stateService.showToast('[2/4] Đang deploy Finance Manager (Gọi vốn & Cổ tức)...', 'warning');
       const financeFactory = new ethers.ContractFactory(FinanceManager.abi, FinanceManager.bytecode, signer);
       const financeContract = await financeFactory.deploy(govAddr);
       await financeContract.waitForDeployment();
@@ -242,9 +226,9 @@ export class SettingsComponent implements OnInit {
       this.stateService.clearToasts();
       this.stateService.showToast('✓ Deploy Finance Manager thành công: ' + financeAddr, 'success');
 
-      // 4. Deploy Marketplace
+      // 3. Deploy Marketplace
       this.stateService.clearToasts();
-      this.stateService.showToast('[4/4] Đang deploy Marketplace (Sàn giao dịch)...', 'warning');
+      this.stateService.showToast('[3/4] Đang deploy Marketplace (Sàn giao dịch)...', 'warning');
       const marketplaceFactory = new ethers.ContractFactory(Marketplace.abi, Marketplace.bytecode, signer);
       const marketplaceContract = await marketplaceFactory.deploy(govAddr, govAddr);
       await marketplaceContract.waitForDeployment();
@@ -253,25 +237,23 @@ export class SettingsComponent implements OnInit {
       this.stateService.clearToasts();
       this.stateService.showToast('✓ Deploy Marketplace thành công: ' + marketplaceAddr, 'success');
 
-      // Tự động Whitelist các smart contracts và ví Deployer để đơn giản hóa vận hành
+      // 4. Deploy EquityToken (Cấu hình Owner và Whitelist trực tiếp trong Constructor)
       this.stateService.clearToasts();
-      this.stateService.showToast('Đang tự động cấu hình Whitelist hệ thống...', 'warning');
-      const gasOverrides = await this.stateService.getGasOverrides(signer);
-      
-      const tx1 = await (tokenContract as any)['setWhitelisted'](financeAddr, true, gasOverrides);
-      await tx1.wait();
-      
-      const tx2 = await (tokenContract as any)['setWhitelisted'](marketplaceAddr, true, gasOverrides);
-      await tx2.wait();
-      
-      const tx3 = await (tokenContract as any)['setWhitelisted'](deployerAddr, true, gasOverrides);
-      await tx3.wait();
-      
-      // Bàn giao quyền sở hữu EquityToken về cho Board Governance (Multisig) để bảo mật
-      this.stateService.showToast('Bàn giao quyền sở hữu Cổ phần về HĐQT...', 'warning');
-      const tx4 = await (tokenContract as any)['transferOwnership'](govAddr, gasOverrides);
-      await tx4.wait();
-      
+      this.stateService.showToast('[4/4] Đang deploy Equity Token (Cổ phần)...', 'warning');
+      const deployerAddr = await signer.getAddress();
+      const tokenFactory = new ethers.ContractFactory(EquityToken.abi, EquityToken.bytecode, signer);
+      const tokenContract = await tokenFactory.deploy(
+        this.tokenName().trim() || comp.name,
+        this.tokenSymbol().trim() || comp.code,
+        govAddr, // BoardGovernance là Owner trực tiếp
+        [financeAddr, marketplaceAddr, deployerAddr] // Whitelist ngay lập tức 3 địa chỉ
+      );
+      await tokenContract.waitForDeployment();
+      const tokenAddr = await tokenContract.getAddress();
+      this.editingContracts['token_address'] = tokenAddr;
+      this.stateService.clearToasts();
+      this.stateService.showToast('✓ Deploy Equity Token thành công: ' + tokenAddr, 'success');
+
       this.stateService.showToast('✓ Khởi tạo và cấu hình hệ thống thành công!', 'success');
 
       // Tự động lưu cấu hình contract ngay sau khi deploy đủ 4 contracts

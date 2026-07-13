@@ -41,19 +41,11 @@ async function main() {
   const govAddr = await governance.getAddress();
   console.log("BoardGovernance deployed to:", govAddr);
 
-  // 3.2. Deploy EquityToken with Owner set to BoardGovernance
-  console.log("Deploying EquityToken...");
-  const EquityToken = await ethers.getContractFactory("EquityToken");
-  const token = await EquityToken.deploy(tokenName, tokenSymbol, govAddr);
-  await token.waitForDeployment();
-  const tokenAddr = await token.getAddress();
-  console.log("EquityToken deployed to:", tokenAddr);
-
-  // 3.3. Treasury address is set directly to BoardGovernance address
+  // 3.2. Treasury address is set directly to BoardGovernance address
   const treasuryAddr = govAddr;
   console.log("Treasury address mapped to BoardGovernance:", treasuryAddr);
 
-  // 3.4. Deploy FinanceManager with Owner set to BoardGovernance
+  // 3.3. Deploy FinanceManager with Owner set to BoardGovernance
   console.log("Deploying FinanceManager...");
   const FinanceManager = await ethers.getContractFactory("FinanceManager");
   const financeManager = await FinanceManager.deploy(govAddr);
@@ -63,13 +55,21 @@ async function main() {
   const distAddr = financeAddr;
   console.log("FinanceManager deployed to:", financeAddr);
 
-  // 3.5. Deploy Marketplace with Owner set to BoardGovernance, fee wallet set to Treasury (BoardGovernance)
+  // 3.4. Deploy Marketplace with Owner set to BoardGovernance, fee wallet set to Treasury (BoardGovernance)
   console.log("Deploying Marketplace...");
   const Marketplace = await ethers.getContractFactory("Marketplace");
   const marketplace = await Marketplace.deploy(govAddr, treasuryAddr);
   await marketplace.waitForDeployment();
   const marketAddr = await marketplace.getAddress();
   console.log("Marketplace deployed to:", marketAddr);
+
+  // 3.5. Deploy EquityToken with Owner set to BoardGovernance and whitelist addresses
+  console.log("Deploying EquityToken...");
+  const EquityToken = await ethers.getContractFactory("EquityToken");
+  const token = await EquityToken.deploy(tokenName, tokenSymbol, govAddr, [financeAddr, marketAddr, deployer.address]);
+  await token.waitForDeployment();
+  const tokenAddr = await token.getAddress();
+  console.log("EquityToken deployed to:", tokenAddr);
 
   // 3.6. Deploy Oracle with Owner set to BoardGovernance
   console.log("Deploying Oracle...");

@@ -64,11 +64,13 @@ contract EquityToken is ERC20, Ownable, Pausable {
     constructor(
         string memory name,
         string memory symbol,
-        address initialOwner
+        address initialOwner,
+        address[] memory initialWhitelist
     ) ERC20(name, symbol) Ownable(initialOwner) {
-        isWhitelisted[initialOwner] = true;
-        _whitelistAddressIndex[initialOwner] = whitelistAddresses.length;
-        whitelistAddresses.push(initialOwner);
+        _addWhitelist(initialOwner);
+        for (uint256 i = 0; i < initialWhitelist.length; i++) {
+            _addWhitelist(initialWhitelist[i]);
+        }
     }
 
     function mint(address to, uint256 amount) external onlyMinterOrOwner whenNotPaused {

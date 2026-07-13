@@ -34,23 +34,23 @@ describe("PTT Dapp Suite", function () {
     await governance.waitForDeployment();
     const govAddr = await governance.getAddress();
 
-    // 2. Deploy EquityToken with Owner set to BoardGovernance
-    const EquityToken = await ethers.getContractFactory("EquityToken");
-    token = await EquityToken.deploy(tokenName, tokenSymbol, govAddr);
-    await token.waitForDeployment();
-    const tokenAddr = await token.getAddress();
-
-    // 3. Deploy FinanceManager with Owner set to BoardGovernance
+    // 2. Deploy FinanceManager with Owner set to BoardGovernance
     const FinanceManager = await ethers.getContractFactory("FinanceManager");
     financeManager = await FinanceManager.deploy(govAddr);
     await financeManager.waitForDeployment();
     const financeAddr = await financeManager.getAddress();
 
-    // 4. Deploy Marketplace with Owner set to BoardGovernance, fee wallet set to BoardGovernance (Treasury)
+    // 3. Deploy Marketplace with Owner set to BoardGovernance, fee wallet set to BoardGovernance (Treasury)
     const Marketplace = await ethers.getContractFactory("Marketplace");
     marketplace = await Marketplace.deploy(govAddr, govAddr);
     await marketplace.waitForDeployment();
     const marketAddr = await marketplace.getAddress();
+
+    // 4. Deploy EquityToken with Owner set to BoardGovernance and initial whitelist addresses
+    const EquityToken = await ethers.getContractFactory("EquityToken");
+    token = await EquityToken.deploy(tokenName, tokenSymbol, govAddr, [financeAddr, marketAddr, deployer.address]);
+    await token.waitForDeployment();
+    const tokenAddr = await token.getAddress();
 
     expect(await governance.threshold()).to.equal(2n);
     expect(await token.owner()).to.equal(govAddr);
@@ -179,6 +179,21 @@ describe("PTT Dapp Suite", function () {
     // Mine a block to ensure checkpoint is finalized in the past
     await ethers.provider.send("evm_mine", []);
 
+    // Finalize the round via BoardGovernance to withdraw the escrowed funds to treasury (BoardGovernance)
+    const finalizeRoundData = financeManager.interface.encodeFunctionData("finalizeFundingRound", [roundId]);
+    const finalizePropTx = await governance.connect(memberA).createProposal(
+      financeAddress,
+      0,
+      finalizeRoundData,
+      "Finalize Funding Round and Withdraw Escrowed Funds",
+      0,
+      3600
+    );
+    await finalizePropTx.wait();
+    const finalizePropId = await governance.proposalCount();
+    await governance.connect(memberB).signProposal(finalizePropId);
+    await governance.executeProposal(finalizePropId);
+
     expect(await token.balanceOf(investorA.address)).to.equal(buyAmount);
     expect(await ethers.provider.getBalance(govAddress)).to.equal(cost);
   });
@@ -269,7 +284,7 @@ describe("PTT Dapp Suite", function () {
     // 3. A non-operator, non-owner wallet (like investorA) trying to setWhitelisted should fail
     await expect(
       token.connect(investorA).setWhitelisted(investorB.address, false)
-    ).to.be.revertedWith("Not authorized: must be owner or operator");
+    ).to.be.revertedWith("Not authorized: must be owner, operator or board member");
   });
 
   it("Should allow HĐQT to assign an Operator in FinanceManager who can update round price directly", async function () {
@@ -305,7 +320,7 @@ describe("PTT Dapp Suite", function () {
     // 3. A non-operator trying to update price should fail
     await expect(
       financeManager.connect(investorA).updateRoundPrice(roundId, ethers.parseEther("0.03"))
-    ).to.be.revertedWith("Not owner or operator");
+    ).to.be.revertedWithCustomError(financeManager, "NotOwnerOrOperator");
   });
 
   it("Should allow Operator to setWhitelistedBatch and setBlacklistedBatch", async function () {
@@ -331,6 +346,6 @@ describe("PTT Dapp Suite", function () {
     // 3. A non-operator trying to batch update should fail
     await expect(
       token.connect(investorA).setWhitelistedBatch([investorB.address], true)
-    ).to.be.revertedWith("Not authorized: must be owner or operator");
+    ).to.be.revertedWith("Not authorized: must be owner, operator or board member");
   });
 });

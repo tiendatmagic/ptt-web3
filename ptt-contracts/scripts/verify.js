@@ -29,7 +29,7 @@ async function main() {
   // Verify EquityToken
   console.log("Verifying EquityToken...");
   try {
-    await hre.run("verify:verify", { address: token, constructorArguments: ["PTT Share Token", "PTTS", governance] });
+    await hre.run("verify:verify", { address: token, constructorArguments: ["PTT Share Token", "PTTS", governance, [fundingManager, marketplace, "0x75AD18eF47eDa21BafF837CAc0F1563D0C355555"]] });
   } catch (e) { console.log("EquityToken verify status:", e.message); }
 
   // Verify Treasury
