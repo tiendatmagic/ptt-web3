@@ -20,7 +20,8 @@ const BOARD_GOVERNANCE_ABI = [
   "function executeProposal(uint256 proposalId) external returns (bytes memory)",
   "function signProposal(uint256 proposalId) external",
   "function threshold() external view returns (uint256)",
-  "function getProposalThreshold(uint256 proposalId) external view returns (uint256)"
+  "function getProposalThreshold(uint256 proposalId) external view returns (uint256)",
+  "function getMembers() external view returns (address[])"
 ];
 
 @Component({
@@ -41,6 +42,7 @@ export class GovernanceComponent implements OnInit {
   public selectedProposal = signal<any | null>(null);
   public proposalSignatures = signal<any[]>([]);
   public proposalThreshold = signal<number>(1);
+  public proposalTotalMembers = signal<number>(0);
   public isPageLoading = signal(true);
 
   // Phân trang Client-side cho danh sách Đề xuất
@@ -195,14 +197,19 @@ export class GovernanceComponent implements OnInit {
           } else {
             onchainThreshold = await govContract['threshold']();
           }
-          
           this.proposalThreshold.set(Number(onchainThreshold));
+
+          // Đọc số lượng thành viên HĐQT
+          const members = await govContract['getMembers']();
+          this.proposalTotalMembers.set(members.length);
         } catch (contractErr) {
-          console.warn('[Governance] Lỗi đọc threshold từ smart contract, dùng fallback từ backend:', contractErr);
+          console.warn('[Governance] Lỗi đọc blockchain, dùng fallback từ backend:', contractErr);
           this.proposalThreshold.set(detail.threshold || 1);
+          this.proposalTotalMembers.set(detail.signatures?.length || 1);
         }
       } else {
         this.proposalThreshold.set(detail.threshold || 1);
+        this.proposalTotalMembers.set(detail.signatures?.length || 1);
       }
     } catch (e) {
       console.error('Lỗi tải chi tiết đề xuất:', e);

@@ -238,7 +238,7 @@
             <!-- Signatures list -->
             <div class="space-y-2">
               <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
-                Chữ ký biểu quyết đã ký ({{ proposalSignatures().length }} / {{ proposalThreshold() }} thành viên)
+                Chữ ký biểu quyết (Đã ký: {{ proposalSignatures().length }} / Yêu cầu tối thiểu: {{ proposalThreshold() }} chữ ký từ {{ proposalTotalMembers() }} thành viên HĐQT)
               </h4>
               <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
                 @for (sig of proposalSignatures(); track sig.id) {
