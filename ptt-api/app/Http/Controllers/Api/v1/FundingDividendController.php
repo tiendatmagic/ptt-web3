@@ -52,27 +52,52 @@ class FundingDividendController extends Controller
         $companyId = $request->header('X-Company-Id');
         $status = $request->input('status', 'DRAFT'); // mặc định DRAFT khi tạo thủ công
 
-        $roundId = DB::table('funding_rounds')->insertGetId([
-            'company_id' => $companyId,
-            'name' => $request->input('name'),
-            'share_price' => $request->input('share_price'),
-            'payment_token_address' => $request->input('payment_token_address'),
-            'payment_token_symbol' => $request->input('payment_token_symbol', 'BNB'),
-            'payment_token_decimals' => $request->input('payment_token_decimals', 18),
-            'target_amount' => $request->input('target_amount'),
-            'raised_amount' => 0,
-            'start_date' => $request->input('start_date'),
-            'end_date' => $request->input('end_date'),
-            'status' => $status,
-            'onchain_round_id' => $request->input('onchain_round_id'),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // Kiểm tra xem đã có vòng gọi vốn DRAFT trùng tên thuộc công ty này chưa
+        $existingDraft = DB::table('funding_rounds')
+            ->where('company_id', $companyId)
+            ->where('name', $request->input('name'))
+            ->where('status', 'DRAFT')
+            ->first();
+
+        if ($existingDraft) {
+            DB::table('funding_rounds')
+                ->where('id', $existingDraft->id)
+                ->update([
+                    'share_price' => $request->input('share_price'),
+                    'payment_token_address' => $request->input('payment_token_address'),
+                    'payment_token_symbol' => $request->input('payment_token_symbol', 'BNB'),
+                    'payment_token_decimals' => $request->input('payment_token_decimals', 18),
+                    'target_amount' => $request->input('target_amount'),
+                    'start_date' => $request->input('start_date'),
+                    'end_date' => $request->input('end_date'),
+                    'status' => $status,
+                    'onchain_round_id' => $request->input('onchain_round_id'),
+                    'updated_at' => now(),
+                ]);
+            $roundId = $existingDraft->id;
+        } else {
+            $roundId = DB::table('funding_rounds')->insertGetId([
+                'company_id' => $companyId,
+                'name' => $request->input('name'),
+                'share_price' => $request->input('share_price'),
+                'payment_token_address' => $request->input('payment_token_address'),
+                'payment_token_symbol' => $request->input('payment_token_symbol', 'BNB'),
+                'payment_token_decimals' => $request->input('payment_token_decimals', 18),
+                'target_amount' => $request->input('target_amount'),
+                'raised_amount' => 0,
+                'start_date' => $request->input('start_date'),
+                'end_date' => $request->input('end_date'),
+                'status' => $status,
+                'onchain_round_id' => $request->input('onchain_round_id'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         return response()->json([
-            'message' => 'Funding round created successfully',
+            'message' => 'Funding round created or updated successfully',
             'funding_round_id' => $roundId
-        ], 201);
+        ], $existingDraft ? 200 : 201);
     }
 
     /**
