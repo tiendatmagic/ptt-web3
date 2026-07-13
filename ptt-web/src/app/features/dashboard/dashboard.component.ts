@@ -89,7 +89,46 @@ export class DashboardComponent implements OnInit {
         const roles = await firstValueFrom(this.apiService.get<any[]>('roles', comp.id));
         this.rolesList.set(roles || []);
 
-        // Nếu đã deploy governance_address -> Đọc trực tiếp từ Smart Contract
+        // Lọc trùng và gộp vai trò của nhân sự từ database
+        const uniqueStaffsMap = new Map<string, any>();
+        if (staffs) {
+          for (const s of staffs) {
+            const addr = s.wallet_address?.toLowerCase();
+            if (!addr) continue;
+            
+            if (uniqueStaffsMap.has(addr)) {
+              const existing = uniqueStaffsMap.get(addr);
+              if (s.role_name && !existing.roles.includes(s.role_name)) {
+                existing.roles.push(s.role_name);
+              }
+              if (s.status === 'ACTIVE') {
+                existing.status = 'ACTIVE';
+              }
+            } else {
+              uniqueStaffsMap.set(addr, {
+                ...s,
+                roles: s.role_name ? [s.role_name] : []
+              });
+            }
+          }
+        }
+
+        const deduplicatedStaffs = Array.from(uniqueStaffsMap.values()).map(s => {
+          s.roles.sort((a: string, b: string) => {
+            const getPriority = (r: string) => {
+              if (['Owner', 'Chủ quán'].includes(r)) return 3;
+              if (['Board Member', 'Quản lý', 'Manager'].includes(r)) return 2;
+              return 1;
+            };
+            return getPriority(b) - getPriority(a);
+          });
+          return {
+            ...s,
+            role_name: s.roles.join(', ')
+          };
+        });
+
+        // Nếu đã deploy governance_address -> Đọc trực tiếp từ Smart Contract và đối chiếu
         if (comp.governance_address && comp.governance_address !== ethers.ZeroAddress) {
           try {
             const provider = this.stateService.getProvider();
@@ -100,32 +139,58 @@ export class DashboardComponent implements OnInit {
                 provider
               );
               const members: string[] = await govContract['getMembers']();
+              const onchainSet = new Set(members.map(m => m.toLowerCase()));
               
-              // Map & Merge với thông tin tên/role từ DB
-              const merged = members.map((addr, idx) => {
-                const cleanAddr = addr.toLowerCase();
-                const dbStaff = staffs?.find(s => s.wallet_address?.toLowerCase() === cleanAddr);
-                
-                return {
-                  id: idx + 1,
-                  user_id: dbStaff?.user_id || null,
-                  name: dbStaff ? this.getStaffDisplayName(dbStaff) : '',
-                  wallet_address: addr, // Hiển thị đúng địa chỉ ví gốc từ contract
-                  role_name: dbStaff?.role_name || 'Board Member',
-                  status: 'ACTIVE'
-                };
-              });
+              const merged: any[] = [];
+              let nextId = 1;
+
+              // 1. Duyệt qua danh sách staffs từ DB (đã lọc trùng), đối chiếu với on-chain
+              if (deduplicatedStaffs) {
+                for (const dbStaff of deduplicatedStaffs) {
+                  const cleanAddr = dbStaff.wallet_address?.toLowerCase();
+                  const isOnChain = cleanAddr ? onchainSet.has(cleanAddr) : false;
+                  
+                  merged.push({
+                    id: nextId++,
+                    user_id: dbStaff.user_id,
+                    name: dbStaff.name,
+                    wallet_address: dbStaff.wallet_address,
+                    role_name: dbStaff.role_name,
+                    status: dbStaff.status,
+                    is_onchain: isOnChain
+                  });
+
+                  if (cleanAddr) {
+                    onchainSet.delete(cleanAddr);
+                  }
+                }
+              }
+
+              // 2. Thêm các thành viên có trên Smart Contract mà chưa được đồng bộ về DB
+              for (const addr of members) {
+                if (onchainSet.has(addr.toLowerCase())) {
+                  merged.push({
+                    id: nextId++,
+                    user_id: null,
+                    name: '',
+                    wallet_address: addr,
+                    role_name: 'Board Member',
+                    status: 'ACTIVE',
+                    is_onchain: true
+                  });
+                }
+              }
 
               this.staffsList.set(merged);
               return;
             }
           } catch (contractErr) {
-            console.warn('Lỗi khi đọc thành viên từ contract, fallback về DB:', contractErr);
+            console.warn('Lỗi khi đọc thành viên từ contract, đối chiếu thất bại, dùng fallback:', contractErr);
           }
         }
 
-        // Fallback: nếu chưa deploy hoặc lỗi, hiển thị từ DB
-        this.staffsList.set(staffs || []);
+        // Fallback: nếu chưa deploy hoặc lỗi, hiển thị từ DB (đã lọc trùng)
+        this.staffsList.set(deduplicatedStaffs);
       }
     } catch (e) {
       console.error('Lỗi khi tải thông tin nhân viên:', e);
@@ -141,6 +206,7 @@ export class DashboardComponent implements OnInit {
   }
 
   public getRoleDisplayName(roleName: string): string {
+    if (!roleName) return '';
     const map: Record<string, string> = {
       'Chủ quán': 'Chủ HĐQT',
       'Owner': 'Chủ HĐQT',
@@ -152,7 +218,10 @@ export class DashboardComponent implements OnInit {
       'Kế toán': 'Kế toán',
       'Accountant': 'Kế toán'
     };
-    return map[roleName] || roleName;
+    return roleName.split(', ')
+      .map(r => map[r.trim()] || r.trim())
+      .filter((value, index, self) => self.indexOf(value) === index)
+      .join(', ');
   }
 
   public getStaffDisplayName(staff: any): string {
@@ -172,8 +241,8 @@ export class DashboardComponent implements OnInit {
 
   public isBoardRole(roleName: string): boolean {
     if (!roleName) return false;
-    const normalized = roleName.trim();
-    return ['Owner', 'Chủ quán', 'Board Member', 'Quản lý', 'Manager'].includes(normalized);
+    const boardRoles = ['Owner', 'Chủ quán', 'Board Member', 'Quản lý', 'Manager'];
+    return roleName.split(', ').some(r => boardRoles.includes(r.trim()));
   }
 
 

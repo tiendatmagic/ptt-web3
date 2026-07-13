@@ -13,9 +13,15 @@
           @if (hasRealName()) {
             <span class="text-white">{{ stateService.currentUser().name }}</span>
           } @else {
-            <span class="font-mono text-xs sm:text-sm bg-white/15 px-2.5 py-1 rounded-lg border border-white/10 select-all tracking-tight select-text">{{ stateService.address() | appShortAddress }}</span>
+            <span
+              class="font-mono text-xs sm:text-sm bg-white/15 px-2.5 py-1 rounded-lg border border-white/10 select-all tracking-tight select-text"
+              >{{ stateService.address() | appShortAddress }}</span
+            >
           }
-          <app-icon name="sparkles" class="w-5 h-5 text-yellow-400 shrink-0 inline-block align-middle" />
+          <app-icon
+            name="sparkles"
+            class="w-5 h-5 text-yellow-400 shrink-0 inline-block align-middle"
+          />
         </h1>
         <p class="text-xs sm:text-sm text-violet-200 mt-1">
           PTT Dapp · Token hóa cổ phần doanh nghiệp · Quản trị on-chain phi tập trung
@@ -36,8 +42,12 @@
           class="w-full sm:w-auto flex items-center justify-center gap-2 bg-white text-violet-700 font-extrabold text-sm px-4 py-2.5 rounded-xl shadow-lg hover:bg-violet-50 active:scale-95 transition-all duration-150"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-              d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.5"
+              d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"
+            />
           </svg>
           KẾT NỐI VÍ
         </button>
@@ -65,23 +75,38 @@
   ===================================================== -->
   @if (stateService.currentUser() && stateService.currentCompany()) {
     <div class="space-y-5">
-      
       <!-- KHỐI TỔNG QUAN DOANH NGHIỆP & CONTRACTS (Full Width) -->
-      <div class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-6 shadow-sm space-y-5">
-        
+      <div
+        class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-6 shadow-sm space-y-5"
+      >
         <!-- Header Info & Stats (Hàng ngang) -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-5 pb-5 border-b border-slate-100 dark:border-slate-800/60">
-          
+        <div
+          class="flex flex-col md:flex-row md:items-center justify-between gap-5 pb-5 border-b border-slate-100 dark:border-slate-800/60"
+        >
           <!-- Company Name & Code -->
           <div class="flex items-center gap-3.5">
-            <div class="w-11 h-11 shrink-0 rounded-2xl bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center">
-              <svg class="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            <div
+              class="w-11 h-11 shrink-0 rounded-2xl bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center"
+            >
+              <svg
+                class="w-6 h-6 text-violet-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                />
               </svg>
             </div>
             <div class="min-w-0">
               <div class="flex items-center gap-1.5">
-                <h2 class="text-base font-extrabold text-slate-800 dark:text-white truncate leading-tight">
+                <h2
+                  class="text-base font-extrabold text-slate-800 dark:text-white truncate leading-tight"
+                >
                   {{ stateService.currentCompany().name }}
                 </h2>
                 @if (stateService.hasPermission('staffs.edit')) {
@@ -94,7 +119,9 @@
                   </a>
                 }
               </div>
-              <span class="text-sm font-bold text-violet-500 uppercase tracking-widest block mt-0.5">
+              <span
+                class="text-sm font-bold text-violet-500 uppercase tracking-widest block mt-0.5"
+              >
                 {{ stateService.currentCompany().code }}
               </span>
             </div>
@@ -102,14 +129,22 @@
 
           <!-- Stats (Valuation & Status) -->
           <div class="flex gap-4 sm:gap-6">
-            <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl px-5 py-3 space-y-0.5 border border-slate-100 dark:border-slate-800/20">
-              <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Định giá</span>
+            <div
+              class="bg-slate-50 dark:bg-slate-900/40 rounded-xl px-5 py-3 space-y-0.5 border border-slate-100 dark:border-slate-800/20"
+            >
+              <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider block"
+                >Định giá</span
+              >
               <span class="text-sm font-black text-slate-800 dark:text-white">
                 ${{ stateService.currentCompany().valuation | number: '1.0-0' }}
               </span>
             </div>
-            <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl px-5 py-3 space-y-0.5 border border-slate-100 dark:border-slate-800/20">
-              <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Trạng thái</span>
+            <div
+              class="bg-slate-50 dark:bg-slate-900/40 rounded-xl px-5 py-3 space-y-0.5 border border-slate-100 dark:border-slate-800/20"
+            >
+              <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider block"
+                >Trạng thái</span
+              >
               <span class="text-sm font-black text-emerald-600 dark:text-emerald-400">
                 ● {{ stateService.currentCompany().status }}
               </span>
@@ -119,25 +154,34 @@
 
         <!-- Contracts (Grid ngang trải rộng) -->
         <div class="space-y-3">
-          <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Smart Contracts deployed (BSC Testnet)</h3>
-          
+          <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">
+            Smart Contracts deployed (BSC Testnet)
+          </h3>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             @for (
               contract of [
                 { label: 'Equity Token', key: 'token_address', icon: 'ethereum' },
                 { label: 'Board Governance', key: 'governance_address', icon: 'scale' },
                 { label: 'Treasury', key: 'governance_address', icon: 'bank' },
-                { label: 'Marketplace', key: 'marketplace_address', icon: 'sync' }
+                { label: 'Marketplace', key: 'marketplace_address', icon: 'sync' },
               ];
               track contract.label
             ) {
-              <div class="bg-slate-50 dark:bg-slate-900/30 rounded-xl p-4 border border-slate-100 dark:border-slate-800/40 space-y-1.5 hover:border-violet-500/20 transition-all duration-200">
+              <div
+                class="bg-slate-50 dark:bg-slate-900/30 rounded-xl p-4 border border-slate-100 dark:border-slate-800/40 space-y-1.5 hover:border-violet-500/20 transition-all duration-200"
+              >
                 <div class="flex items-center gap-1.5">
                   <app-icon [name]="contract.icon" class="w-4 h-4 text-violet-500 shrink-0" />
-                  <span class="text-xs font-black text-slate-400 uppercase tracking-wider">{{ contract.label }}</span>
+                  <span class="text-xs font-black text-slate-400 uppercase tracking-wider">{{
+                    contract.label
+                  }}</span>
                 </div>
                 <a
-                  [href]="'https://testnet.bscscan.com/address/' + stateService.currentCompany()[contract.key]"
+                  [href]="
+                    'https://testnet.bscscan.com/address/' +
+                    stateService.currentCompany()[contract.key]
+                  "
                   target="_blank"
                   class="font-mono text-xs text-violet-500 hover:text-violet-750 hover:underline break-all leading-tight block select-all"
                 >
@@ -150,7 +194,9 @@
       </div>
 
       <!-- KHỐI TABS NỘI DUNG (Full Width) -->
-      <div class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] shadow-sm flex flex-col">
+      <div
+        class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] shadow-sm flex flex-col"
+      >
         <app-tab-group
           [options]="tabOptions()"
           [activeValue]="activeTab()"
@@ -271,12 +317,7 @@
                 Thành viên nội bộ
               </h3>
               @if (stateService.hasPermission('staffs.create')) {
-                <button
-                  app-button
-                  variant="primary"
-                  size="sm"
-                  (click)="openAddStaff()"
-                >
+                <button app-button variant="primary" size="sm" (click)="openAddStaff()">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       stroke-linecap="round"
@@ -301,9 +342,6 @@
                     <th class="px-4 py-3">Họ tên / Ví</th>
                     <th class="px-4 py-3">Vai trò</th>
                     <th class="px-4 py-3">Trạng thái</th>
-                    @if (stateService.hasPermission('staffs.edit')) {
-                      <th class="px-4 py-3 text-right">Thao tác</th>
-                    }
                   </tr>
                 </thead>
                 <tbody>
@@ -317,22 +355,31 @@
                             <span class="font-extrabold text-slate-700 dark:text-slate-200">{{
                               getStaffDisplayName(staff)
                             }}</span>
-                            <span class="text-[10px] font-mono text-slate-400 break-all select-all font-semibold">{{
-                              staff.wallet_address
-                            }}</span>
+                            <span
+                              class="text-[10px] font-mono text-slate-400 break-all select-all font-semibold"
+                              >{{ staff.wallet_address }}</span
+                            >
                           } @else {
-                            <span class="font-extrabold font-mono text-slate-700 dark:text-slate-200 break-all select-all">{{
-                              staff.wallet_address
-                            }}</span>
+                            <span
+                              class="font-extrabold font-mono text-slate-700 dark:text-slate-200 break-all select-all"
+                              >{{ staff.wallet_address }}</span
+                            >
                           }
                         </div>
                       </td>
                       <td class="px-4 py-3">
-                        <span
-                          class="px-2 py-0.5 rounded-full text-sm font-bold bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400"
-                        >
-                          {{ getRoleDisplayName(staff.role_name) }}
-                        </span>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            class="px-2 py-0.5 rounded-full text-xs font-bold bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400"
+                          >
+                            {{ getRoleDisplayName(staff.role_name) }}
+                          </span>
+                          @if (
+                            stateService.currentCompany()?.governance_address &&
+                            stateService.currentCompany()?.governance_address !==
+                              '0x0000000000000000000000000000000000000000'
+                          ) {}
+                        </div>
                       </td>
                       <td class="px-4 py-3">
                         <span
@@ -343,25 +390,6 @@
                           {{ staff.status === 'ACTIVE' ? '● Kích hoạt' : '○ Dừng' }}
                         </span>
                       </td>
-                      @if (stateService.hasPermission('staffs.edit')) {
-                        <td class="px-4 py-3 text-right">
-                          @if (
-                            !isBoardRole(staff.role_name) &&
-                            staff.user_id !== stateService.currentUser()?.id
-                          ) {
-                            <button
-                              app-button
-                              variant="danger-light"
-                              size="sm"
-                              (click)="handleDeactivateStaff(staff.id)"
-                            >
-                              Vô hiệu
-                            </button>
-                          } @else {
-                            <span class="text-slate-300 dark:text-slate-700">—</span>
-                          }
-                        </td>
-                      }
                     </tr>
                   } @empty {
                     <tr>
@@ -557,5 +585,4 @@
       </div>
     </div>
   }
-
 </div>
