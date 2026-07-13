@@ -5,7 +5,11 @@
   >
     <div>
       <h1 class="text-xl sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">
-        Hội đồng Quản trị<span class="text-slate-400 dark:text-slate-500 font-normal">@if (stateService.currentCompany()) { — {{ stateService.currentCompany().name }} }</span>
+        Hội đồng Quản trị<span class="text-slate-400 dark:text-slate-500 font-normal">
+          @if (stateService.currentCompany()) {
+            — {{ stateService.currentCompany().name }}
+          }
+        </span>
       </h1>
       <p class="text-xs text-slate-400">
         Tạo đề xuất, thu thập chữ ký phê duyệt đa chữ ký (Multisig) và thực thi giao dịch doanh
@@ -30,9 +34,11 @@
     <!-- SKELETON -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-pulse">
       <!-- Left panel skeleton -->
-      <div class="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-4 space-y-3">
+      <div
+        class="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-4 space-y-3"
+      >
         <div class="h-5 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/2"></div>
-        @for (i of [1,2,3,4,5]; track i) {
+        @for (i of [1, 2, 3, 4, 5]; track i) {
           <div class="p-3 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2">
             <div class="flex justify-between">
               <div class="h-4 bg-slate-200 dark:bg-slate-800 rounded-md w-16"></div>
@@ -44,7 +50,9 @@
         }
       </div>
       <!-- Right panel skeleton -->
-      <div class="lg:col-span-2 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 space-y-5">
+      <div
+        class="lg:col-span-2 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 space-y-5"
+      >
         <div class="flex justify-between">
           <div class="h-6 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/2"></div>
           <div class="h-6 w-20 bg-slate-200 dark:bg-slate-800 rounded-full"></div>
@@ -59,300 +67,412 @@
       </div>
     </div>
   } @else {
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- PANEL TRÁI: DANH SÁCH PROPOSALS -->
+      <div
+        class="lg:col-span-1 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-5 shadow-sm space-y-4 flex flex-col max-h-[420px] lg:max-h-[650px]"
+      >
+        <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300">Danh sách Đề xuất</h2>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- PANEL TRÁI: DANH SÁCH PROPOSALS -->
-    <div
-      class="lg:col-span-1 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-5 shadow-sm space-y-4 flex flex-col max-h-[420px] lg:max-h-[650px]"
-    >
-      <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300">Danh sách Đề xuất</h2>
+        <!-- Ô Tìm kiếm đề xuất -->
+        <div class="relative shrink-0 select-none">
+          <app-icon
+            name="search"
+            class="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 shrink-0"
+            strokeWidth="2.5"
+          />
+          <input
+            type="text"
+            [ngModel]="searchQuery()"
+            (ngModelChange)="onSearchQueryChange($event)"
+            placeholder="Tìm theo tiêu đề hoặc ID..."
+            class="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-xs font-semibold outline-none focus:border-[var(--color-primary)] transition-all text-slate-800 dark:text-slate-100"
+          />
+        </div>
 
-      <!-- Ô Tìm kiếm đề xuất -->
-      <div class="relative shrink-0 select-none">
-        <app-icon name="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 shrink-0" strokeWidth="2.5" />
-        <input
-          type="text"
-          [ngModel]="searchQuery()"
-          (ngModelChange)="onSearchQueryChange($event)"
-          placeholder="Tìm theo tiêu đề hoặc ID..."
-          class="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-xs font-semibold outline-none focus:border-[var(--color-primary)] transition-all text-slate-800 dark:text-slate-100"
+        <div class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+          @for (proposal of paginatedProposals(); track proposal.id) {
+            <div
+              (click)="selectProposal(proposal)"
+              [class.border-primary]="selectedProposal()?.id === proposal.id"
+              [class.bg-slate-50]="selectedProposal()?.id === proposal.id"
+              [class.dark:bg-slate-900/40]="selectedProposal()?.id === proposal.id"
+              class="p-3 rounded-xl border border-slate-100 dark:border-slate-900/80 hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-all cursor-pointer space-y-1.5"
+            >
+              <div class="flex items-center justify-between gap-2 min-w-0">
+                <span
+                  class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase shrink-0 whitespace-nowrap"
+                  [class.bg-yellow-100]="proposal.status === 'PENDING'"
+                  [class.text-yellow-700]="proposal.status === 'PENDING'"
+                  [class.bg-blue-100]="proposal.status === 'APPROVED'"
+                  [class.text-blue-700]="proposal.status === 'APPROVED'"
+                  [class.bg-emerald-100]="proposal.status === 'EXECUTED'"
+                  [class.text-emerald-700]="proposal.status === 'EXECUTED'"
+                >
+                  {{ proposal.status }}
+                </span>
+                <span class="text-xs font-bold text-slate-400 shrink-0">#{{ proposal.id }}</span>
+              </div>
+
+              <h3 class="text-xs font-black text-slate-700 dark:text-slate-200 line-clamp-1">
+                {{ proposal.title }}
+              </h3>
+
+              <div
+                class="flex justify-between items-center text-[10px] text-slate-400 pt-1 border-t border-slate-100/50 dark:border-slate-900/30 min-w-0 gap-2"
+              >
+                <span class="font-bold truncate">{{ getProposalTypeLabel(proposal.type) }}</span>
+                <span class="shrink-0">{{ proposal.created_at | date: 'dd/MM/yy' }}</span>
+              </div>
+            </div>
+          } @empty {
+            <div class="text-center py-10 space-y-2">
+              <app-icon name="shield" class="w-10 h-10 mx-auto text-slate-300" />
+              <p class="text-xs text-slate-400">Không tìm thấy đề xuất nào.</p>
+            </div>
+          }
+        </div>
+
+        <app-pagination
+          [currentPage]="currentPage()"
+          [totalPages]="totalPages()"
+          [totalItems]="filteredProposals().length"
+          [itemsPerPage]="itemsPerPage"
+          itemName="đề xuất"
+          (pageChange)="onPageChange($event)"
         />
       </div>
 
-      <div class="flex-1 overflow-y-auto space-y-2.5 pr-1">
-        @for (proposal of paginatedProposals(); track proposal.id) {
-          <div
-            (click)="selectProposal(proposal)"
-            [class.border-primary]="selectedProposal()?.id === proposal.id"
-            [class.bg-slate-50]="selectedProposal()?.id === proposal.id"
-            [class.dark:bg-slate-900/40]="selectedProposal()?.id === proposal.id"
-            class="p-3 rounded-xl border border-slate-100 dark:border-slate-900/80 hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-all cursor-pointer space-y-1.5"
-          >
-            <div class="flex items-center justify-between gap-2 min-w-0">
-              <span
-                class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase shrink-0 whitespace-nowrap"
-                [class.bg-yellow-100]="proposal.status === 'PENDING'"
-                [class.text-yellow-700]="proposal.status === 'PENDING'"
-                [class.bg-blue-100]="proposal.status === 'APPROVED'"
-                [class.text-blue-700]="proposal.status === 'APPROVED'"
-                [class.bg-emerald-100]="proposal.status === 'EXECUTED'"
-                [class.text-emerald-700]="proposal.status === 'EXECUTED'"
-              >
-                {{ proposal.status }}
-              </span>
-              <span class="text-xs font-bold text-slate-400 shrink-0">#{{ proposal.id }}</span>
-            </div>
-
-            <h3 class="text-xs font-black text-slate-700 dark:text-slate-200 line-clamp-1">
-              {{ proposal.title }}
-            </h3>
-
-            <div
-              class="flex justify-between items-center text-[10px] text-slate-400 pt-1 border-t border-slate-100/50 dark:border-slate-900/30 min-w-0 gap-2"
-            >
-              <span class="font-bold truncate">{{ getProposalTypeLabel(proposal.type) }}</span>
-              <span class="shrink-0">{{ proposal.created_at | date: 'dd/MM/yy' }}</span>
-            </div>
-          </div>
-        } @empty {
-          <div class="text-center py-10 space-y-2">
-            <app-icon name="shield" class="w-10 h-10 mx-auto text-slate-300" />
-            <p class="text-xs text-slate-400">Không tìm thấy đề xuất nào.</p>
-          </div>
-        }
-      </div>
-
-      <app-pagination
-        [currentPage]="currentPage()"
-        [totalPages]="totalPages()"
-        [totalItems]="filteredProposals().length"
-        [itemsPerPage]="itemsPerPage"
-        itemName="đề xuất"
-        (pageChange)="onPageChange($event)"
-      />
-    </div>
-
-    <!-- PANEL PHẢI: CHI TIẾT PROPOSAL SELECTED -->
-    <div
-      class="lg:col-span-2 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm flex flex-col min-h-[300px] lg:min-h-[500px]"
-    >
-      @if (selectedProposal()) {
-        <div class="flex-1 flex flex-col justify-between space-y-6">
-          <div class="space-y-5">
-            <!-- Title & Status -->
-            <div
-              class="flex justify-between items-start gap-4 pb-4 border-b border-slate-100 dark:border-slate-900/60"
-            >
-              <div class="space-y-1">
-                <span class="text-xs font-black text-primary uppercase tracking-widest"
-                  >Chi tiết đề xuất #{{ selectedProposal().id }}@if (stateService.currentCompany()) { | {{ stateService.currentCompany().name }} }</span
-                >
-                <h2 class="text-base font-extrabold text-slate-800 dark:text-white leading-tight">
-                  {{ selectedProposal().title }}
-                </h2>
-              </div>
-              <div class="flex items-center gap-2 shrink-0">
-                <button
-                  (click)="openShareModal()"
-                  class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-[var(--color-primary)] transition-all flex items-center justify-center border border-slate-200/50 dark:border-slate-800 cursor-pointer shadow-sm bg-white dark:bg-slate-900"
-                  title="Chia sẻ đề xuất & Mã QR"
-                >
-                  <app-icon name="qr" class="w-4 h-4" />
-                </button>
-                <span
-                  class="px-2.5 py-1.5 rounded-full text-xs font-black uppercase"
-                  [class.bg-yellow-100]="selectedProposal().status === 'PENDING'"
-                  [class.text-yellow-600]="selectedProposal().status === 'PENDING'"
-                  [class.bg-blue-100]="selectedProposal().status === 'APPROVED'"
-                  [class.text-blue-600]="selectedProposal().status === 'APPROVED'"
-                  [class.bg-emerald-100]="selectedProposal().status === 'EXECUTED'"
-                  [class.text-emerald-600]="selectedProposal().status === 'EXECUTED'"
-                >
-                  {{ selectedProposal().status }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Description -->
-            <div class="space-y-1">
-              <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
-                Mô tả chi tiết
-              </h4>
-              <p
-                class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20"
-              >
-                {{ selectedProposal().description || 'Không có mô tả.' }}
-              </p>
-            </div>
-
-            <!-- Parameters -->
-            <div class="space-y-1">
-              <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
-                Tham số thực thi (On-chain params)
-              </h4>
+      <!-- PANEL PHẢI: CHI TIẾT PROPOSAL SELECTED -->
+      <div
+        class="lg:col-span-2 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm flex flex-col min-h-[300px] lg:min-h-[500px]"
+      >
+        @if (selectedProposal()) {
+          <div class="flex-1 flex flex-col justify-between space-y-6">
+            <div class="space-y-5">
+              <!-- Title & Status -->
               <div
-                class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20 text-xs"
+                class="flex justify-between items-start gap-4 pb-4 border-b border-slate-100 dark:border-slate-900/60"
               >
-                <div class="flex flex-col gap-0.5">
-                  <span class="font-bold text-slate-400">Target contract / Address:</span>
-                  <span
-                    class="font-mono text-sm font-semibold break-all text-slate-700 dark:text-slate-200"
-                  >
-                    {{
-                      selectedProposal().params?.target ||
-                        '0x0000000000000000000000000000000000000000'
-                    }}
+                <div class="space-y-1">
+                  <span class="text-xs font-black text-primary uppercase tracking-widest"
+                    >Chi tiết đề xuất #{{ selectedProposal().id }}
+                    @if (stateService.currentCompany()) {
+                      | {{ stateService.currentCompany().name }}
+                    }
                   </span>
+                  <h2 class="text-base font-extrabold text-slate-800 dark:text-white leading-tight">
+                    {{ selectedProposal().title }}
+                  </h2>
                 </div>
-                <div class="flex flex-col gap-0.5">
-                  <span class="font-bold text-slate-400">Lượng Coin gửi kèm (Value):</span>
-                  <span class="font-mono font-semibold text-slate-700 dark:text-slate-200">
-                    {{ formatValue(selectedProposal().params?.value) }} {{ stateService.chainSymbol() || 'BNB' }}
+                <div class="flex items-center gap-2 shrink-0">
+                  <button
+                    (click)="openShareModal()"
+                    class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-[var(--color-primary)] transition-all flex items-center justify-center border border-slate-200/50 dark:border-slate-800 cursor-pointer shadow-sm bg-white dark:bg-slate-900"
+                    title="Chia sẻ đề xuất & Mã QR"
+                  >
+                    <app-icon name="qr" class="w-4 h-4" />
+                  </button>
+                  <span
+                    class="px-2.5 py-1.5 rounded-full text-xs font-black uppercase"
+                    [class.bg-yellow-100]="selectedProposal().status === 'PENDING'"
+                    [class.text-yellow-600]="selectedProposal().status === 'PENDING'"
+                    [class.bg-blue-100]="selectedProposal().status === 'APPROVED'"
+                    [class.text-blue-600]="selectedProposal().status === 'APPROVED'"
+                    [class.bg-emerald-100]="selectedProposal().status === 'EXECUTED'"
+                    [class.text-emerald-600]="selectedProposal().status === 'EXECUTED'"
+                  >
+                    {{ selectedProposal().status }}
                   </span>
                 </div>
               </div>
-            </div>
 
-            <!-- Transaction Hash -->
-            @if (selectedProposal().tx_hash) {
+              <!-- Description -->
               <div class="space-y-1">
                 <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
-                  Mã giao dịch thực thi (TxHash — Mạng {{ getChainName() }})
+                  Mô tả chi tiết
+                </h4>
+                <p
+                  class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20"
+                >
+                  {{ selectedProposal().description || 'Không có mô tả.' }}
+                </p>
+              </div>
+
+              <!-- Parameters -->
+              <div class="space-y-1">
+                <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
+                  Tham số thực thi (On-chain params)
                 </h4>
                 <div
-                  class="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20 text-xs"
+                  class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20 text-xs space-y-3"
                 >
-                  <app-icon name="blockchain" class="w-4 h-4 text-emerald-500 shrink-0" />
-                  <a
-                    [href]="getTxExplorerUrl(selectedProposal().tx_hash)"
-                    target="_blank"
-                    class="font-mono text-xs font-semibold break-all text-violet-600 dark:text-violet-400 hover:underline flex-1"
-                  >
-                    {{ selectedProposal().tx_hash }}
-                  </a>
-                  <app-icon name="external-link" class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="flex flex-col gap-0.5">
+                      <span class="font-bold text-slate-400">Target contract / Address:</span>
+                      <span
+                        class="font-mono text-sm font-semibold break-all text-slate-700 dark:text-slate-200"
+                      >
+                        {{
+                          selectedProposal().params?.target ||
+                            '0x0000000000000000000000000000000000000000'
+                        }}
+                      </span>
+                    </div>
+                    <div class="flex flex-col gap-0.5">
+                      <span class="font-bold text-slate-400">Lượng Coin gửi kèm (Value):</span>
+                      <span class="font-mono font-semibold text-slate-700 dark:text-slate-200">
+                        {{ formatValue(selectedProposal().params?.value) }}
+                        {{ stateService.chainSymbol() || 'BNB' }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Hiển thị các tham số giải mã được từ on-chain calldata -->
+                  @if (decodedParams()) {
+                    <div
+                      class="border-t border-slate-200/50 dark:border-slate-800/60 pt-3 space-y-3"
+                    >
+                      <div class="flex flex-col gap-0.5">
+                        <span class="font-bold text-slate-400">Phương thức gọi (Function):</span>
+                        <span
+                          class="font-mono text-xs font-black text-violet-600 dark:text-violet-400"
+                        >
+                          {{ decodedParams().signature }}
+                        </span>
+                      </div>
+
+                      <!-- MINT và BURN: Hiển thị Người nhận và Số lượng -->
+                      @if (decodedParams().name === 'mint' || decodedParams().name === 'burn') {
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div class="flex flex-col gap-0.5">
+                            <span class="font-bold text-slate-400">
+                              {{
+                                decodedParams().name === 'mint'
+                                  ? 'Cổ đông nhận:'
+                                  : 'Cổ đông bị hủy:'
+                              }}
+                            </span>
+                            <span
+                              class="font-mono text-xs font-semibold text-slate-700 dark:text-slate-200 break-all select-all"
+                            >
+                              {{ decodedParams().args[0] }}
+                            </span>
+                          </div>
+                          <div class="flex flex-col gap-0.5">
+                            <span class="font-bold text-slate-400">Số lượng cổ phần:</span>
+                            <span
+                              class="font-mono text-sm font-black text-slate-700 dark:text-slate-200"
+                            >
+                              {{ formatTokenAmount(decodedParams().args[1]) }} cổ phần
+                            </span>
+                          </div>
+                        </div>
+                      }
+
+                      <!-- ADD_MEMBER và REMOVE_MEMBER: Hiển thị địa chỉ Thành viên -->
+                      @if (
+                        decodedParams().name === 'addMember' ||
+                        decodedParams().name === 'removeMember'
+                      ) {
+                        <div class="flex flex-col gap-0.5">
+                          <span class="font-bold text-slate-400">
+                            {{
+                              decodedParams().name === 'addMember'
+                                ? 'Thêm thành viên HĐQT (Address):'
+                                : 'Xóa thành viên HĐQT (Address):'
+                            }}
+                          </span>
+                          <span
+                            class="font-mono text-xs font-semibold text-slate-700 dark:text-slate-200 break-all select-all"
+                          >
+                            {{ decodedParams().args[0] }}
+                          </span>
+                        </div>
+                      }
+
+                      <!-- CHANGE_THRESHOLD: Hiển thị số chữ ký mới -->
+                      @if (decodedParams().name === 'changeThreshold') {
+                        <div class="flex flex-col gap-0.5">
+                          <span class="font-bold text-slate-400">Ngưỡng phê duyệt mới:</span>
+                          <span
+                            class="font-mono text-sm font-black text-slate-700 dark:text-slate-200"
+                          >
+                            {{ decodedParams().args[0] }} chữ ký
+                          </span>
+                        </div>
+                      }
+                    </div>
+                  }
                 </div>
               </div>
-            }
 
-            <!-- Signatures list -->
-            <div class="space-y-3">
-              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 select-none">
-                <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
-                  Trạng thái biểu quyết
-                </h4>
-                @if (proposalSignatures().length >= proposalThreshold()) {
-                  <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-                    Đủ điều kiện thực thi ({{ proposalSignatures().length }}/{{ proposalThreshold() }})
-                  </span>
-                } @else {
-                  <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
-                    Thiếu {{ proposalThreshold() - proposalSignatures().length }} chữ ký nữa ({{ proposalSignatures().length }}/{{ proposalThreshold() }})
-                  </span>
-                }
-              </div>
-
-              <!-- Chi tiết thông số -->
-              <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between px-1 shrink-0 pb-1">
-                <span>Ngưỡng chữ ký yêu cầu: <strong class="text-slate-700 dark:text-slate-200">{{ proposalThreshold() }} chữ ký</strong></span>
-                <span>Thành viên HĐQT: <strong class="text-slate-700 dark:text-slate-200">{{ proposalTotalMembers() }} người</strong></span>
-              </div>
-              <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
-                @for (sig of proposalSignatures(); track sig.id) {
+              <!-- Transaction Hash -->
+              @if (selectedProposal().tx_hash) {
+                <div class="space-y-1">
+                  <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
+                    Mã giao dịch thực thi (TxHash — Mạng {{ getChainName() }})
+                  </h4>
                   <div
-                    class="flex flex-col gap-1.5 bg-slate-50 dark:bg-slate-900/25 p-3 rounded-xl border border-slate-100 dark:border-slate-900/10 text-xs"
+                    class="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20 text-xs"
                   >
-                    <span class="font-extrabold text-slate-700 dark:text-slate-300"
-                      >Biểu quyết bởi:</span
+                    <app-icon name="blockchain" class="w-4 h-4 text-emerald-500 shrink-0" />
+                    <a
+                      [href]="getTxExplorerUrl(selectedProposal().tx_hash)"
+                      target="_blank"
+                      class="font-mono text-xs font-semibold break-all text-violet-600 dark:text-violet-400 hover:underline flex-1"
                     >
-                    <span
-                      class="font-mono text-[11px] break-all text-slate-500 dark:text-slate-400"
-                      >{{ sig.wallet_address }}</span
-                    >
-                    <span
-                      class="text-[10px] font-black text-emerald-500 uppercase flex items-center gap-1"
-                    >
-                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                      Đã ký
-                    </span>
+                      {{ selectedProposal().tx_hash }}
+                    </a>
+                    <app-icon name="external-link" class="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   </div>
-                } @empty {
-                  <p class="text-xs text-slate-400">
-                    Chưa có thành viên nào ký biểu quyết cho đề xuất này.
-                  </p>
-                }
+                </div>
+              }
+
+              <!-- Signatures list -->
+              <div class="space-y-3">
+                <div
+                  class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 select-none"
+                >
+                  <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
+                    Trạng thái biểu quyết
+                  </h4>
+                  @if (proposalSignatures().length >= proposalThreshold()) {
+                    <span
+                      class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"
+                    >
+                      Đủ điều kiện thực thi ({{ proposalSignatures().length }}/{{
+                        proposalThreshold()
+                      }})
+                    </span>
+                  } @else {
+                    <span
+                      class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
+                    >
+                      Thiếu {{ proposalThreshold() - proposalSignatures().length }} chữ ký nữa ({{
+                        proposalSignatures().length
+                      }}/{{ proposalThreshold() }})
+                    </span>
+                  }
+                </div>
+
+                <!-- Chi tiết thông số -->
+                <div
+                  class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between px-1 shrink-0 pb-1"
+                >
+                  <span
+                    >Ngưỡng chữ ký yêu cầu:
+                    <strong class="text-slate-700 dark:text-slate-200"
+                      >{{ proposalThreshold() }} chữ ký</strong
+                    ></span
+                  >
+                  <span
+                    >Thành viên HĐQT:
+                    <strong class="text-slate-700 dark:text-slate-200"
+                      >{{ proposalTotalMembers() }} người</strong
+                    ></span
+                  >
+                </div>
+                <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                  @for (sig of proposalSignatures(); track sig.id) {
+                    <div
+                      class="flex flex-col gap-1.5 bg-slate-50 dark:bg-slate-900/25 p-3 rounded-xl border border-slate-100 dark:border-slate-900/10 text-xs"
+                    >
+                      <span class="font-extrabold text-slate-700 dark:text-slate-300"
+                        >Biểu quyết bởi:</span
+                      >
+                      <span
+                        class="font-mono text-[11px] break-all text-slate-500 dark:text-slate-400"
+                        >{{ sig.wallet_address }}</span
+                      >
+                      <span
+                        class="text-[10px] font-black text-emerald-500 uppercase flex items-center gap-1"
+                      >
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                        Đã ký
+                      </span>
+                    </div>
+                  } @empty {
+                    <p class="text-xs text-slate-400">
+                      Chưa có thành viên nào ký biểu quyết cho đề xuất này.
+                    </p>
+                  }
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Bottom Action Buttons -->
-          <div
-            class="pt-4 border-t border-slate-100 dark:border-slate-900/60 flex items-center justify-between gap-3 select-none"
-          >
-            <!-- Thông báo chưa kết nối ví -->
-            @if (!stateService.isConnected()) {
-              <div class="text-xs text-slate-400 dark:text-slate-500 italic flex items-center gap-1.5 py-2">
-                <app-icon name="warning" class="w-3.5 h-3.5 text-amber-500" strokeWidth="2.5" />
-                Vui lòng kết nối ví Web3 để ký duyệt đề xuất này.
-              </div>
-            } @else {
-              <div></div>
-            }
+            <!-- Bottom Action Buttons -->
+            <div
+              class="pt-4 border-t border-slate-100 dark:border-slate-900/60 flex items-center justify-between gap-3 select-none"
+            >
+              <!-- Thông báo chưa kết nối ví -->
+              @if (!stateService.isConnected()) {
+                <div
+                  class="text-xs text-slate-400 dark:text-slate-500 italic flex items-center gap-1.5 py-2"
+                >
+                  <app-icon name="warning" class="w-3.5 h-3.5 text-amber-500" strokeWidth="2.5" />
+                  Vui lòng kết nối ví Web3 để ký duyệt đề xuất này.
+                </div>
+              } @else {
+                <div></div>
+              }
 
-            <div class="flex gap-3">
-              @if (
-                selectedProposal().status === 'PENDING' &&
-                stateService.hasPermission('proposals.sign')
-              ) {
-                <!-- Kiểm tra ví hiện tại đã ký chưa để tránh lỗi Already signed -->
-                @if (hasCurrentWalletSigned()) {
-                  <div
-                    class="h-11 px-5 rounded-xl flex items-center gap-2 text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800"
-                  >
-                    <app-icon name="shield" class="w-4 h-4" />
-                    ĐÃ KÝ BIỂU QUYẾT
-                  </div>
-                } @else {
+              <div class="flex gap-3">
+                @if (
+                  selectedProposal().status === 'PENDING' &&
+                  stateService.hasPermission('proposals.sign')
+                ) {
+                  <!-- Kiểm tra ví hiện tại đã ký chưa để tránh lỗi Already signed -->
+                  @if (hasCurrentWalletSigned()) {
+                    <div
+                      class="h-11 px-5 rounded-xl flex items-center gap-2 text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800"
+                    >
+                      <app-icon name="shield" class="w-4 h-4" />
+                      ĐÃ KÝ BIỂU QUYẾT
+                    </div>
+                  } @else {
+                    <button
+                      app-button
+                      variant="primary"
+                      (click)="handleSignProposal(selectedProposal())"
+                      class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2"
+                    >
+                      <app-icon name="shield" class="w-4 h-4" />
+                      KÝ BIỂU QUYẾT
+                    </button>
+                  }
+                }
+
+                @if (
+                  (selectedProposal().status === 'APPROVED' ||
+                    (selectedProposal().status === 'PENDING' &&
+                      proposalSignatures().length >= proposalThreshold())) &&
+                  stateService.hasPermission('proposals.execute')
+                ) {
                   <button
                     app-button
                     variant="primary"
-                    (click)="handleSignProposal(selectedProposal())"
-                    class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2"
+                    (click)="handleExecuteProposal(selectedProposal())"
+                    class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 !text-white shadow-md border-0"
                   >
-                    <app-icon name="shield" class="w-4 h-4" />
-                    KÝ BIỂU QUYẾT
+                    <app-icon name="send" class="w-4 h-4" />
+                    THỰC THI ON-CHAIN
                   </button>
                 }
-              }
-
-              @if (
-                (selectedProposal().status === 'APPROVED' || (selectedProposal().status === 'PENDING' && proposalSignatures().length >= proposalThreshold())) &&
-                stateService.hasPermission('proposals.execute')
-              ) {
-                <button
-                  app-button
-                  variant="primary"
-                  (click)="handleExecuteProposal(selectedProposal())"
-                  class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 !text-white shadow-md border-0"
-                >
-                  <app-icon name="send" class="w-4 h-4" />
-                  THỰC THI ON-CHAIN
-                </button>
-              }
+              </div>
             </div>
           </div>
-        </div>
-      } @else {
-        <div class="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-3">
-          <app-icon name="shield" class="w-16 h-16 text-slate-200 dark:text-slate-800" />
-          <h3 class="text-sm font-extrabold text-slate-500">Chọn một đề xuất để xem chi tiết</h3>
-          <p class="text-xs text-slate-400 max-w-xs">
-            Thông tin biểu quyết, chữ ký mật mã EIP-712 và các nút hành động sẽ hiển thị tại đây.
-          </p>
-        </div>
-      }
+        } @else {
+          <div class="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-3">
+            <app-icon name="shield" class="w-16 h-16 text-slate-200 dark:text-slate-800" />
+            <h3 class="text-sm font-extrabold text-slate-500">Chọn một đề xuất để xem chi tiết</h3>
+            <p class="text-xs text-slate-400 max-w-xs">
+              Thông tin biểu quyết, chữ ký mật mã EIP-712 và các nút hành động sẽ hiển thị tại đây.
+            </p>
+          </div>
+        }
+      </div>
     </div>
-  </div>
-
-  } <!-- end @else isPageLoading -->
+  }
+  <!-- end @else isPageLoading -->
 </div>

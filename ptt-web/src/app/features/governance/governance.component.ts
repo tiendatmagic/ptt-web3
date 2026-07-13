@@ -15,13 +15,18 @@ import { CreateProposalModalComponent } from './modals/create-proposal-modal.com
 import { ShareProposalModalComponent } from './modals/share-proposal-modal.component';
 import { POPULAR_CHAINS } from '@core/utils/blockchain.utils';
 
+import { EquityToken } from '@core/constants/contracts/equity-token';
+import { BoardGovernance } from '@core/constants/contracts/board-governance';
+import { FinanceManager } from '@core/constants/contracts/finance-manager';
+
 // ABI rút gọn của BoardGovernance để thực thi executeProposal, signProposal & đọc threshold
 const BOARD_GOVERNANCE_ABI = [
   "function executeProposal(uint256 proposalId) external returns (bytes memory)",
   "function signProposal(uint256 proposalId) external",
   "function threshold() external view returns (uint256)",
   "function getProposalThreshold(uint256 proposalId) external view returns (uint256)",
-  "function getMembers() external view returns (address[])"
+  "function getMembers() external view returns (address[])",
+  "function proposals(uint256 proposalId) external view returns (uint256 id, address target, uint256 value, bytes memory data, string memory description, uint256 voteCount, uint256 effectiveDate, uint256 expirationDate, bool executed, bool cancelled, uint256 thresholdSnapshot)"
 ];
 
 @Component({
@@ -43,6 +48,7 @@ export class GovernanceComponent implements OnInit {
   public proposalSignatures = signal<any[]>([]);
   public proposalThreshold = signal<number>(1);
   public proposalTotalMembers = signal<number>(0);
+  public decodedParams = signal<any | null>(null);
   public isPageLoading = signal(true);
 
   // Phân trang Client-side cho danh sách Đề xuất
@@ -195,6 +201,99 @@ export class GovernanceComponent implements OnInit {
     }
   }
 
+  public formatTokenAmount(amount: any): string {
+    if (!amount) return '0';
+    try {
+      const formatted = ethers.formatEther(amount.toString());
+      return Number(formatted).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+    } catch (e) {
+      return amount.toString();
+    }
+  }
+
+  private decodeOnChainCalldata(target: string, calldata: string) {
+    if (!calldata || calldata === '0x') {
+      this.decodedParams.set(null);
+      return;
+    }
+
+    const comp = this.stateService.currentCompany();
+    if (!comp) return;
+
+    try {
+      let abi: any[] = [];
+      const lowerTarget = target.toLowerCase();
+
+      if (lowerTarget === comp.token_address?.toLowerCase()) {
+        abi = EquityToken.abi;
+      } else if (lowerTarget === comp.governance_address?.toLowerCase()) {
+        abi = BoardGovernance.abi;
+      } else if (lowerTarget === comp.funding_address?.toLowerCase()) {
+        abi = FinanceManager.abi;
+      }
+
+      if (abi.length > 0) {
+        const iface = new ethers.Interface(abi);
+        const parsed = iface.parseTransaction({ data: calldata });
+        if (parsed) {
+          this.decodedParams.set({
+            name: parsed.name,
+            args: parsed.args,
+            signature: parsed.signature
+          });
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('[Governance] Lỗi giải mã calldata on-chain, chuyển sang offline:', err);
+    }
+    
+    this.decodedParams.set(null);
+  }
+
+  private decodeOfflineParams(proposal: any) {
+    if (proposal && proposal.params) {
+      const params = proposal.params;
+      const type = proposal.type;
+      
+      if (type === 'MINT') {
+        this.decodedParams.set({
+          name: 'mint',
+          args: [params.to || params.address, params.amount || params.value],
+          signature: 'mint(address,uint256)'
+        });
+      } else if (type === 'BURN') {
+        this.decodedParams.set({
+          name: 'burn',
+          args: [params.from || params.address, params.amount || params.value],
+          signature: 'burn(address,uint256)'
+        });
+      } else if (type === 'ADD_MEMBER') {
+        this.decodedParams.set({
+          name: 'addMember',
+          args: [params.member || params.address],
+          signature: 'addMember(address)'
+        });
+      } else if (type === 'REMOVE_MEMBER') {
+        this.decodedParams.set({
+          name: 'removeMember',
+          args: [params.member || params.address],
+          signature: 'removeMember(address)'
+        });
+      } else if (type === 'CHANGE_THRESHOLD') {
+        this.decodedParams.set({
+          name: 'changeThreshold',
+          args: [params.newThreshold || params.value],
+          signature: 'changeThreshold(uint256)'
+        });
+      } else {
+        this.decodedParams.set(null);
+      }
+    } else {
+      this.decodedParams.set(null);
+    }
+  }
+
   // Tải chi tiết đề xuất
   private async fetchProposalDetail(proposal: any) {
     const comp = this.stateService.currentCompany();
@@ -213,8 +312,11 @@ export class GovernanceComponent implements OnInit {
           
           const onchainId = proposal.params?.onchain_id;
           let onchainThreshold;
+          let proposalDataOnChain: any = null;
+
           if (onchainId) {
             onchainThreshold = await govContract['getProposalThreshold'](onchainId);
+            proposalDataOnChain = await govContract['proposals'](onchainId);
           } else {
             onchainThreshold = await govContract['threshold']();
           }
@@ -223,14 +325,23 @@ export class GovernanceComponent implements OnInit {
           // Đọc số lượng thành viên HĐQT
           const members = await govContract['getMembers']();
           this.proposalTotalMembers.set(members.length);
+
+          // Giải mã calldata on-chain
+          if (proposalDataOnChain && proposalDataOnChain.data) {
+            this.decodeOnChainCalldata(proposalDataOnChain.target, proposalDataOnChain.data);
+          } else {
+            this.decodeOfflineParams(detail.proposal);
+          }
         } catch (contractErr) {
           console.warn('[Governance] Lỗi đọc blockchain, dùng fallback từ backend:', contractErr);
           this.proposalThreshold.set(detail.threshold || 1);
           this.proposalTotalMembers.set(detail.total_members || 1);
+          this.decodeOfflineParams(detail.proposal);
         }
       } else {
         this.proposalThreshold.set(detail.threshold || 1);
         this.proposalTotalMembers.set(detail.total_members || 1);
+        this.decodeOfflineParams(detail.proposal);
       }
     } catch (e) {
       console.error('Lỗi tải chi tiết đề xuất:', e);
