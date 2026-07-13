@@ -236,14 +236,12 @@
                 <span class="font-mono text-xs text-slate-600 dark:text-slate-300 truncate">{{
                   owner
                 }}</span>
-                @if (contractOwners().length > 1) {
-                  <button
-                    (click)="removeOwner(owner)"
-                    class="text-red-500 hover:text-red-700 font-bold text-xs shrink-0 transition-colors px-1"
-                  >
-                    Xóa
-                  </button>
-                }
+                <button
+                  (click)="removeOwner(owner)"
+                  class="text-red-500 hover:text-red-700 font-bold text-xs shrink-0 transition-colors px-1"
+                >
+                  Xóa
+                </button>
               </div>
             } @empty {
               <p class="text-center text-sm text-slate-400 py-4">Chưa có owner nào.</p>

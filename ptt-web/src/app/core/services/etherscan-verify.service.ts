@@ -36,7 +36,7 @@ export class EtherscanVerifyService {
       sourceCode: params.sourceCode,
       contractaddress: params.contractAddress,
       contractname: params.contractName,
-      compilerversion: 'v0.8.34+commit.be406b2c',
+      compilerversion: 'v0.8.34+commit.80d5c536',
       optimizationUsed: '1',
       runs: '1',
       viaIR: 'true',

@@ -66,6 +66,8 @@ export class SettingsComponent implements OnInit {
   public isDeletable = signal<boolean>(false);
   public deleteLoading = signal<boolean>(false);
 
+  private lastCompanyId: number | null = null;
+
   public readonly contractList = [
     { name: 'Board Governance (HĐQT Đa chữ ký / Treasury)', key: 'governance_address', contractKey: 'BoardGovernance', icon: 'scale' },
     { name: 'Equity Token (Cổ phần Doanh nghiệp)', key: 'token_address', contractKey: 'EquityToken', icon: 'ethereum' },
@@ -76,34 +78,67 @@ export class SettingsComponent implements OnInit {
   constructor() {
     effect(() => {
       const comp = this.stateService.currentCompany();
+      const userAddr = this.stateService.address();
       if (comp) {
-        this.editingContracts = {
-          governance_address: comp.governance_address || '',
-          token_address: comp.token_address || '',
-          funding_address: comp.funding_address || '',
-          marketplace_address: comp.marketplace_address || '',
-        };
-        this.companyName.set(comp.name || '');
-        this.companyValuation.set(comp.valuation || 0);
-        this.companyLogo.set(comp.logo || '');
-        
-        if (comp.wallet_address) {
-          this.contractOwners.set([comp.wallet_address]);
-          this.minSignatures.set(1);
-        }
+        const companyChanged = this.lastCompanyId !== comp.id;
+        this.lastCompanyId = comp.id;
 
-        // Check if deletable: all contract addresses must be null or empty
-        const isLinked = !!(
-          comp.governance_address ||
-          comp.token_address ||
-          comp.funding_address ||
-          comp.marketplace_address ||
-          comp.oracle_address ||
-          comp.registry_address
-        );
-        this.isDeletable.set(!isLinked);
+        if (companyChanged) {
+          this.editingContracts = {
+            governance_address: comp.governance_address || '',
+            token_address: comp.token_address || '',
+            funding_address: comp.funding_address || '',
+            marketplace_address: comp.marketplace_address || '',
+          };
+          this.companyName.set(comp.name || '');
+          this.companyValuation.set(comp.valuation || 0);
+          this.companyLogo.set(comp.logo || '');
+          
+          const hasContracts = !!(
+            comp.governance_address ||
+            comp.token_address ||
+            comp.funding_address ||
+            comp.marketplace_address
+          );
+
+          if (comp.wallet_address) {
+            this.contractOwners.set([comp.wallet_address]);
+            this.minSignatures.set(1);
+          } else if (!hasContracts) {
+            const defaultAddr = userAddr || '';
+            this.contractOwners.set(defaultAddr ? [defaultAddr] : []);
+            this.minSignatures.set(1);
+          } else {
+            this.contractOwners.set([]);
+            this.minSignatures.set(1);
+          }
+
+          // Check if deletable: all contract addresses must be null or empty
+          const isLinked = !!(
+            comp.governance_address ||
+            comp.token_address ||
+            comp.funding_address ||
+            comp.marketplace_address ||
+            comp.oracle_address ||
+            comp.registry_address
+          );
+          this.isDeletable.set(!isLinked);
+        } else {
+          // If it is the same company but the connected wallet changes (or is connected later)
+          // and there is no deployed contract, and current owner list is empty, default to userAddr
+          const hasContracts = !!(
+            comp.governance_address ||
+            comp.token_address ||
+            comp.funding_address ||
+            comp.marketplace_address
+          );
+          if (!hasContracts && this.contractOwners().length === 0 && userAddr) {
+            this.contractOwners.set([userAddr]);
+            this.minSignatures.set(1);
+          }
+        }
       }
-    });
+    }, { allowSignalWrites: true });
   }
 
   ngOnInit() {}
