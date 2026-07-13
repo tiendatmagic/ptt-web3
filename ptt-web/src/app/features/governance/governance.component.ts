@@ -8,6 +8,7 @@ import { ButtonComponent } from '@shared/components/button/button.component';
 import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 import { firstValueFrom } from 'rxjs';
 import { Contract, ethers } from 'ethers';
+import { Router, ActivatedRoute } from '@angular/router';
 
 import { ModalService } from '@core/services/modal.service';
 import { CreateProposalModalComponent } from './modals/create-proposal-modal.component';
@@ -16,7 +17,8 @@ import { CreateProposalModalComponent } from './modals/create-proposal-modal.com
 const BOARD_GOVERNANCE_ABI = [
   "function executeProposal(uint256 proposalId) external returns (bytes memory)",
   "function signProposal(uint256 proposalId) external",
-  "function threshold() external view returns (uint256)"
+  "function threshold() external view returns (uint256)",
+  "function getProposalThreshold(uint256 proposalId) external view returns (uint256)"
 ];
 
 @Component({
@@ -29,6 +31,8 @@ export class GovernanceComponent implements OnInit {
   public stateService = inject(StateService);
   private apiService = inject(ApiService);
   private modalService = inject(ModalService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   public proposalsList = signal<any[]>([]);
   public selectedProposal = signal<any | null>(null);
@@ -74,7 +78,32 @@ export class GovernanceComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.loadProposals();
+    this.initComponent();
+  }
+
+  private async initComponent() {
+    await this.loadProposals();
+
+    // Lắng nghe sự thay đổi của query parameters để tự động chọn đề xuất
+    this.route.queryParams.subscribe(params => {
+      const proposalId = params['proposalId'] ? Number(params['proposalId']) : null;
+      if (proposalId) {
+        // Tìm đề xuất trong danh sách đã tải
+        const proposal = this.proposalsList().find(p => Number(p.id) === proposalId);
+        if (proposal) {
+          // Tự động chuyển trang về trang chứa đề xuất đó
+          const index = this.proposalsList().findIndex(p => Number(p.id) === proposalId);
+          if (index !== -1) {
+            const page = Math.floor(index / this.itemsPerPage) + 1;
+            this.currentPage.set(page);
+          }
+          this.fetchProposalDetail(proposal);
+        }
+      } else {
+        this.selectedProposal.set(null);
+        this.proposalSignatures.set([]);
+      }
+    });
   }
 
   public async loadProposals() {
@@ -97,7 +126,17 @@ export class GovernanceComponent implements OnInit {
     this.currentPage.set(page);
   }
 
-  public async selectProposal(proposal: any) {
+  // Cập nhật URL query parameter khi người dùng click chọn đề xuất
+  public selectProposal(proposal: any) {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { proposalId: proposal.id },
+      queryParamsHandling: 'merge'
+    });
+  }
+
+  // Tải chi tiết đề xuất
+  private async fetchProposalDetail(proposal: any) {
     const comp = this.stateService.currentCompany();
     if (!comp) return;
 
@@ -111,7 +150,15 @@ export class GovernanceComponent implements OnInit {
         try {
           const provider = this.stateService.web3Service.getProvider();
           const govContract = new Contract(comp.governance_address, BOARD_GOVERNANCE_ABI, provider);
-          const onchainThreshold = await govContract['threshold']();
+          
+          const onchainId = proposal.params?.onchain_id;
+          let onchainThreshold;
+          if (onchainId) {
+            onchainThreshold = await govContract['getProposalThreshold'](onchainId);
+          } else {
+            onchainThreshold = await govContract['threshold']();
+          }
+          
           this.proposalThreshold.set(Number(onchainThreshold));
         } catch (contractErr) {
           console.warn('[Governance] Lỗi đọc threshold từ smart contract, dùng fallback từ backend:', contractErr);
@@ -180,11 +227,22 @@ export class GovernanceComponent implements OnInit {
         }
       }
 
-      // 3. Gửi chữ ký off-chain lên Backend
+      // Đọc threshold từ contract để đồng bộ lên Backend
+      let currentThreshold = 1;
+      try {
+        const govContract = new Contract(comp.governance_address, BOARD_GOVERNANCE_ABI, signer);
+        const onchainThreshold = await govContract['threshold']();
+        currentThreshold = Number(onchainThreshold);
+      } catch (e) {
+        currentThreshold = this.proposalThreshold();
+      }
+
+      // 3. Gửi chữ ký off-chain lên Backend kèm theo threshold
       const response = await firstValueFrom(
         this.apiService.post<any>(`proposals/${proposal.id}/sign`, {
           signature: signature,
-          message: message
+          message: message,
+          threshold: currentThreshold
         }, comp.id)
       );
 

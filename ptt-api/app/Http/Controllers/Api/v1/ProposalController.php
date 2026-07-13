@@ -126,6 +126,7 @@ class ProposalController extends Controller
         $request->validate([
             'signature' => 'required|string',
             'message' => 'required|string', // Thông điệp EIP-712 được ký bởi ví
+            'threshold' => 'nullable|integer|min:1',
         ]);
 
         $companyId = $request->header('X-Company-Id');
@@ -180,26 +181,27 @@ class ProposalController extends Controller
             ]);
         }
 
-        // 4. (Tùy chọn) Tự động kiểm tra số lượng chữ ký để chuyển trạng thái sang APPROVED
-        // Trong thực tế, HĐQT của công ty có thể quy định số chữ ký tối thiểu.
-        // Ở đây để đơn giản: nếu có từ 2 chữ ký của Board members trở lên, proposal tự động sang APPROVED.
-        $boardMembersCount = DB::table('staffs')
-            ->join('roles', 'staffs.role_id', '=', 'roles.id')
-            ->where('staffs.company_id', $companyId)
-            ->where('staffs.status', 'ACTIVE')
-            ->where(function ($query) {
-                $query->where('roles.name', 'Owner')
-                      ->orWhere('roles.name', 'Board Member');
-            })
-            ->count();
-
         $signedCount = DB::table('proposal_signatures')
             ->where('proposal_id', $id)
             ->where('status', 'SIGNED')
             ->count();
 
-        // Ngưỡng: tối thiểu 1 chữ ký (nếu board chỉ có 1) hoặc >= 50% số board members
-        $threshold = max(1, ceil($boardMembersCount / 2));
+        // 4. Kiểm tra số lượng chữ ký để chuyển trạng thái sang APPROVED
+        // Ưu tiên sử dụng threshold gửi lên từ Smart Contract, nếu không có mới tự tính fallback
+        $threshold = $request->input('threshold');
+        if (!$threshold) {
+            $boardMembersCount = DB::table('staffs')
+                ->join('roles', 'staffs.role_id', '=', 'roles.id')
+                ->where('staffs.company_id', $companyId)
+                ->where('staffs.status', 'ACTIVE')
+                ->where(function ($query) {
+                    $query->where('roles.name', 'Owner')
+                          ->orWhere('roles.name', 'Board Member');
+                })
+                ->count();
+
+            $threshold = max(1, ceil($boardMembersCount / 2));
+        }
         
         if ($signedCount >= $threshold) {
             DB::table('proposals')
@@ -239,9 +241,9 @@ class ProposalController extends Controller
             return response()->json(['message' => 'Proposal not found'], 404);
         }
 
-        // Cho phép cập nhật cả khi APPROVED lẫn khi đã EXECUTED (sync lại từ on-chain)
-        if (!in_array($proposal->status, ['APPROVED', 'EXECUTED'])) {
-            return response()->json(['message' => 'Proposal must be APPROVED before execution'], 422);
+        // Cho phép cập nhật cả khi PENDING, APPROVED lẫn khi đã EXECUTED (sync lại từ on-chain)
+        if (!in_array($proposal->status, ['PENDING', 'APPROVED', 'EXECUTED'])) {
+            return response()->json(['message' => 'Proposal cannot be executed in this status'], 422);
         }
 
         DB::transaction(function () use ($id, $companyId, $txHash, $proposal) {

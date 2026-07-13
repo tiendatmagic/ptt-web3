@@ -190,9 +190,19 @@ export class CreateProposalModalComponent {
       try {
         const signMessage = `Approve Proposal #${createResponse.proposal_id} for ${comp.name}\nType: ${this.newProposal.type}\nVal: ${value}`;
         const autoSig = await signer.signMessage(signMessage);
+
+        let onchainThreshold = 1;
+        try {
+          const onchainThresholdVal = await govContract['threshold']();
+          onchainThreshold = Number(onchainThresholdVal);
+        } catch (e) {
+          // ignore
+        }
+
         await firstValueFrom(this.apiService.post<any>(`proposals/${createResponse.proposal_id}/sign`, {
           signature: autoSig,
-          message: signMessage
+          message: signMessage,
+          threshold: onchainThreshold
         }, comp.id));
       } catch (sigErr) {
         // Không chặn flow chính nếu lưu chữ ký thất bại

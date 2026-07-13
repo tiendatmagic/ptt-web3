@@ -13,6 +13,7 @@ contract BoardGovernance {
         uint256 expirationDate;
         bool executed;
         bool cancelled;
+        uint256 thresholdSnapshot;
     }
 
     address[] private _members;
@@ -82,7 +83,8 @@ contract BoardGovernance {
             effectiveDate: block.timestamp + delaySeconds,
             expirationDate: durationSeconds > 0 ? block.timestamp + delaySeconds + durationSeconds : 0,
             executed: false,
-            cancelled: false
+            cancelled: false,
+            thresholdSnapshot: threshold
         });
 
         emit ProposalCreated(proposalId, target, description);
@@ -164,6 +166,10 @@ contract BoardGovernance {
         require(newThreshold > 0 && newThreshold <= _members.length, "Invalid threshold");
         threshold = newThreshold;
         emit ThresholdChanged(newThreshold);
+    }
+
+    function getProposalThreshold(uint256 proposalId) external view returns (uint256) {
+        return proposals[proposalId].thresholdSnapshot;
     }
 
     receive() external payable {}

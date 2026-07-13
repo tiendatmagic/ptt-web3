@@ -255,7 +255,7 @@
             }
 
             @if (
-              selectedProposal().status === 'APPROVED' &&
+              (selectedProposal().status === 'APPROVED' || (selectedProposal().status === 'PENDING' && proposalSignatures().length >= proposalThreshold())) &&
               stateService.hasPermission('proposals.execute')
             ) {
               <button
