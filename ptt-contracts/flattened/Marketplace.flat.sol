@@ -1,4 +1,4 @@
-﻿Γùç injected env (1) from ..\.env // tip: Γîÿ suppress logs { quiet: true }
+Γùç injected env (1) from ..\.env // tip: Γîÿ suppress logs { quiet: true }
 // Sources flattened with hardhat v2.28.6 https://hardhat.org
 
 // SPDX-License-Identifier: MIT
@@ -3762,7 +3762,6 @@ contract Marketplace is Ownable {
         require(!usedNonces[p.buyer][p.buyerNonce], "Buyer nonce already used");
         require(!usedNonces[p.seller][p.sellerNonce], "Seller nonce already used");
 
-        require(IComplianceToken(p.token).isWhitelisted(p.buyer), "Buyer not whitelisted for shares");
         require(IComplianceToken(p.token).isWhitelisted(p.seller), "Seller not whitelisted for shares");
 
         {

@@ -96,7 +96,6 @@ contract Marketplace is Ownable {
         require(!usedNonces[p.buyer][p.buyerNonce], "Buyer nonce already used");
         require(!usedNonces[p.seller][p.sellerNonce], "Seller nonce already used");
 
-        require(IComplianceToken(p.token).isWhitelisted(p.buyer), "Buyer not whitelisted for shares");
         require(IComplianceToken(p.token).isWhitelisted(p.seller), "Seller not whitelisted for shares");
 
         {
