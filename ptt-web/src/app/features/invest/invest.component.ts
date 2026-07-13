@@ -143,13 +143,18 @@ export class InvestComponent implements OnInit {
       this.route.queryParams.subscribe(async (params) => {
         const coId = params['companyId'];
         const coCode = params['companyCode'];
+        const current = this.selectedCompany();
+
         if (coId) {
+          if (current && current.id === Number(coId)) return;
           const co = this.companiesList().find(c => c.id === Number(coId));
           if (co) await this.selectCompany(co);
         } else if (coCode) {
+          if (current && current.code?.toLowerCase() === coCode.toLowerCase()) return;
           const co = this.companiesList().find(c => c.code?.toLowerCase() === coCode.toLowerCase());
           if (co) await this.selectCompany(co);
         } else if (this.companiesList().length > 0) {
+          if (current && current.id === this.companiesList()[0].id) return;
           await this.selectCompany(this.companiesList()[0]);
         } else {
           this.isPageLoading.set(false);
@@ -163,29 +168,28 @@ export class InvestComponent implements OnInit {
 
   // Load danh sách công ty (public API, không cần auth)
   async loadCompanies() {
-    const res = await firstValueFrom(this.apiService.get<any[]>('companies/public'));
+    const res = await firstValueFrom(this.apiService.get<any[]>('companies'));
     this.companiesList.set(res || []);
   }
 
   // Chia sẻ liên kết của công ty
-  handleShareLink(co: any) {
-    if (!co) return;
-    const shareUrl = `${window.location.origin}/invest?companyCode=${encodeURIComponent(co.code)}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      this.stateService.showToast(`Đã sao chép liên kết chia sẻ của công ty ${co.name}!`, 'success');
-    }).catch(err => {
-      this.stateService.showToast('Không thể sao chép liên kết chia sẻ!', 'error');
-    });
+  getShareLink(company: any): string {
+    const origin = window.location.origin;
+    return `${origin}/invest?companyCode=${company.code}`;
   }
 
   async selectCompany(company: any) {
+    const current = this.selectedCompany();
+    if (current && current.id === company.id) {
+      return; // Tránh lặp vô hạn và gọi API trùng lặp
+    }
+
     this.selectedCompany.set(company);
     this.isPageLoading.set(true);
     
     // Cập nhật thanh địa chỉ URL trình duyệt tự động
     this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { companyCode: company.code },
+      queryParams: { companyId: company.id },
       queryParamsHandling: 'merge'
     });
 
