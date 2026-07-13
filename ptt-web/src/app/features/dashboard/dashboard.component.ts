@@ -164,6 +164,12 @@ export class DashboardComponent implements OnInit {
     return name;
   }
 
+  public isBoardRole(roleName: string): boolean {
+    if (!roleName) return false;
+    const normalized = roleName.trim();
+    return ['Owner', 'Chủ quán', 'Board Member', 'Quản lý', 'Manager'].includes(normalized);
+  }
+
 
   // Mở modal Đăng ký doanh nghiệp mới
   public openRegisterCompany() {

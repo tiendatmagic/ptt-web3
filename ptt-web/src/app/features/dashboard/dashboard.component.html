@@ -346,8 +346,8 @@
                       @if (stateService.hasPermission('staffs.edit')) {
                         <td class="px-4 py-3 text-right">
                           @if (
-                            staff.role_name !== 'Owner' &&
-                            staff.user_id !== stateService.currentUser().id
+                            !isBoardRole(staff.role_name) &&
+                            staff.user_id !== stateService.currentUser()?.id
                           ) {
                             <button
                               app-button
