@@ -1,4 +1,4 @@
-Γùç injected env (1) from ..\.env // tip: Γùê secrets for agents [www.dotenvx.com]
+◇ injected env (1) from ..\.env // tip: ◈ encrypted .env [www.dotenvx.com]
 // Sources flattened with hardhat v2.28.6 https://hardhat.org
 
 // SPDX-License-Identifier: MIT
@@ -170,7 +170,7 @@ interface IERC20Errors {
     error ERC20InvalidReceiver(address receiver);
 
     /**
-     * @dev Indicates a failure with the `spender`ΓÇÖs `allowance`. Used in transfers.
+     * @dev Indicates a failure with the `spender`’s `allowance`. Used in transfers.
      * @param spender Address that may be allowed to operate on tokens without being their owner.
      * @param allowance Amount of tokens a `spender` is allowed to operate with.
      * @param needed Minimum amount required to perform a transfer.
@@ -229,7 +229,7 @@ interface IERC721Errors {
     error ERC721InvalidReceiver(address receiver);
 
     /**
-     * @dev Indicates a failure with the `operator`ΓÇÖs approval. Used in transfers.
+     * @dev Indicates a failure with the `operator`’s approval. Used in transfers.
      * @param operator Address that may be allowed to operate on tokens without being their owner.
      * @param tokenId Identifier number of a token.
      */
@@ -275,7 +275,7 @@ interface IERC1155Errors {
     error ERC1155InvalidReceiver(address receiver);
 
     /**
-     * @dev Indicates a failure with the `operator`ΓÇÖs approval. Used in transfers.
+     * @dev Indicates a failure with the `operator`’s approval. Used in transfers.
      * @param operator Address that may be allowed to operate on tokens without being their owner.
      * @param owner Address of the current owner of a token.
      */
@@ -884,7 +884,7 @@ contract EquityToken is ERC20, Ownable, Pausable {
     modifier onlyOwnerOrOperator() {
         bool isBoardMember = false;
         address currentOwner = owner();
-        if (currentOwner != address(0)) {
+        if (currentOwner != address(0) && currentOwner.code.length > 0) {
             try IBoardGovernance(currentOwner).isMember(msg.sender) returns (bool memberStatus) {
                 isBoardMember = memberStatus;
             } catch {
