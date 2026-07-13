@@ -98,7 +98,7 @@
             <div
               class="flex justify-between items-center text-[10px] text-slate-400 pt-1 border-t border-slate-100/50 dark:border-slate-900/30 min-w-0 gap-2"
             >
-              <span class="font-bold truncate">{{ proposal.type }}</span>
+              <span class="font-bold truncate">{{ getProposalTypeLabel(proposal.type) }}</span>
               <span class="shrink-0">{{ proposal.created_at | date: 'dd/MM/yy' }}</span>
             </div>
           </div>

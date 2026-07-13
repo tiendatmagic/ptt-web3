@@ -25,14 +25,14 @@ export class CreateProposalModalComponent {
   public isLoading = signal(false);
 
   public proposalTypes = [
-    { value: 'MINT', label: 'MINT (Phát hành cổ phần)' },
-    { value: 'BURN', label: 'BURN (Hủy cổ phần)' },
-    { value: 'WITHDRAW', label: 'WITHDRAW (Rút quỹ BNB)' },
-    { value: 'ADD_MEMBER', label: 'ADD_MEMBER (Thêm HĐQT)' },
-    { value: 'REMOVE_MEMBER', label: 'REMOVE_MEMBER (Xóa HĐQT)' },
-    { value: 'CHANGE_THRESHOLD', label: 'CHANGE_THRESHOLD (Đổi Threshold)' },
-    { value: 'PAUSE_TOKEN', label: 'PAUSE_TOKEN (Khóa chuyển nhượng)' },
-    { value: 'UNPAUSE_TOKEN', label: 'UNPAUSE_TOKEN (Mở khóa chuyển nhượng)' }
+    { value: 'MINT', label: 'Phát hành cổ phần' },
+    { value: 'BURN', label: 'Hủy cổ phần' },
+    { value: 'WITHDRAW', label: 'Rút quỹ BNB' },
+    { value: 'ADD_MEMBER', label: 'Thêm thành viên HĐQT' },
+    { value: 'REMOVE_MEMBER', label: 'Xóa thành viên HĐQT' },
+    { value: 'CHANGE_THRESHOLD', label: 'Thay đổi số chữ ký duyệt đề xuất' },
+    { value: 'PAUSE_TOKEN', label: 'Khóa giao dịch cổ phần' },
+    { value: 'UNPAUSE_TOKEN', label: 'Mở khóa giao dịch cổ phần' }
   ];
 
   public newProposal = {

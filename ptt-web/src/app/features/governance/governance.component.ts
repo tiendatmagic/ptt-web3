@@ -57,6 +57,20 @@ export class GovernanceComponent implements OnInit {
     );
   });
 
+  public getProposalTypeLabel(type: string): string {
+    const map: Record<string, string> = {
+      'MINT': 'Phát hành cổ phần',
+      'BURN': 'Hủy cổ phần',
+      'WITHDRAW': 'Rút quỹ BNB',
+      'ADD_MEMBER': 'Thêm thành viên HĐQT',
+      'REMOVE_MEMBER': 'Xóa thành viên HĐQT',
+      'CHANGE_THRESHOLD': 'Đổi số chữ ký duyệt đề xuất',
+      'PAUSE_TOKEN': 'Khóa giao dịch cổ phần',
+      'UNPAUSE_TOKEN': 'Mở khóa giao dịch cổ phần',
+    };
+    return map[type] || type;
+  }
+
   ngOnInit() {
     this.loadProposals();
   }
@@ -98,7 +112,7 @@ export class GovernanceComponent implements OnInit {
   public openCreateProposal() {
     const ref = this.modalService.open(CreateProposalModalComponent, {
       title: 'Tạo đề xuất mới',
-      size: 'lg'
+      size: '2xl'
     });
     ref.afterClosed$.subscribe(success => {
       if (success) {
