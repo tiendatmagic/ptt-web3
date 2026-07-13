@@ -145,7 +145,6 @@ contract EquityToken is ERC20, Ownable, Pausable {
 
             if (isWhitelistEnabled) {
                 require(isWhitelisted[from], "Sender is not whitelisted");
-                require(isWhitelisted[to], "Receiver is not whitelisted");
             }
 
             if (maxOwnershipPercent > 0) {

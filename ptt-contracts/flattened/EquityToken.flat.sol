@@ -1,4 +1,4 @@
-﻿Γùç injected env (1) from ..\.env // tip: Γùê secrets for agents [www.dotenvx.com]
+Γùç injected env (1) from ..\.env // tip: Γùê secrets for agents [www.dotenvx.com]
 // Sources flattened with hardhat v2.28.6 https://hardhat.org
 
 // SPDX-License-Identifier: MIT
@@ -979,7 +979,6 @@ contract EquityToken is ERC20, Ownable, Pausable {
 
             if (isWhitelistEnabled) {
                 require(isWhitelisted[from], "Sender is not whitelisted");
-                require(isWhitelisted[to], "Receiver is not whitelisted");
             }
 
             if (maxOwnershipPercent > 0) {
