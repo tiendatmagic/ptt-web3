@@ -48,16 +48,14 @@
     </a>
 
     <!-- Quản trị & Biểu quyết (Governance) -->
-    @if (stateService.hasPermission('proposals.view')) {
-      <a
-        routerLink="/governance"
-        routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
-        class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
-      >
-        <app-icon name="shield" class="w-5 h-5 flex-shrink-0" />
-        <span>Hội đồng Quản trị</span>
-      </a>
-    }
+    <a
+      routerLink="/governance"
+      routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
+      class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
+    >
+      <app-icon name="shield" class="w-5 h-5 flex-shrink-0" />
+      <span>Hội đồng Quản trị</span>
+    </a>
 
     <!-- Sổ lệnh & Giao dịch (Marketplace) -->
     @if (stateService.hasPermission('marketplace.view')) {

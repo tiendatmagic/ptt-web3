@@ -37,6 +37,7 @@ export class GovernanceComponent implements OnInit {
   private route = inject(ActivatedRoute);
 
   public proposalsList = signal<any[]>([]);
+  public searchQuery = signal<string>('');
   public selectedProposal = signal<any | null>(null);
   public proposalSignatures = signal<any[]>([]);
   public proposalThreshold = signal<number>(1);
@@ -46,15 +47,30 @@ export class GovernanceComponent implements OnInit {
   public currentPage = signal(1);
   public itemsPerPage = 5; // Hiển thị 5 đề xuất mỗi trang cho gọn
 
+  public filteredProposals = computed(() => {
+    const list = this.proposalsList();
+    const query = this.searchQuery().trim().toLowerCase();
+    if (!query) return list;
+    return list.filter(p => 
+      p.title?.toLowerCase().includes(query) || 
+      String(p.id).includes(query)
+    );
+  });
+
   public paginatedProposals = computed(() => {
     const start = (this.currentPage() - 1) * this.itemsPerPage;
     const end = start + this.itemsPerPage;
-    return this.proposalsList().slice(start, end);
+    return this.filteredProposals().slice(start, end);
   });
 
   public totalPages = computed(() => {
-    return Math.ceil(this.proposalsList().length / this.itemsPerPage) || 1;
+    return Math.ceil(this.filteredProposals().length / this.itemsPerPage) || 1;
   });
+
+  public onSearchQueryChange(query: string) {
+    this.searchQuery.set(query);
+    this.currentPage.set(1);
+  }
 
   // Kiểm tra xem ví hiện tại đã ký đề xuất đang chọn chưa
   public hasCurrentWalletSigned = computed(() => {
