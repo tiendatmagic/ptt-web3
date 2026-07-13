@@ -1,3 +1,4 @@
+﻿Γùç injected env (1) from ..\.env // tip: Γîü auth for agents [www.vestauth.com]
 // Sources flattened with hardhat v2.28.6 https://hardhat.org
 
 // SPDX-License-Identifier: MIT
@@ -19,6 +20,7 @@ contract BoardGovernance {
         uint256 expirationDate;
         bool executed;
         bool cancelled;
+        uint256 thresholdSnapshot;
     }
 
     address[] private _members;
@@ -88,7 +90,8 @@ contract BoardGovernance {
             effectiveDate: block.timestamp + delaySeconds,
             expirationDate: durationSeconds > 0 ? block.timestamp + delaySeconds + durationSeconds : 0,
             executed: false,
-            cancelled: false
+            cancelled: false,
+            thresholdSnapshot: threshold
         });
 
         emit ProposalCreated(proposalId, target, description);
@@ -170,6 +173,10 @@ contract BoardGovernance {
         require(newThreshold > 0 && newThreshold <= _members.length, "Invalid threshold");
         threshold = newThreshold;
         emit ThresholdChanged(newThreshold);
+    }
+
+    function getProposalThreshold(uint256 proposalId) external view returns (uint256) {
+        return proposals[proposalId].thresholdSnapshot;
     }
 
     receive() external payable {}
