@@ -264,6 +264,13 @@ export class StateService {
     this.toastService.showToast(msg, type);
   }
 
+  public copyToClipboard(text: string, label: string = 'Đã sao chép vào bộ nhớ tạm!') {
+    if (text) {
+      navigator.clipboard.writeText(text);
+      this.toastService.showToast(label, 'success');
+    }
+  }
+
   public clearToasts() {
     this.toastService.clearAll();
   }
