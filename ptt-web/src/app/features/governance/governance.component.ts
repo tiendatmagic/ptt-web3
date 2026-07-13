@@ -94,6 +94,8 @@ export class GovernanceComponent implements OnInit {
       'MINT': 'Phát hành cổ phần',
       'BURN': 'Hủy cổ phần',
       'WITHDRAW': 'Rút quỹ BNB',
+      'WITHDRAW_ERC20': 'Rút quỹ Token ERC20',
+      'WITHDRAW_NFT': 'Rút NFT (ERC721/1155)',
       'ADD_MEMBER': 'Thêm thành viên HĐQT',
       'REMOVE_MEMBER': 'Xóa thành viên HĐQT',
       'CHANGE_THRESHOLD': 'Đổi số chữ ký duyệt đề xuất',
