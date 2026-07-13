@@ -201,11 +201,12 @@ export class SettingsComponent implements OnInit {
       this.stateService.clearToasts();
       this.stateService.showToast('✓ Deploy Board Governance thành công: ' + govAddr, 'success');
 
-      // 2. Deploy EquityToken
+      // 2. Deploy EquityToken (tạm thời đặt deployer/signer làm owner để cấu hình nhanh whitelist)
       this.stateService.clearToasts();
       this.stateService.showToast('[2/4] Đang deploy Equity Token (Cổ phần)...', 'warning');
+      const deployerAddr = await signer.getAddress();
       const tokenFactory = new ethers.ContractFactory(EquityToken.abi, EquityToken.bytecode, signer);
-      const tokenContract = await tokenFactory.deploy(comp.name, comp.code, govAddr);
+      const tokenContract = await tokenFactory.deploy(comp.name, comp.code, deployerAddr);
       await tokenContract.waitForDeployment();
       const tokenAddr = await tokenContract.getAddress();
       this.editingContracts['token_address'] = tokenAddr;
@@ -233,6 +234,27 @@ export class SettingsComponent implements OnInit {
       this.editingContracts['marketplace_address'] = marketplaceAddr;
       this.stateService.clearToasts();
       this.stateService.showToast('✓ Deploy Marketplace thành công: ' + marketplaceAddr, 'success');
+
+      // Tự động Whitelist các smart contracts và ví Deployer để đơn giản hóa vận hành
+      this.stateService.clearToasts();
+      this.stateService.showToast('Đang tự động cấu hình Whitelist hệ thống...', 'warning');
+      const gasOverrides = await this.stateService.getGasOverrides(signer);
+      
+      const tx1 = await (tokenContract as any)['setWhitelisted'](financeAddr, true, gasOverrides);
+      await tx1.wait();
+      
+      const tx2 = await (tokenContract as any)['setWhitelisted'](marketplaceAddr, true, gasOverrides);
+      await tx2.wait();
+      
+      const tx3 = await (tokenContract as any)['setWhitelisted'](deployerAddr, true, gasOverrides);
+      await tx3.wait();
+      
+      // Bàn giao quyền sở hữu EquityToken về cho Board Governance (Multisig) để bảo mật
+      this.stateService.showToast('Bàn giao quyền sở hữu Cổ phần về HĐQT...', 'warning');
+      const tx4 = await (tokenContract as any)['transferOwnership'](govAddr, gasOverrides);
+      await tx4.wait();
+      
+      this.stateService.showToast('✓ Khởi tạo và cấu hình hệ thống thành công!', 'success');
 
       // Tự động lưu cấu hình contract ngay sau khi deploy đủ 4 contracts
       await this.handleSaveContracts();

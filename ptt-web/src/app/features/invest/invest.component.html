@@ -189,7 +189,7 @@
             <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Định giá</span>
           </div>
           <p class="text-2xl font-black text-slate-800 dark:text-white">
-            ${{ selectedCompany()?.valuation ? (selectedCompany().valuation | number:'1.0-0') : '—' }}
+            ${{ (selectedCompany()?.valuation !== undefined && selectedCompany()?.valuation !== null) ? (selectedCompany().valuation | number:'1.0-0') : '—' }}
           </p>
           <p class="text-xs text-[var(--color-primary)] font-bold">{{ selectedCompany()?.code || '—' }} · {{ selectedCompany()?.status || '—' }}</p>
         </div>
@@ -233,8 +233,8 @@
                   <!-- Progress bar -->
                   <div class="space-y-2">
                     <div class="flex justify-between text-xs text-slate-400">
-                      <span>Đã bán: {{ formatNumber(round.soldAmount) }} Share</span>
-                      <span>Chào bán tối đa: {{ formatNumber(round.maxSupply) }} Share</span>
+                      <span>Đã bán: {{ formatNumber(round.soldAmount) }} {{ selectedCompany()?.code || 'PTT' }}</span>
+                      <span>Chào bán tối đa: {{ formatNumber(round.maxSupply) }} {{ selectedCompany()?.code || 'PTT' }}</span>
                     </div>
                     <div class="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div class="h-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] rounded-full transition-all duration-500"
