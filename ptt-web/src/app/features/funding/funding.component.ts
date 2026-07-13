@@ -6,7 +6,7 @@ import { StateService } from '@core/services/state.service';
 import { ApiService } from '@core/services/api.service';
 import { IconComponent } from '@shared/components/icon/icon.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, filter } from 'rxjs';
 import { Contract, parseEther, ethers } from 'ethers';
 
 import { ModalService } from '@core/services/modal.service';
@@ -122,7 +122,8 @@ export class FundingComponent implements OnInit {
       const financeContract = new Contract(comp.funding_address, FINANCE_MANAGER_ABI, signer);
 
       // 2. Đọc thông tin round từ contract để lấy giá price chính xác
-      const roundInfo = await financeContract['rounds'](round.id);
+      const onchainRoundId = round.onchain_round_id;
+      const roundInfo = await financeContract['rounds'](onchainRoundId);
       const price = roundInfo.price;
       const paymentToken = roundInfo.paymentToken;
 
@@ -154,7 +155,7 @@ export class FundingComponent implements OnInit {
 
         this.stateService.showToast(`Đang gửi giao dịch mua cổ phần (${formattedCost} ${tokenSymbol})...`, 'warning');
         // Đối với ERC20, không gửi BNB kèm theo (value = 0)
-        const tx = await financeContract['buyShares'](round.id, tokenAmount, {
+        const tx = await financeContract['buyShares'](onchainRoundId, tokenAmount, {
           value: 0,
           ...gasOverrides
         });
@@ -165,7 +166,7 @@ export class FundingComponent implements OnInit {
         const formattedCost = ethers.formatEther(cost);
         this.stateService.showToast(`Chi phí cần thanh toán: ${formattedCost} BNB. Đang gửi giao dịch...`, 'warning');
         
-        const tx = await financeContract['buyShares'](round.id, tokenAmount, {
+        const tx = await financeContract['buyShares'](onchainRoundId, tokenAmount, {
           value: cost,
           ...gasOverrides
         });
@@ -175,7 +176,7 @@ export class FundingComponent implements OnInit {
 
       // 4. Tính toán số tiền đã huy động được (raised_amount) để đồng bộ về Backend
       // Lấy soldAmount thực tế sau giao dịch
-      const updatedRoundInfo = await financeContract['rounds'](round.id);
+      const updatedRoundInfo = await financeContract['rounds'](onchainRoundId);
       const soldAmount = updatedRoundInfo.soldAmount;
       const raisedWei = (BigInt(soldAmount) * BigInt(price)) / 1000000000000000000n;
       
@@ -210,9 +211,17 @@ export class FundingComponent implements OnInit {
 
   // Đóng sớm và rút tiền về ví Quỹ của doanh nghiệp
   public async handleFinalizeRound(round: any) {
-    if (!confirm(`Bạn có chắc chắn muốn kết thúc sớm vòng gọi vốn "${round.name}" và rút toàn bộ số tiền đã huy động được về ví quỹ doanh nghiệp?`)) {
-      return;
-    }
+    const confirmed = await firstValueFrom(
+      this.modalService.confirm({
+        title: 'Xác nhận đóng & rút tiền sớm',
+        description: `Bạn có chắc chắn muốn kết thúc sớm vòng gọi vốn "${round.name}" và rút toàn bộ số tiền đã huy động được về ví quỹ doanh nghiệp?`,
+        confirmText: 'Đóng & Rút tiền',
+        cancelText: 'Hủy bỏ',
+        confirmButtonClass: 'btn-primary',
+        size: 'sm'
+      }).afterClosed$
+    );
+    if (!confirmed) return;
 
     const comp = this.stateService.currentCompany();
     if (!comp || !comp.funding_address) return;
@@ -225,7 +234,7 @@ export class FundingComponent implements OnInit {
       const financeContract = new Contract(comp.funding_address, FINANCE_MANAGER_ABI, signer);
       const gasOverrides = await this.stateService.getGasOverrides(signer);
 
-      const tx = await financeContract['finalizeFundingRound'](round.id, gasOverrides);
+      const tx = await financeContract['finalizeFundingRound'](round.onchain_round_id, gasOverrides);
       this.stateService.showToast('Giao dịch đang chờ xác nhận...', 'warning');
       await tx.wait();
 
@@ -233,7 +242,7 @@ export class FundingComponent implements OnInit {
 
       // Đồng bộ Backend: đặt trạng thái thành COMPLETED
       // Lấy soldAmount từ contract để cập nhật raisedAmount chính xác
-      const updatedRoundInfo = await financeContract['rounds'](round.id);
+      const updatedRoundInfo = await financeContract['rounds'](round.onchain_round_id);
       const soldAmount = updatedRoundInfo.soldAmount;
       const price = updatedRoundInfo.price;
       const paymentToken = updatedRoundInfo.paymentToken;
@@ -267,9 +276,17 @@ export class FundingComponent implements OnInit {
 
   // Hủy vòng gọi vốn và thu hồi cổ phần
   public async handleCancelRound(round: any) {
-    if (!confirm(`CẢNH BÁO: Bạn có chắc chắn muốn HỦY vòng gọi vốn "${round.name}"? Hành động này sẽ cho phép toàn bộ nhà đầu tư rút lại tiền đã nạp và thu hồi cổ phần về quỹ doanh nghiệp.`)) {
-      return;
-    }
+    const confirmed = await firstValueFrom(
+      this.modalService.confirm({
+        title: 'Xác nhận hủy vòng gọi vốn',
+        description: `CẢNH BÁO: Bạn có chắc chắn muốn HỦY vòng gọi vốn "${round.name}"? Hành động này sẽ cho phép toàn bộ nhà đầu tư rút lại tiền đã nạp và thu hồi cổ phần về quỹ doanh nghiệp.`,
+        confirmText: 'Hủy vòng gọi vốn',
+        cancelText: 'Quay lại',
+        confirmButtonClass: 'btn-danger',
+        size: 'sm'
+      }).afterClosed$
+    );
+    if (!confirmed) return;
 
     const comp = this.stateService.currentCompany();
     if (!comp || !comp.funding_address) return;
@@ -282,7 +299,7 @@ export class FundingComponent implements OnInit {
       const financeContract = new Contract(comp.funding_address, FINANCE_MANAGER_ABI, signer);
       const gasOverrides = await this.stateService.getGasOverrides(signer);
 
-      const tx = await financeContract['cancelFundingRound'](round.id, gasOverrides);
+      const tx = await financeContract['cancelFundingRound'](round.onchain_round_id, gasOverrides);
       this.stateService.showToast('Giao dịch đang chờ xác nhận...', 'warning');
       await tx.wait();
 
@@ -319,15 +336,15 @@ export class FundingComponent implements OnInit {
       const userAddress = await signer.getAddress();
       const financeContract = new Contract(comp.funding_address, FINANCE_MANAGER_ABI, signer);
 
-      const shares = await financeContract['investorPurchases'](round.id, userAddress);
-      const payment = await financeContract['investorPayments'](round.id, userAddress);
+      const shares = await financeContract['investorPurchases'](round.onchain_round_id, userAddress);
+      const payment = await financeContract['investorPayments'](round.onchain_round_id, userAddress);
 
       if (BigInt(shares) === 0n || BigInt(payment) === 0n) {
         this.stateService.showToast('Bạn không có khoản đầu tư nào để hoàn trả trong vòng gọi vốn này!', 'error');
         return;
       }
 
-      const updatedRoundInfo = await financeContract['rounds'](round.id);
+      const updatedRoundInfo = await financeContract['rounds'](round.onchain_round_id);
       const shareToken = updatedRoundInfo.shareToken;
       const paymentToken = updatedRoundInfo.paymentToken;
 
@@ -344,7 +361,7 @@ export class FundingComponent implements OnInit {
       }
 
       this.stateService.showToast('Đang gửi giao dịch rút tiền hoàn trả...', 'warning');
-      const tx = await financeContract['claimRefund'](round.id, gasOverrides);
+      const tx = await financeContract['claimRefund'](round.onchain_round_id, gasOverrides);
       this.stateService.showToast('Giao dịch đang chờ xác nhận...', 'warning');
       await tx.wait();
 
