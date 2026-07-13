@@ -20,6 +20,8 @@ class CompanyMapper
             $model->token_address,
             $model->funding_address,
             $model->marketplace_address,
+            $model->token_name,
+            $model->token_symbol,
             $model->status
         );
     }
@@ -40,6 +42,8 @@ class CompanyMapper
         $model->token_address = $entity->getTokenAddress();
         $model->funding_address = $entity->getFundingAddress();
         $model->marketplace_address = $entity->getMarketplaceAddress();
+        $model->token_name = $entity->getTokenName();
+        $model->token_symbol = $entity->getTokenSymbol();
         $model->status = $entity->getStatus();
         
         return $model;

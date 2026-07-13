@@ -14,6 +14,8 @@ class Company
     private ?string $tokenAddress;
     private ?string $fundingAddress;
     private ?string $marketplaceAddress;
+    private ?string $tokenName;
+    private ?string $tokenSymbol;
     private string $status;
 
     public function __construct(
@@ -27,6 +29,8 @@ class Company
         ?string $tokenAddress,
         ?string $fundingAddress,
         ?string $marketplaceAddress,
+        ?string $tokenName = null,
+        ?string $tokenSymbol = null,
         string $status = 'ACTIVE'
     ) {
         $this->id = $id;
@@ -39,6 +43,8 @@ class Company
         $this->tokenAddress = $tokenAddress;
         $this->fundingAddress = $fundingAddress;
         $this->marketplaceAddress = $marketplaceAddress;
+        $this->tokenName = $tokenName;
+        $this->tokenSymbol = $tokenSymbol;
         $this->status = $status;
     }
 
@@ -97,6 +103,22 @@ class Company
     public function getStatus(): string
     {
         return $this->status;
+    }
+
+    public function getTokenName(): ?string
+    {
+        return $this->tokenName;
+    }
+
+    public function getTokenSymbol(): ?string
+    {
+        return $this->tokenSymbol;
+    }
+
+    public function updateTokenInfo(?string $tokenName, ?string $tokenSymbol): void
+    {
+        $this->tokenName = $tokenName;
+        $this->tokenSymbol = $tokenSymbol;
     }
 
     public function updateValuation(float $valuation): void

@@ -24,6 +24,8 @@ class RegisterCompanyRequest extends FormRequest
             'funding_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'marketplace_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'oracle_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
+            'token_name' => 'nullable|string|max:255',
+            'token_symbol' => 'nullable|string|max:50',
         ];
     }
 }

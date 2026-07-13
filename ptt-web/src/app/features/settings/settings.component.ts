@@ -40,6 +40,8 @@ export class SettingsComponent implements OnInit {
   public companyName = signal<string>('');
   public companyValuation = signal<number>(0);
   public companyLogo = signal<string>('');
+  public tokenName = signal<string>('');
+  public tokenSymbol = signal<string>('');
   public saveInfoLoading = signal<boolean>(false);
 
   // --- Threshold state ---
@@ -91,6 +93,8 @@ export class SettingsComponent implements OnInit {
           this.companyName.set(comp.name || '');
           this.companyValuation.set(comp.valuation || 0);
           this.companyLogo.set(comp.logo || '');
+          this.tokenName.set(comp.token_name || '');
+          this.tokenSymbol.set(comp.token_symbol || '');
           
           const hasContracts = !!(
             comp.governance_address ||
@@ -201,12 +205,16 @@ export class SettingsComponent implements OnInit {
       this.stateService.clearToasts();
       this.stateService.showToast('✓ Deploy Board Governance thành công: ' + govAddr, 'success');
 
-      // 2. Deploy EquityToken (tạm thời đặt deployer/signer làm owner để cấu hình nhanh whitelist)
+      // 2. Deploy EquityToken (tạm thời đặt deployer/signer làm owner để cấu hình whitelist)
       this.stateService.clearToasts();
       this.stateService.showToast('[2/4] Đang deploy Equity Token (Cổ phần)...', 'warning');
       const deployerAddr = await signer.getAddress();
       const tokenFactory = new ethers.ContractFactory(EquityToken.abi, EquityToken.bytecode, signer);
-      const tokenContract = await tokenFactory.deploy(comp.name, comp.code, deployerAddr);
+      const tokenContract = await tokenFactory.deploy(
+        this.tokenName().trim() || comp.name,
+        this.tokenSymbol().trim() || comp.code,
+        deployerAddr
+      );
       await tokenContract.waitForDeployment();
       const tokenAddr = await tokenContract.getAddress();
       this.editingContracts['token_address'] = tokenAddr;
@@ -373,6 +381,8 @@ Hãy lưu trữ cẩn thận và không chia sẻ khóa bảo mật (Private Key
         name: this.companyName(),
         valuation: this.companyValuation(),
         logo: this.companyLogo(),
+        token_name: this.tokenName(),
+        token_symbol: this.tokenSymbol(),
       };
       await firstValueFrom(this.apiService.put<any>(`companies/${comp.id}`, payload));
       this.stateService.showToast('Cập nhật thông tin doanh nghiệp thành công!', 'success');

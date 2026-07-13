@@ -194,6 +194,32 @@
               />
             </div>
 
+            <div class="grid grid-cols-2 gap-4">
+              <div class="form-field">
+                <label>Tên Token Cổ phần</label>
+                <input
+                  type="text"
+                  [ngModel]="tokenName()"
+                  (ngModelChange)="tokenName.set($event)"
+                  placeholder="VD: PTT Asset Token"
+                  [disabled]="isAllContractsLinked() || isContractLinked('token_address')"
+                  class="form-input focus:border-violet-500 disabled:opacity-60 disabled:bg-slate-50 dark:disabled:bg-slate-900/60 disabled:cursor-not-allowed"
+                />
+              </div>
+
+              <div class="form-field">
+                <label>Ký hiệu Token (Symbol)</label>
+                <input
+                  type="text"
+                  [ngModel]="tokenSymbol()"
+                  (ngModelChange)="tokenSymbol.set($event)"
+                  placeholder="VD: PTT"
+                  [disabled]="isAllContractsLinked() || isContractLinked('token_address')"
+                  class="form-input focus:border-violet-500 disabled:opacity-60 disabled:bg-slate-50 dark:disabled:bg-slate-900/60 disabled:cursor-not-allowed"
+                />
+              </div>
+            </div>
+
             <div class="pt-1 flex justify-end">
               <button
                 app-button

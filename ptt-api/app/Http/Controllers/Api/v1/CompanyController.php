@@ -37,6 +37,8 @@ class CompanyController extends Controller
                 'token_address' => $company->getTokenAddress(),
                 'funding_address' => $company->getFundingAddress(),
                 'marketplace_address' => $company->getMarketplaceAddress(),
+                'token_name' => $company->getTokenName(),
+                'token_symbol' => $company->getTokenSymbol(),
                 'status' => $company->getStatus(),
             ];
         }, $companies);
@@ -67,6 +69,8 @@ class CompanyController extends Controller
             'token_address' => $company->getTokenAddress(),
             'funding_address' => $company->getFundingAddress(),
             'marketplace_address' => $company->getMarketplaceAddress(),
+            'token_name' => $company->getTokenName(),
+            'token_symbol' => $company->getTokenSymbol(),
             'status' => $company->getStatus(),
         ]);
     }
@@ -91,7 +95,9 @@ class CompanyController extends Controller
                 $request->input('governance_address'),
                 $request->input('token_address'),
                 $request->input('funding_address'),
-                $request->input('marketplace_address')
+                $request->input('marketplace_address'),
+                $request->input('token_name') ?: $request->input('name'),
+                $request->input('token_symbol') ?: $request->input('code')
             );
 
             $savedCompany = $this->companyRepository->save($company);
@@ -226,7 +232,32 @@ class CompanyController extends Controller
             'name' => 'required|string|max:255',
             'valuation' => 'required|numeric|min:0',
             'logo' => 'nullable|string|max:2048',
+            'token_name' => 'nullable|string|max:255',
+            'token_symbol' => 'nullable|string|max:50',
         ]);
+
+        $hasContracts = (
+            $companyModel->governance_address ||
+            $companyModel->token_address ||
+            $companyModel->funding_address ||
+            $companyModel->marketplace_address
+        );
+
+        if ($hasContracts) {
+            if (isset($validated['token_name']) && $companyModel->token_name !== $validated['token_name']) {
+                return response()->json(['message' => 'Cannot modify Token Name once contracts are deployed'], 400);
+            }
+            if (isset($validated['token_symbol']) && $companyModel->token_symbol !== $validated['token_symbol']) {
+                return response()->json(['message' => 'Cannot modify Token Symbol once contracts are deployed'], 400);
+            }
+        } else {
+            if (isset($validated['token_name'])) {
+                $companyModel->token_name = $validated['token_name'];
+            }
+            if (isset($validated['token_symbol'])) {
+                $companyModel->token_symbol = $validated['token_symbol'];
+            }
+        }
 
         $companyModel->name = $validated['name'];
         $companyModel->valuation = $validated['valuation'];
@@ -243,6 +274,8 @@ class CompanyController extends Controller
                 'name' => $companyModel->name,
                 'logo' => $companyModel->logo,
                 'valuation' => $companyModel->valuation,
+                'token_name' => $companyModel->token_name,
+                'token_symbol' => $companyModel->token_symbol,
                 'status' => $companyModel->status,
             ]
         ]);

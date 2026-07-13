@@ -22,6 +22,8 @@ class CompanyModel extends Model
         'token_address',
         'funding_address',
         'marketplace_address',
+        'token_name',
+        'token_symbol',
         'status',
     ];
 
