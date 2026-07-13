@@ -103,7 +103,6 @@ export class StateService {
       const response = await firstValueFrom(this.apiService.get<any>('auth/me'));
       if (response?.user) {
         this.currentUser.set(response.user);
-        this.loadCompanies();
       } else {
         this.currentUser.set(null);
       }
@@ -111,6 +110,8 @@ export class StateService {
       // Session hết hạn hoặc cookie hết hiệu lực
       this.currentUser.set(null);
     } finally {
+      // Luôn tải danh sách công ty để khách vãng lai/người dùng chưa kết nối ví vẫn xem được dữ liệu công khai
+      await this.loadCompanies();
       this.isSessionRestored.set(true);
     }
   }

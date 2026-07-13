@@ -50,11 +50,15 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('roles', [StaffController::class, 'indexRoles'])->middleware('permission:staffs.view');
     });
 
-    // Proposal Routes (Requires Authentication & Permissions)
+    // Public Proposal Routes
+    Route::prefix('proposals')->group(function () {
+        Route::get('/', [ProposalController::class, 'index']);
+        Route::get('{id}', [ProposalController::class, 'show']);
+    });
+
+    // Proposal Protected Routes (Requires Authentication & Permissions)
     Route::middleware('auth:sanctum')->prefix('proposals')->group(function () {
-        Route::get('/', [ProposalController::class, 'index'])->middleware('permission:proposals.view');
         Route::post('/', [ProposalController::class, 'store'])->middleware('permission:proposals.create');
-        Route::get('{id}', [ProposalController::class, 'show'])->middleware('permission:proposals.view');
         Route::post('{id}/sign', [ProposalController::class, 'sign'])->middleware('permission:proposals.sign');
         Route::post('{id}/execute', [ProposalController::class, 'execute'])->middleware('permission:proposals.execute');
     });

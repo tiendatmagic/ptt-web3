@@ -29,7 +29,40 @@
     </div>
   </div>
 
-  @if (!stateService.currentCompany()) {
+  @if (!stateService.isConnected() || !stateService.hasPermission('staffs.edit')) {
+    <!-- Giao diện Chặn Truy Cập -->
+    <div
+      class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-12 text-center shadow-sm max-w-2xl mx-auto my-10 space-y-6"
+    >
+      <div
+        class="w-16 h-16 mx-auto rounded-3xl bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center mb-2 shadow-sm border border-amber-100 dark:border-amber-900/30"
+      >
+        <app-icon name="lock" class="w-8 h-8 text-amber-500" strokeWidth="2" />
+      </div>
+      
+      <div class="space-y-2">
+        <h2 class="text-lg font-black text-slate-800 dark:text-white leading-tight">
+          Hạn chế quyền truy cập
+        </h2>
+        <p class="text-sm text-slate-400 dark:text-slate-500 max-w-md mx-auto leading-relaxed">
+          Trang cấu hình doanh nghiệp chứa các thiết lập Smart Contracts nhạy cảm và danh sách Owners. 
+          Vui lòng kết nối ví Web3 của Chủ sở hữu (Owner) hoặc Quản trị viên để truy cập.
+        </p>
+      </div>
+
+      @if (!stateService.isConnected()) {
+        <button
+          app-button
+          variant="primary"
+          (click)="stateService.connectWallet()"
+          class="h-11 px-8 rounded-xl font-bold shadow-md active:scale-95 transition-all duration-150"
+        >
+          KẾT NỐI VÍ NGAY
+        </button>
+      }
+    </div>
+  } @else {
+    @if (!stateService.currentCompany()) {
     <!-- Chưa chọn công ty -->
     <div
       class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-12 text-center shadow-sm"
@@ -399,5 +432,6 @@
         }
       </div>
     </div>
+    }
   }
 </div>

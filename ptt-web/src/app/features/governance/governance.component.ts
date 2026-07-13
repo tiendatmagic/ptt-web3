@@ -12,6 +12,8 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { ModalService } from '@core/services/modal.service';
 import { CreateProposalModalComponent } from './modals/create-proposal-modal.component';
+import { ShareProposalModalComponent } from './modals/share-proposal-modal.component';
+import { POPULAR_CHAINS } from '@core/utils/blockchain.utils';
 
 // ABI rút gọn của BoardGovernance để thực thi executeProposal, signProposal & đọc threshold
 const BOARD_GOVERNANCE_ABI = [
@@ -133,6 +135,25 @@ export class GovernanceComponent implements OnInit {
       queryParams: { proposalId: proposal.id },
       queryParamsHandling: 'merge'
     });
+  }
+
+  public openShareModal() {
+    const proposal = this.selectedProposal();
+    if (!proposal) return;
+
+    this.modalService.open(ShareProposalModalComponent, {
+      title: 'Chia sẻ đề xuất',
+      size: 'md',
+      data: { proposalId: proposal.id }
+    });
+  }
+
+  public getTxExplorerUrl(txHash: string): string {
+    if (!txHash) return '';
+    const chainId = this.stateService.chainId();
+    const popular = POPULAR_CHAINS.find(c => Number(c.chainId) === Number(chainId));
+    const baseExplorer = popular ? popular.explorerUrl : 'https://bscscan.com';
+    return `${baseExplorer}/tx/${txHash}`;
   }
 
   // Tải chi tiết đề xuất

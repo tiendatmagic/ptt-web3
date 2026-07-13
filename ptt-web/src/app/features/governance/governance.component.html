@@ -5,7 +5,7 @@
   >
     <div>
       <h1 class="text-xl sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">
-        Hội đồng Quản trị
+        Hội đồng Quản trị<span class="text-slate-400 dark:text-slate-500 font-normal">@if (stateService.currentCompany()) { — {{ stateService.currentCompany().name }} }</span>
       </h1>
       <p class="text-xs text-slate-400">
         Tạo đề xuất, thu thập chữ ký phê duyệt đa chữ ký (Multisig) và thực thi giao dịch doanh
@@ -133,23 +133,32 @@
             >
               <div class="space-y-1">
                 <span class="text-xs font-black text-primary uppercase tracking-widest"
-                  >Chi tiết đề xuất #{{ selectedProposal().id }}</span
+                  >Chi tiết đề xuất #{{ selectedProposal().id }}@if (stateService.currentCompany()) { | {{ stateService.currentCompany().name }} }</span
                 >
                 <h2 class="text-base font-extrabold text-slate-800 dark:text-white leading-tight">
                   {{ selectedProposal().title }}
                 </h2>
               </div>
-              <span
-                class="px-2.5 py-1 rounded-full text-xs font-black uppercase"
-                [class.bg-yellow-100]="selectedProposal().status === 'PENDING'"
-                [class.text-yellow-600]="selectedProposal().status === 'PENDING'"
-                [class.bg-blue-100]="selectedProposal().status === 'APPROVED'"
-                [class.text-blue-600]="selectedProposal().status === 'APPROVED'"
-                [class.bg-emerald-100]="selectedProposal().status === 'EXECUTED'"
-                [class.text-emerald-600]="selectedProposal().status === 'EXECUTED'"
-              >
-                {{ selectedProposal().status }}
-              </span>
+              <div class="flex items-center gap-2 shrink-0">
+                <button
+                  (click)="openShareModal()"
+                  class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-[var(--color-primary)] transition-all flex items-center justify-center border border-slate-200/50 dark:border-slate-800 cursor-pointer shadow-sm bg-white dark:bg-slate-900"
+                  title="Chia sẻ đề xuất & Mã QR"
+                >
+                  <app-icon name="qr" class="w-4 h-4" />
+                </button>
+                <span
+                  class="px-2.5 py-1.5 rounded-full text-xs font-black uppercase"
+                  [class.bg-yellow-100]="selectedProposal().status === 'PENDING'"
+                  [class.text-yellow-600]="selectedProposal().status === 'PENDING'"
+                  [class.bg-blue-100]="selectedProposal().status === 'APPROVED'"
+                  [class.text-blue-600]="selectedProposal().status === 'APPROVED'"
+                  [class.bg-emerald-100]="selectedProposal().status === 'EXECUTED'"
+                  [class.text-emerald-600]="selectedProposal().status === 'EXECUTED'"
+                >
+                  {{ selectedProposal().status }}
+                </span>
+              </div>
             </div>
 
             <!-- Description -->
@@ -192,6 +201,28 @@
               </div>
             </div>
 
+            <!-- Transaction Hash -->
+            @if (selectedProposal().tx_hash) {
+              <div class="space-y-1">
+                <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
+                  Mã giao dịch thực thi (TxHash)
+                </h4>
+                <div
+                  class="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20 text-xs"
+                >
+                  <app-icon name="blockchain" class="w-4 h-4 text-emerald-500 shrink-0" />
+                  <a
+                    [href]="getTxExplorerUrl(selectedProposal().tx_hash)"
+                    target="_blank"
+                    class="font-mono text-xs font-semibold break-all text-violet-600 dark:text-violet-400 hover:underline flex-1"
+                  >
+                    {{ selectedProposal().tx_hash }}
+                  </a>
+                  <app-icon name="external-link" class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                </div>
+              </div>
+            }
+
             <!-- Signatures list -->
             <div class="space-y-2">
               <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-wider">
@@ -227,47 +258,59 @@
 
           <!-- Bottom Action Buttons -->
           <div
-            class="pt-4 border-t border-slate-100 dark:border-slate-900/60 flex justify-end gap-3 select-none"
+            class="pt-4 border-t border-slate-100 dark:border-slate-900/60 flex items-center justify-between gap-3 select-none"
           >
-            @if (
-              selectedProposal().status === 'PENDING' &&
-              stateService.hasPermission('proposals.sign')
-            ) {
-              <!-- Kiểm tra ví hiện tại đã ký chưa để tránh lỗi Already signed -->
-              @if (hasCurrentWalletSigned()) {
-                <div
-                  class="h-11 px-5 rounded-xl flex items-center gap-2 text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800"
-                >
-                  <app-icon name="shield" class="w-4 h-4" />
-                  ĐÃ KÝ BIỂU QUYẾT
-                </div>
-              } @else {
+            <!-- Thông báo chưa kết nối ví -->
+            @if (!stateService.isConnected()) {
+              <div class="text-xs text-slate-400 dark:text-slate-500 italic flex items-center gap-1.5 py-2">
+                <app-icon name="warning" class="w-3.5 h-3.5 text-amber-500" strokeWidth="2.5" />
+                Vui lòng kết nối ví Web3 để ký duyệt đề xuất này.
+              </div>
+            } @else {
+              <div></div>
+            }
+
+            <div class="flex gap-3">
+              @if (
+                selectedProposal().status === 'PENDING' &&
+                stateService.hasPermission('proposals.sign')
+              ) {
+                <!-- Kiểm tra ví hiện tại đã ký chưa để tránh lỗi Already signed -->
+                @if (hasCurrentWalletSigned()) {
+                  <div
+                    class="h-11 px-5 rounded-xl flex items-center gap-2 text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800"
+                  >
+                    <app-icon name="shield" class="w-4 h-4" />
+                    ĐÃ KÝ BIỂU QUYẾT
+                  </div>
+                } @else {
+                  <button
+                    app-button
+                    variant="primary"
+                    (click)="handleSignProposal(selectedProposal())"
+                    class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2"
+                  >
+                    <app-icon name="shield" class="w-4 h-4" />
+                    KÝ BIỂU QUYẾT
+                  </button>
+                }
+              }
+
+              @if (
+                (selectedProposal().status === 'APPROVED' || (selectedProposal().status === 'PENDING' && proposalSignatures().length >= proposalThreshold())) &&
+                stateService.hasPermission('proposals.execute')
+              ) {
                 <button
                   app-button
                   variant="primary"
-                  (click)="handleSignProposal(selectedProposal())"
-                  class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2"
+                  (click)="handleExecuteProposal(selectedProposal())"
+                  class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 !text-white shadow-md border-0"
                 >
-                  <app-icon name="shield" class="w-4 h-4" />
-                  KÝ BIỂU QUYẾT
+                  <app-icon name="send" class="w-4 h-4" />
+                  THỰC THI ON-CHAIN
                 </button>
               }
-            }
-
-            @if (
-              (selectedProposal().status === 'APPROVED' || (selectedProposal().status === 'PENDING' && proposalSignatures().length >= proposalThreshold())) &&
-              stateService.hasPermission('proposals.execute')
-            ) {
-              <button
-                app-button
-                variant="primary"
-                (click)="handleExecuteProposal(selectedProposal())"
-                class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 !text-white shadow-md border-0"
-              >
-                <app-icon name="send" class="w-4 h-4" />
-                THỰC THI ON-CHAIN
-              </button>
-            }
+            </div>
           </div>
         </div>
       } @else {
