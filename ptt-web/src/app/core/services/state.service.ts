@@ -251,6 +251,10 @@ export class StateService {
     this.toastService.showToast(msg, type);
   }
 
+  public clearToasts() {
+    this.toastService.clearAll();
+  }
+
   public toggleTheme() {
     this.themeService.toggleTheme();
   }

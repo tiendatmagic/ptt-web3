@@ -186,55 +186,64 @@ export class SettingsComponent implements OnInit {
     }
 
     this.deployAllLoading.set(true);
+    this.stateService.clearToasts();
     this.stateService.showToast('Bắt đầu deploy hệ thống 4 contracts. Vui lòng duyệt từng giao dịch trên Metamask...', 'warning');
 
     const chainId = this.stateService.chainId();
 
     try {
       // 1. Deploy BoardGovernance
+      this.stateService.clearToasts();
       this.stateService.showToast('[1/4] Đang deploy Board Governance (HĐQT Multisig)...', 'warning');
       const govFactory = new ethers.ContractFactory(BoardGovernance.abi, BoardGovernance.bytecode, signer);
       const govContract = await govFactory.deploy(owners, this.minSignatures());
       await govContract.waitForDeployment();
       const govAddr = await govContract.getAddress();
       this.editingContracts['governance_address'] = govAddr;
+      this.stateService.clearToasts();
       this.stateService.showToast('✓ Deploy Board Governance thành công: ' + govAddr, 'success');
       this.autoVerify(govAddr, 'BoardGovernance', BoardGovernance.sourceCode, chainId);
 
       // 2. Deploy EquityToken
+      this.stateService.clearToasts();
       this.stateService.showToast('[2/4] Đang deploy Equity Token (Cổ phần)...', 'warning');
       const tokenFactory = new ethers.ContractFactory(EquityToken.abi, EquityToken.bytecode, signer);
       const tokenContract = await tokenFactory.deploy(comp.name, comp.code, govAddr);
       await tokenContract.waitForDeployment();
       const tokenAddr = await tokenContract.getAddress();
       this.editingContracts['token_address'] = tokenAddr;
+      this.stateService.clearToasts();
       this.stateService.showToast('✓ Deploy Equity Token thành công: ' + tokenAddr, 'success');
       this.autoVerify(tokenAddr, 'EquityToken', EquityToken.sourceCode, chainId);
 
       // 3. Deploy FinanceManager
+      this.stateService.clearToasts();
       this.stateService.showToast('[3/4] Đang deploy Finance Manager (Gọi vốn & Cổ tức)...', 'warning');
       const financeFactory = new ethers.ContractFactory(FinanceManager.abi, FinanceManager.bytecode, signer);
       const financeContract = await financeFactory.deploy(govAddr);
       await financeContract.waitForDeployment();
       const financeAddr = await financeContract.getAddress();
       this.editingContracts['funding_address'] = financeAddr;
+      this.stateService.clearToasts();
       this.stateService.showToast('✓ Deploy Finance Manager thành công: ' + financeAddr, 'success');
       this.autoVerify(financeAddr, 'FinanceManager', FinanceManager.sourceCode, chainId);
 
       // 4. Deploy Marketplace
+      this.stateService.clearToasts();
       this.stateService.showToast('[4/4] Đang deploy Marketplace (Sàn giao dịch)...', 'warning');
       const marketplaceFactory = new ethers.ContractFactory(Marketplace.abi, Marketplace.bytecode, signer);
       const marketplaceContract = await marketplaceFactory.deploy(govAddr, govAddr);
       await marketplaceContract.waitForDeployment();
       const marketplaceAddr = await marketplaceContract.getAddress();
       this.editingContracts['marketplace_address'] = marketplaceAddr;
+      this.stateService.clearToasts();
       this.stateService.showToast('✓ Deploy Marketplace thành công: ' + marketplaceAddr, 'success');
       this.autoVerify(marketplaceAddr, 'Marketplace', Marketplace.sourceCode, chainId);
 
       // Tự động lưu cấu hình contract ngay sau khi deploy đủ 4 contracts
-      this.stateService.showToast('Đang tự động lưu cấu hình Smart Contracts...', 'warning');
       await this.handleSaveContracts();
 
+      this.stateService.clearToasts();
       this.stateService.showToast('🎉 Hoàn tất! Đã deploy và lưu cấu hình 4 Smart Contracts thành công.', 'success');
 
     } catch (e: any) {
@@ -248,14 +257,12 @@ export class SettingsComponent implements OnInit {
   /** Tự động verify contract trên Explorer sau khi deploy (background, không block UI) */
   private autoVerify(address: string, contractName: string, sourceCode: string, chainId: number | null) {
     if (!chainId || !sourceCode) return;
-    this.stateService.showToast(`🔍 Đang gửi yêu cầu verify ${contractName} lên Explorer...`, 'warning');
 
     // Chờ 8 giây để Block Explorer kịp đồng bộ hóa bytecode của contract vừa deploy
     setTimeout(() => {
       this.verifyService.submitVerify({ contractAddress: address, contractName, sourceCode, chainId })
         .then(result => {
           if (result.success && result.guid) {
-            this.stateService.showToast(`✓ Đã gửi verify ${contractName}. Đang chờ xác nhận...`, 'success');
             return this.verifyService.pollVerifyStatus(result.guid, chainId).then(status => {
               if (status.verified) {
                 this.stateService.showToast(`✅ ${contractName} đã được verify thành công trên Explorer!`, 'success');

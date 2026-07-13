@@ -37,4 +37,8 @@ export class ToastService {
   public removeToast(id: string) {
     this.toasts.update(current => current.filter(t => t.id !== id));
   }
+
+  public clearAll() {
+    this.toasts.set([]);
+  }
 }
