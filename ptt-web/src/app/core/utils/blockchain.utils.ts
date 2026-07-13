@@ -12,11 +12,12 @@ export const POPULAR_CHAINS = [
 export function getExplorerApiUrl(chainId: string | number): string | null {
   const id = chainId.toString().trim();
   switch (id) {
-    case '1': return 'https://api.etherscan.io/api';
-    case '56': return 'https://api.bscscan.com/api';
-    case '97': return 'https://api-testnet.bscscan.com/api';
-    case '42161': return 'https://api.arbiscan.io/api';
-    case '421614': return 'https://api-sepolia.arbiscan.io/api';
+    case '1':
+    case '56':
+    case '97':
+    case '42161':
+    case '421614':
+      return 'https://api.etherscan.io/v2/api';
     default: return null;
   }
 }

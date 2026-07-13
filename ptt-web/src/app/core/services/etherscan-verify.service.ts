@@ -31,7 +31,7 @@ export class EtherscanVerifyService {
     }
 
     const body = new URLSearchParams({
-      chainId: params.chainId.toString(),
+      chainid: params.chainId.toString(),
       codeformat: 'solidity-single-file',
       sourceCode: params.sourceCode,
       contractaddress: params.contractAddress,
@@ -47,7 +47,7 @@ export class EtherscanVerifyService {
     });
 
     try {
-      const res = await fetch(`${apiUrl}?module=contract&action=verifysourcecode`, {
+      const res = await fetch(`${apiUrl}?chainid=${params.chainId}&module=contract&action=verifysourcecode`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: body.toString()
@@ -79,7 +79,7 @@ export class EtherscanVerifyService {
       await this.delay(3000);
       try {
         const res = await fetch(
-          `${apiUrl}?module=contract&action=checkverifystatus&guid=${guid}&apikey=${this.apiKey}`
+          `${apiUrl}?chainid=${chainId}&module=contract&action=checkverifystatus&guid=${guid}&apikey=${this.apiKey}`
         );
         const json = await res.json();
 

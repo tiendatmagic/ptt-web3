@@ -215,22 +215,25 @@ export class SettingsComponent implements OnInit {
     if (!chainId || !sourceCode) return;
     this.stateService.showToast(`🔍 Đang gửi yêu cầu verify ${contractName} lên Explorer...`, 'warning');
 
-    this.verifyService.submitVerify({ contractAddress: address, contractName, sourceCode, chainId })
-      .then(result => {
-        if (result.success && result.guid) {
-          this.stateService.showToast(`✓ Đã gửi verify ${contractName}. Đang chờ xác nhận...`, 'success');
-          return this.verifyService.pollVerifyStatus(result.guid, chainId).then(status => {
-            if (status.verified) {
-              this.stateService.showToast(`✅ ${contractName} đã được verify thành công trên Explorer!`, 'success');
-            } else {
-              this.stateService.showToast(`⚠️ Verify ${contractName}: ${status.message}`, 'warning');
-            }
-          });
-        }
-        this.stateService.showToast(`⚠️ Gửi verify ${contractName} thất bại: ${result.message}`, 'warning');
-        return Promise.resolve();
-      })
-      .catch(err => console.warn(`[Verify] ${contractName} error:`, err));
+    // Chờ 8 giây để Block Explorer kịp đồng bộ hóa bytecode của contract vừa deploy
+    setTimeout(() => {
+      this.verifyService.submitVerify({ contractAddress: address, contractName, sourceCode, chainId })
+        .then(result => {
+          if (result.success && result.guid) {
+            this.stateService.showToast(`✓ Đã gửi verify ${contractName}. Đang chờ xác nhận...`, 'success');
+            return this.verifyService.pollVerifyStatus(result.guid, chainId).then(status => {
+              if (status.verified) {
+                this.stateService.showToast(`✅ ${contractName} đã được verify thành công trên Explorer!`, 'success');
+              } else {
+                this.stateService.showToast(`⚠️ Verify ${contractName}: ${status.message}`, 'warning');
+              }
+            });
+          }
+          this.stateService.showToast(`⚠️ Gửi verify ${contractName} thất bại: ${result.message}`, 'warning');
+          return Promise.resolve();
+        })
+        .catch(err => console.warn(`[Verify] ${contractName} error:`, err));
+    }, 8000);
   }
 
   // --- Owners ---
