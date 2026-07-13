@@ -81,6 +81,8 @@ export class InvestComponent implements OnInit {
   public myBalance = signal<string>('0');         // EquityToken balance
   public totalSupply = signal<string>('0');        // Tổng cung
   public claimableDiv = signal<string>('0');       // Cổ tức có thể claim
+  public myPaymentTokenBalance = signal<string>('0'); // Số dư ví dùng thanh toán (USDT/BNB)
+  public myPaymentTokenSymbol = signal<string>('BNB');
 
   // Funding round
   public activeFundingRound = signal<any | null>(null);
@@ -305,6 +307,27 @@ export class InvestComponent implements OnInit {
                 startTime: Number(r.startTime),
                 endTime: Number(r.endTime)
               };
+              // Tải số dư payment token của ví người dùng để hiển thị lên bảng mua cổ phần
+              const userAddress = this.walletAddress();
+              if (userAddress) {
+                try {
+                  if (isERC20) {
+                    const tokenContract = new ethers.Contract(r.paymentToken, ERC20_ABI, provider);
+                    const bal = await tokenContract['balanceOf'](userAddress);
+                    this.myPaymentTokenBalance.set(ethers.formatUnits(bal, tokenDecimals));
+                  } else {
+                    const bal = await provider.getBalance(userAddress);
+                    this.myPaymentTokenBalance.set(ethers.formatEther(bal));
+                  }
+                  this.myPaymentTokenSymbol.set(tokenSymbol);
+                } catch (balErr) {
+                  console.warn('Lỗi đọc số dư payment token:', balErr);
+                  this.myPaymentTokenBalance.set('0');
+                }
+              } else {
+                this.myPaymentTokenBalance.set('0');
+              }
+
               break;
             }
           }
@@ -312,6 +335,7 @@ export class InvestComponent implements OnInit {
         } catch (err) {
           console.warn('Lỗi đọc funding round:', err);
           this.activeFundingRound.set(null);
+          this.myPaymentTokenBalance.set('0');
         }
       }
     } catch (e) {

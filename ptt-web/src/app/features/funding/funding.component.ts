@@ -47,6 +47,8 @@ export class FundingComponent implements OnInit {
   // Gọi vốn
   public roundsList = signal<any[]>([]);
   public purchaseAmount = '';
+  public myPaymentTokenBalance = signal<string>('0');
+  public myPaymentTokenSymbol = signal<string>('BNB');
 
   // Cổ tức
   public dividendsList = signal<any[]>([]);
@@ -57,11 +59,13 @@ export class FundingComponent implements OnInit {
   constructor() {
     effect(() => {
       const comp = this.stateService.currentCompany();
+      const addr = this.stateService.address(); // Lắng nghe cả thay đổi ví để tự load lại số dư
       if (comp) {
         this.loadFundingData();
       } else {
         this.roundsList.set([]);
         this.dividendsList.set([]);
+        this.myPaymentTokenBalance.set('0');
         this.isPageLoading.set(false);
       }
     }, { allowSignalWrites: true });
@@ -86,10 +90,51 @@ export class FundingComponent implements OnInit {
       // 2. Tải danh sách cổ tức
       const divs = await firstValueFrom(this.apiService.get<any[]>('dividends', comp.id));
       this.dividendsList.set(divs || []);
+
+      // 3. Tải số dư token thanh toán
+      await this.loadPaymentTokenBalance();
     } catch (e) {
       console.error('Lỗi khi tải dữ liệu gọi vốn/cổ tức:', e);
     } finally {
       this.isPageLoading.set(false);
+    }
+  }
+
+  // Tải số dư token thanh toán (USDT/BNB) của ví đang kết nối
+  public async loadPaymentTokenBalance() {
+    const comp = this.stateService.currentCompany();
+    if (!comp || !this.stateService.isConnected() || !this.stateService.address()) {
+      this.myPaymentTokenBalance.set('0');
+      return;
+    }
+
+    try {
+      const activeRound = this.roundsList().find(r => r.status === 'ACTIVE');
+      if (!activeRound) return;
+
+      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com');
+      const userAddress = this.stateService.address();
+      if (!userAddress) return;
+
+      const paymentToken = activeRound.payment_token_address;
+      const isERC20 = paymentToken && paymentToken !== ethers.ZeroAddress;
+
+      if (isERC20) {
+        const tokenContract = new Contract(paymentToken, ERC20_ABI, provider);
+        const [bal, dec, sym] = await Promise.all([
+          tokenContract['balanceOf'](userAddress),
+          tokenContract['decimals'](),
+          tokenContract['symbol']()
+        ]);
+        this.myPaymentTokenBalance.set(ethers.formatUnits(bal, dec));
+        this.myPaymentTokenSymbol.set(sym);
+      } else {
+        const bal = await provider.getBalance(userAddress);
+        this.myPaymentTokenBalance.set(ethers.formatEther(bal));
+        this.myPaymentTokenSymbol.set('BNB');
+      }
+    } catch (err) {
+      console.warn('[Funding] Không thể tải số dư payment token:', err);
     }
   }
 
