@@ -43,7 +43,7 @@ export class CreateProposalModalComponent {
   public newProposal = {
     title: '',
     description: '',
-    type: 'MINT',
+    type: '',
     target: '',
     value: '0',
     mintParams: {
@@ -69,6 +69,10 @@ export class CreateProposalModalComponent {
 
   async onSubmit() {
     if (!this.newProposal.title) return;
+    if (!this.newProposal.type) {
+      this.stateService.showToast('Vui lòng chọn loại đề xuất!', 'error');
+      return;
+    }
     const comp = this.stateService.currentCompany();
     if (!comp || !comp.governance_address || !comp.token_address) {
       this.stateService.showToast('Không tìm thấy cấu hình Smart Contracts của công ty!', 'error');

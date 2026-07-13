@@ -161,7 +161,7 @@
       app-button
       variant="primary"
       (click)="onSubmit()"
-      [disabled]="!newProposal.title"
+      [disabled]="!newProposal.title || !newProposal.type"
       [loading]="isLoading()"
     >
       Tạo và Gửi On-chain
