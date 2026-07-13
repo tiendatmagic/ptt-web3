@@ -155,7 +155,7 @@
         <!-- Contracts (Grid ngang trải rộng) -->
         <div class="space-y-3">
           <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">
-            Smart Contracts deployed (BSC Testnet)
+            Smart Contracts
           </h3>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -319,9 +319,13 @@
                   Thành viên HĐQT
                 </h3>
                 <p class="text-xs text-slate-400 leading-relaxed">
-                  Danh sách lấy trực tiếp từ Smart Contract.
-                  Để thêm / xóa thành viên, vui lòng tạo đề xuất tại
-                  <a routerLink="/governance" class="text-[var(--color-primary)] font-bold hover:underline">Hội đồng Quản trị</a>.
+                  Danh sách lấy trực tiếp từ Smart Contract. Để thêm / xóa thành viên, vui lòng tạo
+                  đề xuất tại
+                  <a
+                    routerLink="/governance"
+                    class="text-[var(--color-primary)] font-bold hover:underline"
+                    >Hội đồng Quản trị</a
+                  >.
                 </p>
               </div>
             </div>
@@ -348,9 +352,10 @@
                       <td class="px-4 py-3 max-w-0">
                         <div class="flex flex-col gap-0.5 min-w-0">
                           @if (getStaffDisplayName(staff)) {
-                            <span class="font-extrabold text-slate-700 dark:text-slate-200 truncate">{{
-                              getStaffDisplayName(staff)
-                            }}</span>
+                            <span
+                              class="font-extrabold text-slate-700 dark:text-slate-200 truncate"
+                              >{{ getStaffDisplayName(staff) }}</span
+                            >
                             <span
                               class="text-[10px] font-mono text-slate-400 font-semibold truncate"
                               [title]="staff.wallet_address"
