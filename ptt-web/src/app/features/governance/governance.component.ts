@@ -12,10 +12,11 @@ import { Contract, ethers } from 'ethers';
 import { ModalService } from '@core/services/modal.service';
 import { CreateProposalModalComponent } from './modals/create-proposal-modal.component';
 
-// ABI rút gọn của BoardGovernance để thực thi executeProposal & signProposal
+// ABI rút gọn của BoardGovernance để thực thi executeProposal, signProposal & đọc threshold
 const BOARD_GOVERNANCE_ABI = [
   "function executeProposal(uint256 proposalId) external returns (bytes memory)",
-  "function signProposal(uint256 proposalId) external"
+  "function signProposal(uint256 proposalId) external",
+  "function threshold() external view returns (uint256)"
 ];
 
 @Component({
@@ -32,6 +33,7 @@ export class GovernanceComponent implements OnInit {
   public proposalsList = signal<any[]>([]);
   public selectedProposal = signal<any | null>(null);
   public proposalSignatures = signal<any[]>([]);
+  public proposalThreshold = signal<number>(1);
   public isPageLoading = signal(true);
 
   // Phân trang Client-side cho danh sách Đề xuất
@@ -103,6 +105,21 @@ export class GovernanceComponent implements OnInit {
       const detail = await firstValueFrom(this.apiService.get<any>(`proposals/${proposal.id}`, comp.id));
       this.selectedProposal.set(detail.proposal);
       this.proposalSignatures.set(detail.signatures || []);
+
+      // Đọc threshold trực tiếp từ Blockchain (Smart Contract BoardGovernance)
+      if (comp.governance_address) {
+        try {
+          const provider = this.stateService.web3Service.getProvider();
+          const govContract = new Contract(comp.governance_address, BOARD_GOVERNANCE_ABI, provider);
+          const onchainThreshold = await govContract['threshold']();
+          this.proposalThreshold.set(Number(onchainThreshold));
+        } catch (contractErr) {
+          console.warn('[Governance] Lỗi đọc threshold từ smart contract, dùng fallback từ backend:', contractErr);
+          this.proposalThreshold.set(detail.threshold || 1);
+        }
+      } else {
+        this.proposalThreshold.set(detail.threshold || 1);
+      }
     } catch (e) {
       console.error('Lỗi tải chi tiết đề xuất:', e);
     }

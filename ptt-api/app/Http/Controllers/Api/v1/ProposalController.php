@@ -64,9 +64,22 @@ class ProposalController extends Controller
             ->where('proposal_id', $id)
             ->get();
 
+        // Tính toán ngưỡng phê duyệt (threshold) giống như lúc sign
+        $boardMembersCount = DB::table('staffs')
+            ->join('roles', 'staffs.role_id', '=', 'roles.id')
+            ->where('staffs.company_id', $companyId)
+            ->where('staffs.status', 'ACTIVE')
+            ->where(function ($query) {
+                $query->where('roles.name', 'Owner')
+                      ->orWhere('roles.name', 'Board Member');
+            })
+            ->count();
+        $threshold = max(1, ceil($boardMembersCount / 2));
+
         return response()->json([
             'proposal' => $proposal,
-            'signatures' => $signatures
+            'signatures' => $signatures,
+            'threshold' => $threshold
         ]);
     }
 
