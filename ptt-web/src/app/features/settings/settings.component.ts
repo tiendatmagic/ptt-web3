@@ -11,6 +11,7 @@ import { ButtonComponent } from '@shared/components/button/button.component';
 import { BoardGovernance, EquityToken, FinanceManager, Marketplace } from '../../core/constants/contracts';
 import { IconComponent } from '@shared/components/icon/icon.component';
 import { CustomSelectComponent } from '@shared/components/custom-select/custom-select.component';
+import { DeployModalComponent } from './deploy-modal.component';
 
 @Component({
   selector: 'app-settings',
@@ -83,13 +84,15 @@ export class SettingsComponent implements OnInit {
         const companyChanged = this.lastCompanyId !== comp.id;
         this.lastCompanyId = comp.id;
 
+        // Luôn đồng bộ địa chỉ hợp đồng từ state service để cập nhật phản ứng (reactive)
+        this.editingContracts = {
+          governance_address: comp.governance_address || '',
+          token_address: comp.token_address || '',
+          funding_address: comp.funding_address || '',
+          marketplace_address: comp.marketplace_address || '',
+        };
+
         if (companyChanged) {
-          this.editingContracts = {
-            governance_address: comp.governance_address || '',
-            token_address: comp.token_address || '',
-            funding_address: comp.funding_address || '',
-            marketplace_address: comp.marketplace_address || '',
-          };
           this.companyName.set(comp.name || '');
           this.companyValuation.set(comp.valuation || 0);
           this.companyLogo.set(comp.logo || '');
@@ -197,77 +200,43 @@ export class SettingsComponent implements OnInit {
       return;
     }
 
-    this.deployAllLoading.set(true);
-    this.stateService.clearToasts();
-    this.stateService.showToast('Bắt đầu deploy hệ thống 4 contracts. Vui lòng duyệt từng giao dịch trên Metamask...', 'warning');
+    const modalRef = this.modalService.open(DeployModalComponent, {
+      title: 'Triển khai Hệ thống Smart Contracts',
+      size: 'lg',
+      closeOnBackdropClick: false,
+      showHeader: false,
+      data: {
+        owners,
+        minSignatures: this.minSignatures(),
+        tokenName: this.tokenName(),
+        tokenSymbol: this.tokenSymbol(),
+        company: comp
+      }
+    });
 
-    const chainId = this.stateService.chainId();
+    modalRef.afterClosed$.subscribe(async (result) => {
+      if (result && result.success && result.addresses) {
+        const updatedAddresses = result.addresses;
+        this.editingContracts = {
+          governance_address: updatedAddresses.governance_address || '',
+          token_address: updatedAddresses.token_address || '',
+          funding_address: updatedAddresses.funding_address || '',
+          marketplace_address: updatedAddresses.marketplace_address || '',
+        };
 
-    try {
-      // 1. Deploy BoardGovernance
-      this.stateService.clearToasts();
-      this.stateService.showToast('[1/4] Đang deploy Board Governance (HĐQT Multisig)...', 'warning');
-      const govFactory = new ethers.ContractFactory(BoardGovernance.abi, BoardGovernance.bytecode, signer);
-      const govContract = await govFactory.deploy(owners, this.minSignatures());
-      await govContract.waitForDeployment();
-      const govAddr = await govContract.getAddress();
-      this.editingContracts['governance_address'] = govAddr;
-      this.stateService.clearToasts();
-      this.stateService.showToast('✓ Deploy Board Governance thành công: ' + govAddr, 'success');
+        const updated = {
+          ...comp,
+          ...updatedAddresses
+        };
+        this.stateService.currentCompany.set(updated);
+        
+        const currentList = this.stateService.companiesList();
+        const updatedList = currentList.map(c => c.id === comp.id ? updated : c);
+        this.stateService.companiesList.set(updatedList);
 
-      // 2. Deploy FinanceManager
-      this.stateService.clearToasts();
-      this.stateService.showToast('[2/4] Đang deploy Finance Manager (Gọi vốn & Cổ tức)...', 'warning');
-      const financeFactory = new ethers.ContractFactory(FinanceManager.abi, FinanceManager.bytecode, signer);
-      const financeContract = await financeFactory.deploy(govAddr);
-      await financeContract.waitForDeployment();
-      const financeAddr = await financeContract.getAddress();
-      this.editingContracts['funding_address'] = financeAddr;
-      this.stateService.clearToasts();
-      this.stateService.showToast('✓ Deploy Finance Manager thành công: ' + financeAddr, 'success');
-
-      // 3. Deploy Marketplace
-      this.stateService.clearToasts();
-      this.stateService.showToast('[3/4] Đang deploy Marketplace (Sàn giao dịch)...', 'warning');
-      const marketplaceFactory = new ethers.ContractFactory(Marketplace.abi, Marketplace.bytecode, signer);
-      const marketplaceContract = await marketplaceFactory.deploy(govAddr, govAddr);
-      await marketplaceContract.waitForDeployment();
-      const marketplaceAddr = await marketplaceContract.getAddress();
-      this.editingContracts['marketplace_address'] = marketplaceAddr;
-      this.stateService.clearToasts();
-      this.stateService.showToast('✓ Deploy Marketplace thành công: ' + marketplaceAddr, 'success');
-
-      // 4. Deploy EquityToken (Cấu hình Owner và Whitelist trực tiếp trong Constructor)
-      this.stateService.clearToasts();
-      this.stateService.showToast('[4/4] Đang deploy Equity Token (Cổ phần)...', 'warning');
-      const deployerAddr = await signer.getAddress();
-      const tokenFactory = new ethers.ContractFactory(EquityToken.abi, EquityToken.bytecode, signer);
-      const tokenContract = await tokenFactory.deploy(
-        this.tokenName().trim() || comp.name,
-        this.tokenSymbol().trim() || comp.code,
-        govAddr, // BoardGovernance là Owner trực tiếp
-        [financeAddr, marketplaceAddr, deployerAddr] // Whitelist ngay lập tức 3 địa chỉ
-      );
-      await tokenContract.waitForDeployment();
-      const tokenAddr = await tokenContract.getAddress();
-      this.editingContracts['token_address'] = tokenAddr;
-      this.stateService.clearToasts();
-      this.stateService.showToast('✓ Deploy Equity Token thành công: ' + tokenAddr, 'success');
-
-      this.stateService.showToast('✓ Khởi tạo và cấu hình hệ thống thành công!', 'success');
-
-      // Tự động lưu cấu hình contract ngay sau khi deploy đủ 4 contracts
-      await this.handleSaveContracts();
-
-      this.stateService.clearToasts();
-      this.stateService.showToast('🎉 Hoàn tất! Đã deploy và lưu cấu hình 4 Smart Contracts thành công.', 'success');
-
-    } catch (e: any) {
-      console.error(e);
-      this.stateService.showToast('Lỗi khi deploy: ' + (e.message || 'Unknown'), 'error');
-    } finally {
-      this.deployAllLoading.set(false);
-    }
+        this.stateService.showToast('🎉 Triển khai và lưu cấu hình hệ thống Smart Contracts thành công!', 'success');
+      }
+    });
   }
 
   // --- Owners ---

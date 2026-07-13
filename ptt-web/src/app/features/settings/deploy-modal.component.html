@@ -1,0 +1,277 @@
+<div class="w-full flex flex-col space-y-5">
+  <!-- HEADER CUSTOM (Thay thế cho Header mặc định để kiểm soát nút tắt) -->
+  <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/50 shrink-0">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center shrink-0">
+        <app-icon name="sparkles" class="w-4 h-4 text-violet-600 dark:text-violet-400" />
+      </div>
+      <h3 class="text-base font-extrabold text-slate-800 dark:text-white truncate">
+        Triển khai Hệ thống Smart Contracts
+      </h3>
+    </div>
+    <!-- Chỉ hiển thị nút đóng khi KHÔNG ở trạng thái đang deploy -->
+    @if (status() !== 'deploying') {
+      <button
+        type="button"
+        (click)="onCancel()"
+        class="w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors shrink-0"
+      >
+        <app-icon name="close" class="h-4.5 w-4.5" strokeWidth="2.5" />
+      </button>
+    }
+  </div>
+
+  <!-- 1. TRẠNG THÁI XÁC NHẬN (CONFIRM) -->
+  @if (status() === 'confirm') {
+    <div class="space-y-4">
+      <!-- Cảnh báo quan trọng -->
+      <div class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/30 rounded-[15px] p-4 flex gap-3">
+        <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0 text-amber-600 dark:text-amber-400">
+          <app-icon name="lock" class="w-4.5 h-4.5" />
+        </div>
+        <div class="space-y-1">
+          <h4 class="text-sm font-bold text-amber-800 dark:text-amber-300">Lưu ý quan trọng trước khi triển khai</h4>
+          <p class="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+            Hệ thống chuẩn bị tạo 4 Smart Contracts riêng cho doanh nghiệp của bạn trên Blockchain. Vui lòng đọc kỹ các ràng buộc bên dưới trước khi bấm xác nhận.
+          </p>
+        </div>
+      </div>
+
+      <!-- Danh sách lưu ý chi tiết -->
+      <div class="space-y-3 bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/60 rounded-[15px] p-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+        <div class="flex gap-2">
+          <span class="text-violet-500 font-bold shrink-0">1.</span>
+          <span><strong>Khóa thông tin Token:</strong> Tên Token cổ phần (<span class="font-bold text-slate-800 dark:text-white">{{ data?.tokenName }}</span>) và Ký hiệu Token (<span class="font-bold text-slate-800 dark:text-white">{{ data?.tokenSymbol }}</span>) sẽ được ghi cứng lên Blockchain và <strong>không thể thay đổi</strong> sau khi deploy.</span>
+        </div>
+        <div class="flex gap-2">
+          <span class="text-violet-500 font-bold shrink-0">2.</span>
+          <span><strong>Yêu cầu xác nhận giao dịch:</strong> Ví MetaMask sẽ hiển thị yêu cầu xác nhận <strong>4 lần giao dịch tuần tự</strong> đại diện cho 4 Smart Contracts của doanh nghiệp.</span>
+        </div>
+        <div class="flex gap-2">
+          <span class="text-violet-500 font-bold shrink-0">3.</span>
+          <span><strong>Không làm mới trang:</strong> Vui lòng giữ tab trình duyệt hoạt động, không F5 hoặc bấm nút quay lại trong lúc quá trình deploy đang diễn ra.</span>
+        </div>
+      </div>
+
+      <!-- Footer các nút hành động -->
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button
+          app-button
+          variant="secondary"
+          size="md"
+          (click)="onCancel()"
+          class="px-5 rounded-[15px] font-bold"
+        >
+          HỦY BỎ
+        </button>
+        <button
+          app-button
+          variant="primary"
+          size="md"
+          (click)="startDeploy()"
+          class="px-5 rounded-[15px] font-bold"
+        >
+          BẮT ĐẦU TRIỂN KHAI
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- 2. TRẠNG THÁI ĐANG DEPLOY (DEPLOYING) -->
+  @if (status() === 'deploying') {
+    <div class="space-y-5 py-2">
+      <!-- Tiêu đề tiến trình & text trạng thái -->
+      <div class="text-center space-y-1.5">
+        <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Tiến trình triển khai hệ thống</div>
+        <div class="text-sm font-black text-slate-800 dark:text-white leading-tight">
+          {{ statusText() }}
+        </div>
+      </div>
+
+      <!-- Slider Tiến trình có sẵn -->
+      <div class="px-2">
+        <app-custom-slider
+          [min]="0"
+          [max]="4"
+          [step]="1"
+          [marks]="true"
+          [disabled]="true"
+          [value]="currentStep()"
+          color="primary"
+        />
+        <div class="flex justify-between text-[10px] text-slate-400 font-bold px-1 mt-1">
+          <span>Chuẩn bị</span>
+          <span>Board Gov (1/4)</span>
+          <span>Finance (2/4)</span>
+          <span>Marketplace (3/4)</span>
+          <span>Equity Token (4/4)</span>
+        </div>
+      </div>
+
+      <!-- Danh sách các bước triển khai chi tiết kèm Logs -->
+      <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
+        @for (log of logs(); track log.name; let idx = $index) {
+          <div class="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 px-4 py-3 rounded-xl transition-all duration-300">
+            <div class="flex items-center gap-3 min-w-0">
+              <!-- Icon chỉ báo trạng thái -->
+              @if (log.status === 'pending') {
+                <div class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-400 text-xs font-bold">
+                  {{ idx + 1 }}
+                </div>
+              } @else if (log.status === 'running') {
+                <div class="w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-950 flex items-center justify-center shrink-0">
+                  <div class="w-3 h-3 rounded-full border-2 border-violet-600 border-t-transparent animate-spin"></div>
+                </div>
+              } @else if (log.status === 'success') {
+                <div class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                </div>
+              } @else if (log.status === 'error') {
+                <div class="w-5 h-5 rounded-full bg-red-100 dark:bg-red-950 flex items-center justify-center shrink-0 text-red-600 dark:text-red-400">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+              }
+
+              <!-- Tên Contract & địa chỉ ví -->
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-slate-700 dark:text-slate-300 leading-none">{{ log.name }}</div>
+                @if (log.address) {
+                  <div class="flex items-center gap-1.5 mt-1">
+                    <span class="font-mono text-[10px] text-slate-400 truncate">{{ log.address }}</span>
+                    <button
+                      (click)="
+                        stateService.copyToClipboard(log.address, 'Đã sao chép địa chỉ hợp đồng!');
+                        $event.stopPropagation()
+                      "
+                      title="Sao chép địa chỉ"
+                      class="text-slate-400 hover:text-violet-600 transition-colors shrink-0"
+                    >
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                      </svg>
+                    </button>
+                  </div>
+                } @else if (log.status === 'running') {
+                  <span class="text-[10px] text-violet-500 font-semibold mt-1 block">Đang khởi tạo giao dịch...</span>
+                } @else if (log.status === 'pending') {
+                  <span class="text-[10px] text-slate-400 mt-1 block">Chưa bắt đầu</span>
+                }
+              </div>
+            </div>
+
+            <!-- Chỉ báo text trạng thái phụ -->
+            <div class="shrink-0 text-right">
+              @if (log.status === 'success') {
+                <span class="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-md">DEPLOYED</span>
+              } @else if (log.status === 'running') {
+                <span class="text-[10px] font-bold text-violet-500 bg-violet-50 dark:bg-violet-950/30 px-2 py-0.5 rounded-md animate-pulse">RUNNING</span>
+              } @else if (log.status === 'error') {
+                <span class="text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-950/30 px-2 py-0.5 rounded-md">FAILED</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Cảnh báo chống tải lại trang -->
+      <div class="flex items-center justify-center gap-1.5 text-center text-[10px] text-slate-400 bg-slate-50 dark:bg-slate-900/20 py-2 border border-slate-100 dark:border-slate-800/40 rounded-xl leading-normal">
+        <app-icon name="lock" class="w-3.5 h-3.5 text-slate-400" strokeWidth="2.5" />
+        <span>Kết nối an toàn qua ví Web3. Vui lòng không làm mới (F5) trình duyệt.</span>
+      </div>
+    </div>
+  }
+
+  <!-- 3. TRẠNG THÁI THÀNH CÔNG (SUCCESS) -->
+  @if (status() === 'success') {
+    <div class="space-y-5 text-center py-4">
+      <!-- Icon thành công to -->
+      <div class="w-16 h-16 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-md">
+        <svg class="w-9 h-9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+        </svg>
+      </div>
+
+      <div class="space-y-1.5">
+        <h4 class="text-base font-black text-slate-800 dark:text-white">Triển khai thành công!</h4>
+        <p class="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+          Cả 4 Smart Contracts đã được liên kết thành công với doanh nghiệp của bạn trên máy chủ.
+        </p>
+      </div>
+
+      <!-- Địa chỉ rút gọn -->
+      <div class="grid grid-cols-2 gap-2 text-left bg-slate-50 dark:bg-slate-900/40 p-3 rounded-[15px] border border-slate-100 dark:border-slate-800/40 text-[11px]">
+        <div class="space-y-0.5">
+          <div class="text-slate-400 font-medium">1. Board Governance</div>
+          <div class="font-mono text-slate-700 dark:text-slate-300 font-bold truncate">{{ deployedAddresses.governance_address }}</div>
+        </div>
+        <div class="space-y-0.5">
+          <div class="text-slate-400 font-medium">2. Finance Manager</div>
+          <div class="font-mono text-slate-700 dark:text-slate-300 font-bold truncate">{{ deployedAddresses.funding_address }}</div>
+        </div>
+        <div class="space-y-0.5 mt-2">
+          <div class="text-slate-400 font-medium">3. Marketplace</div>
+          <div class="font-mono text-slate-700 dark:text-slate-300 font-bold truncate">{{ deployedAddresses.marketplace_address }}</div>
+        </div>
+        <div class="space-y-0.5 mt-2">
+          <div class="text-slate-400 font-medium">4. Equity Token</div>
+          <div class="font-mono text-slate-700 dark:text-slate-300 font-bold truncate">{{ deployedAddresses.token_address }}</div>
+        </div>
+      </div>
+
+      <!-- Nút hoàn tất -->
+      <div class="pt-2 flex justify-center">
+        <button
+          app-button
+          variant="primary"
+          size="md"
+          (click)="closeSuccess()"
+          class="px-8 rounded-[15px] font-bold"
+        >
+          HOÀN TẤT
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- 4. TRẠNG THÁI LỖI (ERROR) -->
+  @if (status() === 'error') {
+    <div class="space-y-5 text-center py-4">
+      <!-- Icon lỗi to -->
+      <div class="w-16 h-16 mx-auto rounded-full bg-red-100 dark:bg-red-950/40 flex items-center justify-center text-red-600 dark:text-red-400 shadow-md">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+        </svg>
+      </div>
+
+      <div class="space-y-1.5">
+        <h4 class="text-base font-black text-slate-800 dark:text-white">Có lỗi xảy ra trong quá trình deploy!</h4>
+        <p class="text-xs text-slate-400">Không thể hoàn thành triển khai Smart Contracts.</p>
+      </div>
+
+      <!-- Khối chi tiết lỗi -->
+      <div class="bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 rounded-[15px] p-4 text-left max-h-[140px] overflow-y-auto no-scrollbar">
+        <div class="text-[10px] text-red-400 font-bold uppercase tracking-wider mb-1">Chi tiết lỗi</div>
+        <div class="font-mono text-xs text-red-800 dark:text-red-300 break-words leading-relaxed whitespace-pre-line">
+          {{ errorMessage() }}
+        </div>
+      </div>
+
+      <!-- Nút đóng quay lại -->
+      <div class="pt-2 flex justify-center">
+        <button
+          app-button
+          variant="primary"
+          size="md"
+          (click)="onCancel()"
+          class="px-8 rounded-[15px] font-bold"
+        >
+          ĐÓNG VÀ QUAY LẠI
+        </button>
+      </div>
+    </div>
+  }
+</div>

@@ -103,28 +103,21 @@
             </div>
             <button
               (click)="handleDeployAll()"
-              [disabled]="deployAllLoading()"
-              class="flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-white text-violet-700 hover:bg-violet-50 font-black text-sm shrink-0 shadow-lg active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none"
+              class="flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-white text-violet-700 hover:bg-violet-50 font-black text-sm shrink-0 shadow-lg active:scale-95 transition-all duration-150 cursor-pointer"
             >
-              @if (deployAllLoading()) {
-                <div
-                  class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin shrink-0"
-                ></div>
-              } @else {
-                <svg
-                  class="w-4 h-4 text-violet-700"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2.5"
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-              }
+              <svg
+                class="w-4 h-4 text-violet-700"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2.5"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
               DEPLOY HỆ THỐNG
             </button>
           </div>
