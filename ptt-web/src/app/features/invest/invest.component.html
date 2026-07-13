@@ -1,9 +1,10 @@
 <div class="w-full px-4 sm:px-6 py-5 space-y-5">
-
   <!-- ====================================================
        WELCOME BANNER
   ===================================================== -->
-  <div class="relative overflow-hidden rounded-[15px] bg-gradient-to-r from-[var(--color-primary)] via-purple-650 to-[var(--color-secondary)] text-white px-6 py-4 shadow-md flex items-center justify-between gap-4">
+  <div
+    class="relative overflow-hidden rounded-[15px] bg-gradient-to-r from-[var(--color-primary)] via-purple-650 to-[var(--color-secondary)] text-white px-6 py-4 shadow-md flex items-center justify-between gap-4"
+  >
     <div class="min-w-0">
       <h1 class="text-lg font-black">Sàn Đầu tư Cổ phần</h1>
       <p class="text-sm text-purple-100 mt-0.5 hidden sm:block">
@@ -12,22 +13,34 @@
     </div>
     <div class="shrink-0 flex items-center gap-3">
       @if (!isConnected()) {
-        <button (click)="stateService.connectWallet()"
-          class="bg-white text-[var(--color-primary)] hover:bg-purple-50 font-black text-xs h-9 px-4 rounded-xl flex items-center gap-2 shadow transition-all">
+        <button
+          (click)="stateService.connectWallet()"
+          class="bg-white text-[var(--color-primary)] hover:bg-purple-50 font-black text-xs h-9 px-4 rounded-xl flex items-center gap-2 shadow transition-all"
+        >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-              d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.5"
+              d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"
+            />
           </svg>
           Kết nối ví
         </button>
       } @else {
-        <div class="flex items-center gap-2 bg-white/15 px-3 py-1.5 rounded-xl border border-white/20">
+        <div
+          class="flex items-center gap-2 bg-white/15 px-3 py-1.5 rounded-xl border border-white/20"
+        >
           <span class="w-2 h-2 bg-purple-300 rounded-full animate-pulse"></span>
-          <span class="text-xs font-bold font-mono">{{ walletAddress()?.slice(0,6) }}...{{ walletAddress()?.slice(-4) }}</span>
+          <span class="text-xs font-bold font-mono"
+            >{{ walletAddress()?.slice(0, 6) }}...{{ walletAddress()?.slice(-4) }}</span
+          >
         </div>
       }
     </div>
-    <div class="absolute -right-8 -top-8 w-36 h-36 bg-white/5 rounded-full pointer-events-none"></div>
+    <div
+      class="absolute -right-8 -top-8 w-36 h-36 bg-white/5 rounded-full pointer-events-none"
+    ></div>
   </div>
 
   @if (isPageLoading()) {
@@ -36,7 +49,9 @@
     ===================================================== -->
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 animate-pulse select-none">
       <!-- Left Panel (Company Selector) Skeleton -->
-      <div class="lg:col-span-1 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-4 space-y-4 flex flex-col min-h-[300px]">
+      <div
+        class="lg:col-span-1 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-4 space-y-4 flex flex-col min-h-[300px]"
+      >
         <div class="h-4 bg-slate-200 dark:bg-slate-800 rounded w-1/3"></div>
         <div class="h-10 bg-slate-100 dark:bg-slate-900 rounded-xl"></div>
         <div class="space-y-2 flex-1">
@@ -45,11 +60,13 @@
           }
         </div>
       </div>
-      
+
       <!-- Right Panel (Portfolio Stats) Skeleton -->
       <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
         @for (i of [1, 2, 3]; track i) {
-          <div class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-5 space-y-3">
+          <div
+            class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-5 space-y-3"
+          >
             <div class="flex items-center gap-2">
               <div class="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-800"></div>
               <div class="h-3 bg-slate-200 dark:bg-slate-800 rounded w-24"></div>
@@ -60,9 +77,11 @@
         }
       </div>
     </div>
-    
+
     <!-- Tabs view skeleton -->
-    <div class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-6 shadow-sm animate-pulse space-y-6">
+    <div
+      class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-6 shadow-sm animate-pulse space-y-6"
+    >
       <div class="flex gap-4 border-b border-slate-100 dark:border-slate-800 pb-3">
         <div class="h-4 bg-slate-200 dark:bg-slate-800 rounded w-24"></div>
         <div class="h-4 bg-slate-200 dark:bg-slate-800 rounded w-24"></div>
@@ -87,9 +106,13 @@
     ===================================================== -->
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
       <!-- Company Selector -->
-      <div class="lg:col-span-1 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-4 shadow-sm space-y-3 flex flex-col min-h-[300px]">
-        <h3 class="text-sm font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider">Chọn công ty</h3>
-        
+      <div
+        class="lg:col-span-1 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-4 shadow-sm space-y-3 flex flex-col min-h-[300px]"
+      >
+        <h3 class="text-sm font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+          Chọn công ty
+        </h3>
+
         <!-- Ô TÌM KIẾM -->
         <div class="relative shrink-0 select-none">
           <input
@@ -98,8 +121,18 @@
             placeholder="Tìm tên hoặc mã..."
             class="w-full h-10 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-semibold outline-none focus:border-[var(--color-primary)] transition-all text-slate-800 dark:text-slate-100"
           />
-          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <svg
+            class="w-4 h-4 text-slate-400 absolute left-3 top-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
           </svg>
         </div>
 
@@ -107,33 +140,71 @@
         <div class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[350px] min-h-[150px]">
           @for (co of filteredCompanies(); track co.id) {
             <div class="flex items-center gap-1.5 w-full">
-              <button (click)="selectCompany(co)"
+              <button
+                (click)="selectCompany(co)"
                 class="flex-1 text-left px-3.5 py-3 rounded-xl border transition-all flex items-center gap-3 min-w-0"
-                [class]="selectedCompany()?.id === co.id
-                  ? 'border-[var(--color-primary)] bg-purple-50 dark:bg-purple-950/20'
-                  : 'border-slate-200 dark:border-slate-800 bg-transparent'">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  [class]="selectedCompany()?.id === co.id ? 'bg-[var(--color-primary)]/20 text-[var(--color-primary)]' : 'bg-slate-100 dark:bg-slate-900 text-slate-400'">
+                [class]="
+                  selectedCompany()?.id === co.id
+                    ? 'border-[var(--color-primary)] bg-purple-50 dark:bg-purple-950/20'
+                    : 'border-slate-200 dark:border-slate-800 bg-transparent'
+                "
+              >
+                <div
+                  class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  [class]="
+                    selectedCompany()?.id === co.id
+                      ? 'bg-[var(--color-primary)]/20 text-[var(--color-primary)]'
+                      : 'bg-slate-100 dark:bg-slate-900 text-slate-400'
+                  "
+                >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                    />
                   </svg>
                 </div>
                 <div class="min-w-0 flex-1">
-                  <p class="text-sm font-extrabold truncate"
-                     [class]="selectedCompany()?.id === co.id ? 'text-[var(--color-primary)] dark:text-purple-300' : 'text-slate-800 dark:text-white'">{{ co.name }}</p>
-                  <p class="text-xs font-bold uppercase" [class]="selectedCompany()?.id === co.id ? 'text-[var(--color-primary)]' : 'text-slate-400'">{{ co.code }}</p>
+                  <p
+                    class="text-sm font-extrabold truncate"
+                    [class]="
+                      selectedCompany()?.id === co.id
+                        ? 'text-[var(--color-primary)] dark:text-purple-300'
+                        : 'text-slate-800 dark:text-white'
+                    "
+                  >
+                    {{ co.name }}
+                  </p>
+                  <p
+                    class="text-xs font-bold uppercase"
+                    [class]="
+                      selectedCompany()?.id === co.id
+                        ? 'text-[var(--color-primary)]'
+                        : 'text-slate-400'
+                    "
+                  >
+                    {{ co.code }}
+                  </p>
                 </div>
               </button>
-              <button (click)="handleShareLink(co); $event.stopPropagation()"
+              <button
+                (click)="handleShareLink(co); $event.stopPropagation()"
                 title="Chia sẻ liên kết"
-                class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 flex items-center justify-center shrink-0 text-slate-400 hover:text-[var(--color-primary)] transition-all">
+                class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 flex items-center justify-center shrink-0 text-slate-400 hover:text-[var(--color-primary)] transition-all"
+              >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 10.742l4.882-2.441m0 0A3.998 3.998 0 1117 8a3.998 3.998 0 01-3.434-1.258m0 2.516a4.001 4.001 0 01-3.434 2.516m4.882-2.441L8.684 13.26m0 0A4 4 0 117 12a4 4 0 013.434 1.258" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8.684 10.742l4.882-2.441m0 0A3.998 3.998 0 1117 8a3.998 3.998 0 01-3.434-1.258m0 2.516a4.001 4.001 0 01-3.434 2.516m4.882-2.441L8.684 13.26m0 0A4 4 0 117 12a4 4 0 013.434 1.258"
+                  />
                 </svg>
               </button>
             </div>
-          }
-          @empty {
+          } @empty {
             <div class="text-center py-8 text-slate-400">
               <p class="text-xs">Không tìm thấy công ty phù hợp.</p>
             </div>
@@ -144,33 +215,77 @@
       <!-- Portfolio Stats (3 cột phải) -->
       <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
         <!-- Cổ phần nắm giữ -->
-        <div class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-5 shadow-sm space-y-3">
+        <div
+          class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-5 shadow-sm space-y-3"
+        >
           <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center shrink-0">
-              <svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+            <div
+              class="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center shrink-0"
+            >
+              <svg
+                class="w-5 h-5 text-violet-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+                />
               </svg>
             </div>
-            <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Cổ phần của tôi</span>
+            <span class="text-xs font-black text-slate-400 uppercase tracking-wider"
+              >Cổ phần của tôi</span
+            >
           </div>
-          <p class="text-2xl font-black text-slate-800 dark:text-white">{{ formatNumber(myBalance()) }}</p>
+          <p class="text-2xl font-black text-slate-800 dark:text-white">
+            {{ formatNumber(myBalance()) }}
+          </p>
           <p class="text-xs text-slate-400">trên tổng {{ formatNumber(totalSupply()) }} cổ phần</p>
         </div>
 
         <!-- Cổ tức có thể nhận -->
-        <div class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-5 shadow-sm space-y-3">
+        <div
+          class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-5 shadow-sm space-y-3"
+        >
           <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center shrink-0">
-              <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div
+              class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center shrink-0"
+            >
+              <svg
+                class="w-5 h-5 text-amber-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </div>
-            <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Cổ tức chưa nhận</span>
+            <span class="text-xs font-black text-slate-400 uppercase tracking-wider"
+              >Cổ tức chưa nhận</span
+            >
           </div>
-          <p class="text-2xl font-black text-amber-600 dark:text-amber-400">{{ formatNumber(claimableDiv()) }} <span class="text-sm font-bold text-slate-400">BNB</span></p>
+          <p class="text-2xl font-black text-amber-600 dark:text-amber-400">
+            {{ formatNumber(claimableDiv()) }}
+            <span class="text-sm font-bold text-slate-400">BNB</span>
+          </p>
           @if (+claimableDiv() > 0) {
-            <button app-button variant="primary" size="sm" class="w-full"
-              (click)="handleClaimDividend()" [disabled]="!isConnected()" [loading]="dividendLoading()">
+            <button
+              app-button
+              variant="primary"
+              size="sm"
+              class="w-full"
+              (click)="handleClaimDividend()"
+              [disabled]="!isConnected()"
+              [loading]="dividendLoading()"
+            >
               Nhận cổ tức
             </button>
           } @else {
@@ -179,19 +294,39 @@
         </div>
 
         <!-- Định giá công ty -->
-        <div class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-5 shadow-sm space-y-3">
+        <div
+          class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] p-5 shadow-sm space-y-3"
+        >
           <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-950/40 flex items-center justify-center shrink-0">
-              <svg class="w-5 h-5 text-[var(--color-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            <div
+              class="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-950/40 flex items-center justify-center shrink-0"
+            >
+              <svg
+                class="w-5 h-5 text-[var(--color-primary)]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                />
               </svg>
             </div>
             <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Định giá</span>
           </div>
           <p class="text-2xl font-black text-slate-800 dark:text-white">
-            ${{ (selectedCompany()?.valuation !== undefined && selectedCompany()?.valuation !== null) ? (selectedCompany().valuation | number:'1.0-0') : '—' }}
+            ${{
+              selectedCompany()?.valuation !== undefined && selectedCompany()?.valuation !== null
+                ? (selectedCompany().valuation | number: '1.0-0')
+                : '—'
+            }}
           </p>
-          <p class="text-xs text-[var(--color-primary)] font-bold">{{ selectedCompany()?.code || '—' }} · {{ selectedCompany()?.status || '—' }}</p>
+          <p class="text-xs text-[var(--color-primary)] font-bold">
+            {{ selectedCompany()?.code || '—' }} · {{ selectedCompany()?.status || '—' }}
+          </p>
         </div>
       </div>
     </div>
@@ -200,7 +335,9 @@
          TABS: Gọi vốn / Sàn giao dịch / Cổ tức / Portfolio
     ===================================================== -->
     @if (selectedCompany()) {
-      <div class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] shadow-sm overflow-hidden">
+      <div
+        class="bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-[15px] shadow-sm overflow-hidden"
+      >
         <app-tab-group
           [options]="tabOptions"
           [activeValue]="activeTab()"
@@ -214,17 +351,30 @@
           <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Thông tin vòng gọi vốn -->
             <div class="space-y-4">
-              <h3 class="text-base font-black text-slate-700 dark:text-slate-200">Vòng gọi vốn hiện tại</h3>
+              <h3 class="text-base font-black text-slate-700 dark:text-slate-200">
+                Vòng gọi vốn hiện tại
+              </h3>
               @if (activeFundingRound(); as round) {
                 <div class="space-y-4">
                   <div class="grid grid-cols-2 gap-3">
                     <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3.5 space-y-1">
-                      <span class="text-xs font-black text-slate-400 uppercase block">Tỷ giá mua</span>
-                      <span class="text-lg font-black text-slate-800 dark:text-white">{{ formatNumber(round.price) }} {{ round.paymentTokenSymbol }} = 1 {{ selectedCompany()?.code || 'PTT' }}</span>
+                      <span class="text-xs font-black text-slate-400 uppercase block"
+                        >Tỷ giá mua</span
+                      >
+                      <span class="text-lg font-black text-slate-800 dark:text-white"
+                        >{{ formatNumber(round.price) }} {{ round.paymentTokenSymbol }} = 1
+                        {{ selectedCompany()?.code || 'PTT' }}</span
+                      >
                     </div>
                     <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3.5 space-y-1">
-                      <span class="text-xs font-black text-slate-400 uppercase block">Trạng thái</span>
-                      <span class="text-sm font-extrabold" [class.text-[var(--color-primary)]]="round.isActive" [class.text-red-400]="!round.isActive">
+                      <span class="text-xs font-black text-slate-400 uppercase block"
+                        >Trạng thái</span
+                      >
+                      <span
+                        class="text-sm font-extrabold"
+                        [class.text-[var(--color-primary)]]="round.isActive"
+                        [class.text-red-400]="!round.isActive"
+                      >
                         {{ round.isActive ? '● Đang mở' : '○ Đã đóng' }}
                       </span>
                     </div>
@@ -233,20 +383,42 @@
                   <!-- Progress bar -->
                   <div class="space-y-2">
                     <div class="flex justify-between text-xs text-slate-400">
-                      <span>Đã bán: {{ formatNumber(round.soldAmount) }} {{ selectedCompany()?.code || 'PTT' }}</span>
-                      <span>Chào bán tối đa: {{ formatNumber(round.maxSupply) }} {{ selectedCompany()?.code || 'PTT' }}</span>
+                      <span
+                        >Đã bán: {{ formatNumber(round.soldAmount) }}
+                        {{ selectedCompany()?.code || 'PTT' }}</span
+                      >
+                      <span
+                        >Chào bán tối đa: {{ formatNumber(round.maxSupply) }}
+                        {{ selectedCompany()?.code || 'PTT' }}</span
+                      >
                     </div>
                     <div class="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div class="h-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] rounded-full transition-all duration-500"
-                        [style.width]="fundingProgress() + '%'"></div>
+                      <div
+                        class="h-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] rounded-full transition-all duration-500"
+                        [style.width]="fundingProgress() + '%'"
+                      ></div>
                     </div>
-                    <p class="text-xs text-[var(--color-primary)] font-bold text-right">{{ fundingProgress().toFixed(1) }}% hoàn thành</p>
+                    <p class="text-xs text-[var(--color-primary)] font-bold text-right">
+                      {{ fundingProgress().toFixed(1) }}% hoàn thành
+                    </p>
                   </div>
 
                   @if (round.isWhitelistOnly) {
-                    <div class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/30 rounded-xl p-3 flex gap-2.5 text-sm text-amber-700 dark:text-amber-400">
-                      <svg class="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    <div
+                      class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/30 rounded-xl p-3 flex gap-2.5 text-sm text-amber-700 dark:text-amber-400"
+                    >
+                      <svg
+                        class="w-4 h-4 mt-0.5 shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                        />
                       </svg>
                       <span>Vòng này chỉ dành cho nhà đầu tư trong whitelist (đã KYC).</span>
                     </div>
@@ -254,8 +426,18 @@
                 </div>
               } @else {
                 <div class="text-center py-10 text-slate-400">
-                  <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  <svg
+                    class="w-12 h-12 mx-auto mb-3 opacity-30"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="1.5"
+                      d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                    />
                   </svg>
                   <p class="text-sm font-semibold">Chưa có vòng gọi vốn đang mở</p>
                 </div>
@@ -269,28 +451,49 @@
                 <div class="space-y-3">
                   <div class="space-y-1.5">
                     <div class="flex justify-between items-center select-none">
-                      <label class="text-xs font-black text-slate-400 uppercase tracking-wider block">Số lượng cổ phần</label>
+                      <label
+                        class="text-xs font-black text-slate-400 uppercase tracking-wider block"
+                        >Số lượng cổ phần</label
+                      >
                       @if (isConnected()) {
                         <span class="text-[10px] font-black text-slate-400">
-                          Số dư khả dụng: <span class="text-[var(--color-primary)]">{{ +myPaymentTokenBalance() | number: '1.0-4' }} {{ myPaymentTokenSymbol() }}</span>
+                          Số dư khả dụng:
+                          <span class="text-[var(--color-primary)]"
+                            >{{ +myPaymentTokenBalance() | number: '1.0-4' }}
+                            {{ myPaymentTokenSymbol() }}</span
+                          >
                         </span>
                       }
                     </div>
-                    <input type="number" min="1" [(ngModel)]="buyAmount"
-                      class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-purple-500/10 transition-all" />
+                    <input
+                      type="number"
+                      min="1"
+                      [(ngModel)]="buyAmount"
+                      class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-purple-500/10 transition-all"
+                    />
                   </div>
 
-                  <div class="bg-purple-50 dark:bg-purple-950/20 border border-[var(--color-primary)]/20 rounded-xl p-4">
+                  <div
+                    class="bg-purple-50 dark:bg-purple-950/20 border border-[var(--color-primary)]/20 rounded-xl p-4"
+                  >
                     <div class="flex justify-between text-sm">
                       <span class="text-slate-600 dark:text-slate-400">Tổng thanh toán:</span>
                       <span class="font-extrabold text-[var(--color-primary)]">
-                        {{ formatNumber(+activeFundingRound()!.pricePerShare * buyAmount()) }} {{ activeFundingRound()?.paymentTokenSymbol }}
+                        {{ formatNumber(+activeFundingRound()!.pricePerShare * buyAmount()) }}
+                        {{ activeFundingRound()?.paymentTokenSymbol }}
                       </span>
                     </div>
                   </div>
 
-                  <button app-button variant="primary" size="lg" class="w-full"
-                    (click)="handleBuyShares()" [disabled]="!isConnected()" [loading]="buyLoading()">
+                  <button
+                    app-button
+                    variant="primary"
+                    size="lg"
+                    class="w-full"
+                    (click)="handleBuyShares()"
+                    [disabled]="!isConnected()"
+                    [loading]="buyLoading()"
+                  >
                     @if (!isConnected()) {
                       Kết nối ví để mua
                     } @else {
@@ -300,7 +503,11 @@
                   </button>
                 </div>
               } @else {
-                <p class="text-sm text-slate-400 bg-slate-50 dark:bg-slate-900/40 rounded-xl p-5 text-center">Hiện không có vòng gọi vốn đang mở.</p>
+                <p
+                  class="text-sm text-slate-400 bg-slate-50 dark:bg-slate-900/40 rounded-xl p-5 text-center"
+                >
+                  Hiện không có vòng gọi vốn đang mở.
+                </p>
               }
             </div>
           </div>
@@ -321,25 +528,38 @@
 
               <div class="grid grid-cols-2 gap-3">
                 <div class="space-y-1.5">
-                  <label class="text-xs font-black text-slate-400 uppercase tracking-wider block">Giá (BNB)</label>
-                  <input type="text" [(ngModel)]="orderPrice"
+                  <label class="text-xs font-black text-slate-400 uppercase tracking-wider block"
+                    >Giá (BNB)</label
+                  >
+                  <input
+                    type="text"
+                    [(ngModel)]="orderPrice"
                     placeholder="0.001"
-                    class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-purple-500/10 transition-all" />
+                    class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-purple-500/10 transition-all"
+                  />
                 </div>
                 <div class="space-y-1.5">
-                  <label class="text-xs font-black text-slate-400 uppercase tracking-wider block">Số lượng</label>
-                  <input type="number" min="1" [(ngModel)]="orderAmount"
-                    class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-purple-500/10 transition-all" />
+                  <label class="text-xs font-black text-slate-400 uppercase tracking-wider block"
+                    >Số lượng</label
+                  >
+                  <input
+                    type="number"
+                    min="1"
+                    [(ngModel)]="orderAmount"
+                    class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-purple-500/10 transition-all"
+                  />
                 </div>
               </div>
 
-              <button app-button
+              <button
+                app-button
                 [variant]="orderSide() === 'BUY' ? 'primary' : 'danger'"
                 size="lg"
                 class="w-full"
                 (click)="handlePlaceOrder()"
                 [disabled]="!isConnected() || !orderPrice()"
-                [loading]="orderLoading()">
+                [loading]="orderLoading()"
+              >
                 {{ orderSide() === 'BUY' ? '▲ Đặt lệnh MUA' : '▼ Đặt lệnh BÁN' }}
               </button>
             </div>
@@ -349,24 +569,38 @@
               <h3 class="text-base font-black text-slate-700 dark:text-slate-200">Sổ lệnh</h3>
               <div class="grid grid-cols-2 gap-2">
                 <div class="space-y-1.5">
-                  <p class="text-xs font-black text-[var(--color-primary)] uppercase tracking-wider">Lệnh MUA</p>
+                  <p
+                    class="text-xs font-black text-[var(--color-primary)] uppercase tracking-wider"
+                  >
+                    Lệnh MUA
+                  </p>
                   @for (bid of orderBook().bids; track bid.id) {
-                    <div class="flex justify-between px-3 py-2 bg-purple-50 dark:bg-purple-950/20 rounded-xl text-xs">
-                      <span class="font-bold text-[var(--color-primary)] dark:text-purple-400">{{ formatNumber(bid.price) }}</span>
+                    <div
+                      class="flex justify-between px-3 py-2 bg-purple-50 dark:bg-purple-950/20 rounded-xl text-xs"
+                    >
+                      <span class="font-bold text-[var(--color-primary)] dark:text-purple-400">{{
+                        formatNumber(bid.price)
+                      }}</span>
                       <span class="text-slate-500">{{ bid.amount }}</span>
                     </div>
+                  } @empty {
+                    <p class="text-xs text-slate-400 text-center py-3">Chưa có lệnh</p>
                   }
-                  @empty { <p class="text-xs text-slate-400 text-center py-3">Chưa có lệnh</p> }
                 </div>
                 <div class="space-y-1.5">
                   <p class="text-xs font-black text-red-500 uppercase tracking-wider">Lệnh BÁN</p>
                   @for (ask of orderBook().asks; track ask.id) {
-                    <div class="flex justify-between px-3 py-2 bg-red-50 dark:bg-red-950/20 rounded-xl text-xs">
-                      <span class="font-bold text-red-600 dark:text-red-400">{{ formatNumber(ask.price) }}</span>
+                    <div
+                      class="flex justify-between px-3 py-2 bg-red-50 dark:bg-red-950/20 rounded-xl text-xs"
+                    >
+                      <span class="font-bold text-red-600 dark:text-red-400">{{
+                        formatNumber(ask.price)
+                      }}</span>
                       <span class="text-slate-500">{{ ask.amount }}</span>
                     </div>
+                  } @empty {
+                    <p class="text-xs text-slate-400 text-center py-3">Chưa có lệnh</p>
                   }
-                  @empty { <p class="text-xs text-slate-400 text-center py-3">Chưa có lệnh</p> }
                 </div>
               </div>
             </div>
@@ -377,21 +611,44 @@
         @if (activeTab() === 'dividends') {
           <div class="p-6 space-y-4">
             <h3 class="text-base font-black text-slate-700 dark:text-slate-200">Cổ tức của tôi</h3>
-            <div class="max-w-md mx-auto bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200/60 dark:border-amber-900/30 rounded-[15px] p-8 text-center space-y-5">
-              <div class="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center mx-auto">
-                <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div
+              class="max-w-md mx-auto bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200/60 dark:border-amber-900/30 rounded-[15px] p-8 text-center space-y-5"
+            >
+              <div
+                class="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center mx-auto"
+              >
+                <svg
+                  class="w-8 h-8 text-amber-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
               <div>
-                <p class="text-xs font-black text-amber-600 uppercase tracking-wider mb-2">Số dư cổ tức chờ nhận</p>
-                <p class="text-4xl font-black text-amber-700 dark:text-amber-400">{{ formatNumber(claimableDiv()) }}</p>
+                <p class="text-xs font-black text-amber-600 uppercase tracking-wider mb-2">
+                  Số dư cổ tức chờ nhận
+                </p>
+                <p class="text-4xl font-black text-amber-700 dark:text-amber-400">
+                  {{ formatNumber(claimableDiv()) }}
+                </p>
                 <p class="text-sm text-amber-600 font-bold mt-1">BNB</p>
               </div>
-              <button app-button variant="primary" size="lg" class="w-full"
+              <button
+                app-button
+                variant="primary"
+                size="lg"
+                class="w-full"
                 (click)="handleClaimDividend()"
                 [disabled]="!isConnected() || +claimableDiv() === 0"
-                [loading]="dividendLoading()">
+                [loading]="dividendLoading()"
+              >
                 @if (!isConnected()) {
                   Kết nối ví để nhận
                 } @else {
@@ -406,53 +663,103 @@
         <!-- ==================== TAB: PORTFOLIO ==================== -->
         @if (activeTab() === 'portfolio') {
           <div class="p-6 space-y-5">
-            <h3 class="text-base font-black text-slate-700 dark:text-slate-200">Danh mục đầu tư của tôi</h3>
+            <h3 class="text-base font-black text-slate-700 dark:text-slate-200">
+              Danh mục đầu tư của tôi
+            </h3>
 
             @if (!isConnected()) {
               <div class="text-center py-10 text-slate-400">
-                <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
+                <svg
+                  class="w-12 h-12 mx-auto mb-3 opacity-30"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"
+                  />
                 </svg>
                 <p class="text-sm font-semibold">Kết nối ví để xem danh mục</p>
-                <button app-button variant="primary" size="sm" class="mt-3"
-                  (click)="stateService.connectWallet()">
+                <button
+                  app-button
+                  variant="primary"
+                  size="sm"
+                  class="mt-3"
+                  (click)="stateService.connectWallet()"
+                >
                   Kết nối ví
                 </button>
               </div>
             } @else {
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="bg-violet-50 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-900/30 rounded-[15px] p-5 space-y-2">
-                  <p class="text-xs font-black text-violet-600 uppercase tracking-wider">Cổ phần nắm giữ</p>
-                  <p class="text-3xl font-black text-violet-700 dark:text-violet-400">{{ formatNumber(myBalance()) }}</p>
+                <div
+                  class="bg-violet-50 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-900/30 rounded-[15px] p-5 space-y-2"
+                >
+                  <p class="text-xs font-black text-violet-600 uppercase tracking-wider">
+                    Cổ phần nắm giữ
+                  </p>
+                  <p class="text-3xl font-black text-violet-700 dark:text-violet-400">
+                    {{ formatNumber(myBalance()) }}
+                  </p>
                   <p class="text-xs text-slate-400">{{ selectedCompany()?.code }} Token</p>
                 </div>
 
-                <div class="bg-purple-50 dark:bg-purple-950/20 border border-[var(--color-primary)]/20 rounded-[15px] p-5 space-y-2">
-                  <p class="text-xs font-black text-[var(--color-primary)] uppercase tracking-wider">Tỷ lệ sở hữu</p>
-                  <p class="text-3xl font-black text-[var(--color-primary)] dark:text-purple-350">
-                    {{ +totalSupply() > 0 ? ((+myBalance() / +totalSupply()) * 100).toFixed(4) : '0' }}%
+                <div
+                  class="bg-purple-50 dark:bg-purple-950/20 border border-[var(--color-primary)]/20 rounded-[15px] p-5 space-y-2"
+                >
+                  <p
+                    class="text-xs font-black text-[var(--color-primary)] uppercase tracking-wider"
+                  >
+                    Tỷ lệ sở hữu
                   </p>
-                  <p class="text-xs text-slate-400">trên tổng {{ formatNumber(totalSupply()) }} cổ phần</p>
+                  <p class="text-3xl font-black text-[var(--color-primary)] dark:text-purple-350">
+                    {{
+                      +totalSupply() > 0 ? ((+myBalance() / +totalSupply()) * 100).toFixed(4) : '0'
+                    }}%
+                  </p>
+                  <p class="text-xs text-slate-400">
+                    trên tổng {{ formatNumber(totalSupply()) }} cổ phần
+                  </p>
                 </div>
 
-                <div class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/30 rounded-[15px] p-5 space-y-2">
-                  <p class="text-xs font-black text-amber-600 uppercase tracking-wider">Cổ tức chờ nhận</p>
-                  <p class="text-3xl font-black text-amber-700 dark:text-amber-400">{{ formatNumber(claimableDiv()) }}</p>
+                <div
+                  class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/30 rounded-[15px] p-5 space-y-2"
+                >
+                  <p class="text-xs font-black text-amber-600 uppercase tracking-wider">
+                    Cổ tức chờ nhận
+                  </p>
+                  <p class="text-3xl font-black text-amber-700 dark:text-amber-400">
+                    {{ formatNumber(claimableDiv()) }}
+                  </p>
                   <p class="text-xs text-slate-400">BNB</p>
                 </div>
               </div>
 
               <!-- Địa chỉ contract -->
               <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-4 space-y-2">
-                <p class="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Smart Contracts liên quan</p>
-                @for (item of [
-                  {label: 'Equity Token', addr: selectedCompany()?.token_address},
-                  {label: 'Finance Manager', addr: selectedCompany()?.funding_address}
-                ]; track item.label) {
-                  <div class="flex items-center justify-between gap-3 py-2 border-b border-slate-200 dark:border-slate-800/60 last:border-0">
+                <p class="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
+                  Smart Contracts liên quan
+                </p>
+                @for (
+                  item of [
+                    { label: 'Equity Token', addr: selectedCompany()?.token_address },
+                    { label: 'Finance Manager', addr: selectedCompany()?.funding_address },
+                  ];
+                  track item.label
+                ) {
+                  <div
+                    class="flex items-center justify-between gap-3 py-2 border-b border-slate-200 dark:border-slate-800/60 last:border-0"
+                  >
                     <span class="text-xs font-bold text-slate-500 shrink-0">{{ item.label }}</span>
-                    <a [href]="'https://testnet.bscscan.com/address/' + item.addr" target="_blank"
-                      class="font-mono text-xs text-violet-500 hover:underline truncate">{{ item.addr || '—' }}</a>
+                    <a
+                      [href]="'https://testnet.bscscan.com/address/' + item.addr"
+                      target="_blank"
+                      class="font-mono text-xs text-violet-500 hover:underline truncate"
+                      >{{ item.addr || '—' }}</a
+                    >
                   </div>
                 }
               </div>
@@ -462,5 +769,4 @@
       </div>
     }
   }
-
 </div>
