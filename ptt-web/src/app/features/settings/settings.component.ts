@@ -187,6 +187,16 @@ export class SettingsComponent implements OnInit {
       return;
     }
 
+    if (!this.tokenName() || !this.tokenName().trim()) {
+      this.stateService.showToast('Tên Token Cổ phần không được để trống! Vui lòng lưu thông tin trong tab Cài đặt trước.', 'warning');
+      return;
+    }
+
+    if (!this.tokenSymbol() || !this.tokenSymbol().trim()) {
+      this.stateService.showToast('Ký hiệu Token không được để trống! Vui lòng lưu thông tin trong tab Cài đặt trước.', 'warning');
+      return;
+    }
+
     this.deployAllLoading.set(true);
     this.stateService.clearToasts();
     this.stateService.showToast('Bắt đầu deploy hệ thống 4 contracts. Vui lòng duyệt từng giao dịch trên Metamask...', 'warning');
@@ -372,6 +382,16 @@ Hãy lưu trữ cẩn thận và không chia sẻ khóa bảo mật (Private Key
 
     if (!this.companyName().trim()) {
       this.stateService.showToast('Tên doanh nghiệp không được để trống!', 'warning');
+      return;
+    }
+
+    if (!this.tokenName() || !this.tokenName().trim()) {
+      this.stateService.showToast('Tên Token Cổ phần không được để trống!', 'warning');
+      return;
+    }
+
+    if (!this.tokenSymbol() || !this.tokenSymbol().trim()) {
+      this.stateService.showToast('Ký hiệu Token không được để trống!', 'warning');
       return;
     }
 
