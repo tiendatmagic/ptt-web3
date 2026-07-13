@@ -23,8 +23,8 @@
     :root {
       --splash-bg: #f8fafc;
       --splash-text: #0f172a;
-      --splash-brand: #8000ff;
-      --splash-primary: #ff00dd;
+      --splash-brand: #0d9488;
+      --splash-primary: #006dd0;
     }
     html.dark {
       --splash-bg: #030712;
@@ -55,19 +55,19 @@
       align-items: center;
       justify-content: center;
       border-radius: 50%;
-      background-color: rgba(128, 0, 255, 0.08);
-      border: 1px solid rgba(128, 0, 255, 0.15);
+      background-color: rgba(13, 148, 136, 0.08);
+      border: 1px solid rgba(13, 148, 136, 0.15);
       padding: 10px;
     }
     html.dark .app-splash-logo-container {
-      background-color: rgba(128, 0, 255, 0.12);
-      border-color: rgba(128, 0, 255, 0.2);
+      background-color: rgba(13, 148, 136, 0.12);
+      border-color: rgba(13, 148, 136, 0.2);
     }
     .app-splash-logo-glow {
       position: absolute;
       inset: 0;
       border-radius: 50%;
-      background: linear-gradient(to top right, rgba(255, 0, 221, 0.1), rgba(128, 0, 255, 0.1));
+      background: linear-gradient(to top right, rgba(0, 109, 208, 0.1), rgba(13, 148, 136, 0.1));
       filter: blur(8px);
     }
     .app-splash-logo {
@@ -80,7 +80,7 @@
     .app-splash-spinner {
       width: 24px;
       height: 24px;
-      border: 3px solid rgba(128, 0, 255, 0.1);
+      border: 3px solid rgba(13, 148, 136, 0.1);
       border-radius: 50%;
       border-top-color: var(--splash-brand);
       animation: splash-spin-spinner 0.8s infinite linear;

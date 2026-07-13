@@ -131,7 +131,7 @@ cafe-blockchain-web/
     - Ứng dụng storefront import trực tiếp giao diện `StoreComponent` từ thư viện dùng chung `@features/storefront` để tránh sao chép code.
     - Tuyệt đối không import bất kỳ component quản trị nào (như `settings`, `reports`, `staffs`) vào ứng dụng `storefront` nhằm giữ bundle size nhẹ nhất cho khách hàng.
 6.  **Thiết kế Giao diện (UI/UX) và Custom Component:**
-    - **Màu sắc chủ đạo:** Tông màu hồng Neon (`#ff00dd`) và tím Neon (`#8000ff`). Sử dụng các biến CSS động `--dynamic-primary` và `--dynamic-secondary`.
+    - **Màu sắc chủ đạo:** Tông màu xanh dương (`#006dd0`) và xanh ngọc (`#0d9488`). Sử dụng các biến CSS động `--dynamic-primary` và `--dynamic-secondary`.
     - **Bo góc:** Giới hạn bo góc tối đa của các khung, thẻ và nút là `15px` (ghi đè `--radius-xl` thành `15px`).
     - **SVG Icons:** Không sử dụng Emoji thô trong giao diện. Sử dụng component `<app-icon>` hoặc inline SVG chất lượng cao, responsive.
     - **Angular Host Display (Quan trọng):** Tất cả các component tự định nghĩa (ví dụ: `app-custom-switch`, `app-custom-select`) phải thiết lập `:host { display: block; }` trong CSS để tránh trình duyệt coi chúng là thẻ inline, làm vỡ khoảng cách margin/spacing.

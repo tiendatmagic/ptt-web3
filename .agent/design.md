@@ -24,15 +24,15 @@ Tài liệu này đặc tả toàn bộ quy chuẩn thiết kế giao diện UI/
 Hệ thống sử dụng cơ chế màu sắc động (Dynamic Theme) cho phép chủ cửa hàng tùy chỉnh màu sắc thương hiệu từ trang quản trị.
 
 ### 2.1. Màu sắc mặc định thương hiệu DApp (Default Brand Colors)
-*   **Màu chủ đạo (Primary Accent)**: **Hồng Neon (`#ff00dd`)** - CSS Variable: `--dynamic-primary`.
-*   **Màu phụ trợ (Secondary Accent)**: **Tím Neon (`#8000ff`)** - CSS Variable: `--dynamic-secondary`.
+*   **Màu chủ đạo (Primary Accent)**: **Xanh Dương (`#006dd0`)** - CSS Variable: `--dynamic-primary`.
+*   **Màu phụ trợ (Secondary Accent)**: **Xanh Ngọc (`#0d9488`)** - CSS Variable: `--dynamic-secondary`.
 *   **Fallback tĩnh**: Định nghĩa sẵn tại `:root` trong `styles.css` để tránh lỗi mất màu (trong suốt/trắng) khi vừa xóa cache trình duyệt hoặc chưa kết nối ví.
 
 ### 2.2. Ánh xạ biến màu Tailwind v4 (Color Mapping)
 Các biến dynamic này được biên dịch thành hệ màu chủ đạo của Tailwind CSS v4 thông qua `@theme`:
 ```css
---color-primary: var(--dynamic-primary, #ff00dd);
---color-secondary: var(--dynamic-secondary, #8000ff);
+--color-primary: var(--dynamic-primary, #006dd0);
+--color-secondary: var(--dynamic-secondary, #0d9488);
 
 /* Ghi đè hệ màu purple để các class Tailwind mặc định tự động đổi màu */
 --color-purple-50: color-mix(in srgb, var(--color-primary) 5%, white);

@@ -30,8 +30,8 @@ import { Component } from '@angular/core';
         <circle cx="50" cy="50" r="8" fill="url(#logo-grad-comp)" />
         <defs>
           <linearGradient id="logo-grad-comp" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="var(--color-primary, #ff00dd)" />
-            <stop offset="100%" stop-color="var(--color-secondary, #8000ff)" />
+            <stop offset="0%" stop-color="var(--color-primary, #006dd0)" />
+            <stop offset="100%" stop-color="var(--color-secondary, #0d9488)" />
           </linearGradient>
         </defs>
       </svg>
