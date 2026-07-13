@@ -115,51 +115,6 @@
     </div>
   }
 
-  <!-- 4. FUNDING_ROUND (TAO VONG GOI VON) -->
-  @if (newProposal.type === 'FUNDING_ROUND') {
-    <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20 space-y-3">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="form-field">
-          <label>Tên vòng gọi vốn</label>
-          <input
-            type="text"
-            [(ngModel)]="newProposal.fundingRoundParams.name"
-            placeholder="VD: Vòng Seed"
-            class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
-          />
-        </div>
-        <div class="form-field">
-          <label>Giá cổ phần (BNB)</label>
-          <input
-            type="text"
-            [(ngModel)]="newProposal.fundingRoundParams.share_price"
-            placeholder="VD: 0.001"
-            class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
-          />
-        </div>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="form-field">
-          <label>Số lượng chào bán</label>
-          <input
-            type="number"
-            [(ngModel)]="newProposal.fundingRoundParams.max_supply"
-            placeholder="VD: 100000"
-            class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
-          />
-        </div>
-        <div class="form-field">
-          <label>Thời gian bán (Ngày)</label>
-          <input
-            type="number"
-            [(ngModel)]="newProposal.fundingRoundParams.duration_days"
-            placeholder="VD: 30"
-            class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
-          />
-        </div>
-      </div>
-    </div>
-  }
 
   <!-- 5. ADD / REMOVE MEMBER HĐQT -->
   @if (newProposal.type === 'ADD_MEMBER' || newProposal.type === 'REMOVE_MEMBER') {

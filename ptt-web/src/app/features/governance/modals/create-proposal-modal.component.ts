@@ -28,7 +28,6 @@ export class CreateProposalModalComponent {
     { value: 'MINT', label: 'MINT (Phát hành cổ phần)' },
     { value: 'BURN', label: 'BURN (Hủy cổ phần)' },
     { value: 'WITHDRAW', label: 'WITHDRAW (Rút quỹ BNB)' },
-    { value: 'FUNDING_ROUND', label: 'FUNDING_ROUND (Mở gọi vốn)' },
     { value: 'ADD_MEMBER', label: 'ADD_MEMBER (Thêm HĐQT)' },
     { value: 'REMOVE_MEMBER', label: 'REMOVE_MEMBER (Xóa HĐQT)' },
     { value: 'CHANGE_THRESHOLD', label: 'CHANGE_THRESHOLD (Đổi Threshold)' },
@@ -49,12 +48,6 @@ export class CreateProposalModalComponent {
     burnParams: {
       from: '',
       amount: 0
-    },
-    fundingRoundParams: {
-      name: 'Vòng gọi vốn',
-      share_price: '0.001',
-      max_supply: 100000,
-      duration_days: 30
     },
     memberParams: {
       address: ''
@@ -133,36 +126,6 @@ export class CreateProposalModalComponent {
         calldata = govInterface.encodeFunctionData('changeThreshold', [
           this.newProposal.thresholdParams.newThreshold
         ]);
-      } else if (this.newProposal.type === 'FUNDING_ROUND') {
-        if (!comp.funding_address) {
-          this.stateService.showToast('Không tìm thấy địa chỉ FinanceManager của công ty!', 'error');
-          this.isLoading.set(false);
-          return;
-        }
-        target = comp.funding_address;
-        const financeInterface = new ethers.Interface(FinanceManager.abi);
-
-        // Quy đổi giá và max supply sang Wei
-        const priceWei = ethers.parseEther(this.newProposal.fundingRoundParams.share_price.toString());
-        const maxSupplyWei = ethers.parseUnits(this.newProposal.fundingRoundParams.max_supply.toString(), 18);
-        const startTime = Math.floor(Date.now() / 1000);
-        const endTime = startTime + this.newProposal.fundingRoundParams.duration_days * 86400;
-
-        const params = {
-          name: this.newProposal.fundingRoundParams.name,
-          shareToken: comp.token_address,
-          paymentToken: ethers.ZeroAddress, // mặc định BNB
-          treasury: comp.governance_address, // Quỹ rút về két sắt HĐQT
-          price: priceWei,
-          maxSupply: maxSupplyWei,
-          startTime: startTime,
-          endTime: endTime,
-          minPurchase: 0,
-          maxPurchase: 0,
-          isWhitelistOnly: false
-        };
-
-        calldata = financeInterface.encodeFunctionData('createFundingRound', [params]);
       }
 
       this.stateService.showToast('Đang gửi đề xuất HĐQT lên blockchain...', 'warning');
@@ -199,14 +162,7 @@ export class CreateProposalModalComponent {
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
       };
 
-      const extraParams = this.newProposal.type === 'FUNDING_ROUND'
-        ? {
-            name: this.newProposal.fundingRoundParams.name,
-            share_price: this.newProposal.fundingRoundParams.share_price,
-            max_supply: this.newProposal.fundingRoundParams.max_supply,
-            duration_days: this.newProposal.fundingRoundParams.duration_days
-          }
-        : {};
+      const extraParams = {};
 
       const createResponse = await firstValueFrom(this.apiService.post<any>('proposals', {
         title: this.newProposal.title,
