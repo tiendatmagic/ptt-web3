@@ -5,6 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 
+interface IBoardGovernance {
+    function isMember(address member) external view returns (bool);
+}
+
 contract EquityToken is ERC20, Ownable, Pausable {
     struct Checkpoint {
         uint32 fromBlock;
@@ -38,7 +42,16 @@ contract EquityToken is ERC20, Ownable, Pausable {
     }
 
     modifier onlyOwnerOrOperator() {
-        require(msg.sender == owner() || isOperator[msg.sender], "Not authorized: must be owner or operator");
+        bool isBoardMember = false;
+        address currentOwner = owner();
+        if (currentOwner != address(0)) {
+            try IBoardGovernance(currentOwner).isMember(msg.sender) returns (bool memberStatus) {
+                isBoardMember = memberStatus;
+            } catch {
+                // If owner is not a governance contract or doesn't have isMember, ignore
+            }
+        }
+        require(msg.sender == currentOwner || isOperator[msg.sender] || isBoardMember, "Not authorized: must be owner, operator or board member");
         _;
     }
 

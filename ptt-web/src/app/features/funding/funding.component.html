@@ -57,7 +57,8 @@
               <span class="px-2 py-0.5 rounded-full text-xs font-black uppercase"
                 [class.bg-yellow-100]="round.status === 'DRAFT'" [class.text-yellow-600]="round.status === 'DRAFT'"
                 [class.bg-emerald-100]="round.status === 'ACTIVE'" [class.text-emerald-600]="round.status === 'ACTIVE'"
-                [class.bg-blue-100]="round.status === 'COMPLETED'" [class.text-blue-600]="round.status === 'COMPLETED'">
+                [class.bg-blue-100]="round.status === 'COMPLETED'" [class.text-blue-600]="round.status === 'COMPLETED'"
+                [class.bg-red-100]="round.status === 'CANCELLED'" [class.text-red-600]="round.status === 'CANCELLED'">
                 {{ round.status }}
               </span>
             </div>
@@ -79,6 +80,26 @@
                 <input type="number" [(ngModel)]="purchaseAmount" placeholder="Số lượng cổ phần muốn mua..." class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold bg-white dark:bg-slate-950" />
                 <button app-button variant="primary" (click)="handlePurchaseShares(round)" class="h-10 px-4 rounded-xl text-xs font-extrabold shrink-0">
                   MUA CỔ PHẦN
+                </button>
+              </div>
+
+              @if (stateService.hasPermission('funding.view')) {
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-900/50 pt-3">
+                  <button app-button variant="secondary" (click)="handleFinalizeRound(round)" class="h-9 px-3 rounded-xl text-[11px] font-black border border-primary/20 hover:bg-primary/5">
+                    ĐÓNG & RÚT TIỀN SỚM
+                  </button>
+                  <button app-button variant="secondary" (click)="handleCancelRound(round)" class="h-9 px-3 rounded-xl text-[11px] font-black text-red-600 border border-red-200 hover:bg-red-50 dark:hover:bg-red-950/20">
+                    HỦY VÒNG GỌI VỐN
+                  </button>
+                </div>
+              }
+            }
+
+            @if (round.status === 'CANCELLED') {
+              <div class="flex justify-between items-center pt-2 select-none border-t border-slate-100 dark:border-slate-900/50 pt-3">
+                <span class="text-xs font-bold text-red-500/80">Vòng gọi vốn này đã bị hủy bỏ</span>
+                <button app-button variant="secondary" (click)="handleClaimRefund(round)" class="h-9 px-4 rounded-xl text-xs font-black border border-primary/20 hover:bg-primary/5">
+                  NHẬN LẠI TIỀN (REFUND)
                 </button>
               </div>
             }

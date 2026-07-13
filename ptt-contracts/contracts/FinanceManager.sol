@@ -27,6 +27,8 @@ contract FinanceManager is Ownable {
         uint256 maxPurchase;
         bool isWhitelistOnly;
         bool active;
+        bool finalized;
+        bool cancelled;
     }
 
     struct RoundParams {
@@ -60,6 +62,7 @@ contract FinanceManager is Ownable {
     mapping(uint256 => FundingRound) private _rounds;
     
     mapping(uint256 => mapping(address => uint256)) public investorPurchases;
+    mapping(uint256 => mapping(address => uint256)) public investorPayments;
     mapping(uint256 => mapping(address => bool)) public roundWhitelist;
 
     uint256 public dividendCount;
@@ -79,6 +82,9 @@ contract FinanceManager is Ownable {
 
     event OperatorUpdated(address indexed previousOperator, address indexed newOperator);
     event RoundPriceUpdated(uint256 indexed roundId, uint256 newPrice);
+    event RoundFinalized(uint256 indexed roundId, uint256 totalRaised, uint256 returnedShares);
+    event RoundCancelled(uint256 indexed roundId, uint256 returnedShares);
+    event RefundClaimed(uint256 indexed roundId, address indexed investor, uint256 shares, uint256 amount);
 
     modifier onlyOwnerOrOperator() {
         require(msg.sender == owner() || msg.sender == operator, "Not owner or operator");
@@ -130,7 +136,9 @@ contract FinanceManager is Ownable {
             minPurchase: p.minPurchase,
             maxPurchase: p.maxPurchase,
             isWhitelistOnly: p.isWhitelistOnly,
-            active: true
+            active: true,
+            finalized: false,
+            cancelled: false
         });
 
         emit RoundCreated(roundId, p.name, p.price);
@@ -157,7 +165,6 @@ contract FinanceManager is Ownable {
 
     function _processPayment(
         address paymentToken,
-        address treasury,
         uint256 cost
     ) private {
         if (paymentToken == address(0)) {
@@ -166,13 +173,11 @@ contract FinanceManager is Ownable {
                 (bool refundSuccess, ) = payable(msg.sender).call{value: msg.value - cost}("");
                 require(refundSuccess, "Refund failed");
             }
-            (bool treasurySuccess, ) = treasury.call{value: cost}("");
-            require(treasurySuccess, "BNB transfer to treasury failed");
         } else {
             require(msg.value == 0, "Do not send BNB for token payment");
             IERC20 token = IERC20(paymentToken);
             require(token.balanceOf(msg.sender) >= cost, "Insufficient stablecoin balance");
-            require(token.transferFrom(msg.sender, treasury, cost), "Token transfer to treasury failed");
+            require(token.transferFrom(msg.sender, address(this), cost), "Token transfer to contract failed");
         }
     }
 
@@ -192,6 +197,7 @@ contract FinanceManager is Ownable {
         
         {
             require(_rounds[roundId].active, "Round not active");
+            require(!_rounds[roundId].finalized && !_rounds[roundId].cancelled, "Round finished or cancelled");
             require(block.timestamp >= _rounds[roundId].startTime, "Round not started");
             require(block.timestamp <= _rounds[roundId].endTime, "Round ended");
             require(_rounds[roundId].soldAmount + tokenAmount <= _rounds[roundId].maxSupply, "Exceeds round max supply");
@@ -226,12 +232,94 @@ contract FinanceManager is Ownable {
         require(cost > 0, "Cost is too small");
 
         _rounds[roundId].soldAmount += tokenAmount;
+        investorPayments[roundId][msg.sender] += cost;
 
-        _processPayment(_rounds[roundId].paymentToken, _rounds[roundId].treasury, cost);
+        _processPayment(_rounds[roundId].paymentToken, cost);
 
         require(IERC20(_rounds[roundId].shareToken).transfer(msg.sender, tokenAmount), "Share transfer to investor failed");
 
         emit SharesPurchased(roundId, msg.sender, tokenAmount, cost);
+    }
+
+    function finalizeFundingRound(uint256 roundId) external onlyOwner {
+        require(roundId <= roundCount && roundId > 0, "Round does not exist");
+        FundingRound storage round = _rounds[roundId];
+        require(round.active, "Round is not active");
+        require(!round.finalized && !round.cancelled, "Round already finalized or cancelled");
+
+        round.active = false;
+        round.finalized = true;
+
+        uint256 cost = (round.soldAmount * round.price) / 1e18;
+
+        if (cost > 0) {
+            if (round.paymentToken == address(0)) {
+                (bool success, ) = round.treasury.call{value: cost}("");
+                require(success, "BNB transfer to treasury failed");
+            } else {
+                IERC20 token = IERC20(round.paymentToken);
+                require(token.transfer(round.treasury, cost), "Token transfer to treasury failed");
+            }
+        }
+
+        uint256 remainingShares = round.maxSupply - round.soldAmount;
+        if (remainingShares > 0) {
+            require(
+                IERC20(round.shareToken).transfer(round.treasury, remainingShares),
+                "Remaining share transfer failed"
+            );
+        }
+
+        emit RoundFinalized(roundId, cost, remainingShares);
+    }
+
+    function cancelFundingRound(uint256 roundId) external onlyOwner {
+        require(roundId <= roundCount && roundId > 0, "Round does not exist");
+        FundingRound storage round = _rounds[roundId];
+        require(round.active, "Round is not active");
+        require(!round.finalized && !round.cancelled, "Round already finalized or cancelled");
+
+        round.active = false;
+        round.cancelled = true;
+
+        uint256 remainingShares = round.maxSupply - round.soldAmount;
+        if (remainingShares > 0) {
+            require(
+                IERC20(round.shareToken).transfer(round.treasury, remainingShares),
+                "Remaining share transfer failed"
+            );
+        }
+
+        emit RoundCancelled(roundId, remainingShares);
+    }
+
+    function claimRefund(uint256 roundId) external {
+        require(roundId <= roundCount && roundId > 0, "Round does not exist");
+        FundingRound storage round = _rounds[roundId];
+        require(round.cancelled, "Round is not cancelled");
+
+        uint256 shares = investorPurchases[roundId][msg.sender];
+        uint256 payment = investorPayments[roundId][msg.sender];
+
+        require(shares > 0 && payment > 0, "No investment to refund");
+
+        investorPurchases[roundId][msg.sender] = 0;
+        investorPayments[roundId][msg.sender] = 0;
+
+        require(
+            IERC20(round.shareToken).transferFrom(msg.sender, round.treasury, shares),
+            "Share return failed"
+        );
+
+        if (round.paymentToken == address(0)) {
+            (bool success, ) = payable(msg.sender).call{value: payment}("");
+            require(success, "BNB refund failed");
+        } else {
+            IERC20 token = IERC20(round.paymentToken);
+            require(token.transfer(msg.sender, payment), "Token refund failed");
+        }
+
+        emit RefundClaimed(roundId, msg.sender, shares, payment);
     }
 
     function createDividendRound(

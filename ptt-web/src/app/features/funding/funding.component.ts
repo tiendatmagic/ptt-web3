@@ -15,8 +15,13 @@ import { CreateRoundProposalModalComponent } from './modals/create-round-proposa
 // ABI rút gọn của FinanceManager để quản lý Gọi vốn & Cổ tức
 const FINANCE_MANAGER_ABI = [
   "function buyShares(uint256 roundId, uint256 tokenAmount) external payable",
-  "function rounds(uint256 roundId) external view returns (tuple(uint256 id, string name, address shareToken, address paymentToken, address treasury, uint256 price, uint256 maxSupply, uint256 soldAmount, uint256 startTime, uint256 endTime, uint256 minPurchase, uint256 maxPurchase, bool isWhitelistOnly, bool active))",
-  "function claimDividend(uint256 dividendId) external"
+  "function rounds(uint256 roundId) external view returns (tuple(uint256 id, string name, address shareToken, address paymentToken, address treasury, uint256 price, uint256 maxSupply, uint256 soldAmount, uint256 startTime, uint256 endTime, uint256 minPurchase, uint256 maxPurchase, bool isWhitelistOnly, bool active, bool finalized, bool cancelled))",
+  "function claimDividend(uint256 dividendId) external",
+  "function finalizeFundingRound(uint256 roundId) external",
+  "function cancelFundingRound(uint256 roundId) external",
+  "function claimRefund(uint256 roundId) external",
+  "function investorPurchases(uint256 roundId, address investor) external view returns (uint256)",
+  "function investorPayments(uint256 roundId, address investor) external view returns (uint256)"
 ];
 
 // ABI rút gọn của ERC20 để xử lý phê duyệt (approve)
@@ -180,6 +185,156 @@ export class FundingComponent implements OnInit {
     } catch (e: any) {
       console.error(e);
       this.stateService.showToast(e.message || 'Lỗi giao dịch hoặc từ chối thanh toán!', 'error');
+    } finally {
+      this.stateService.isLoading.set(false);
+    }
+  }
+
+  // Đóng sớm và rút tiền về ví Quỹ của doanh nghiệp
+  public async handleFinalizeRound(round: any) {
+    if (!confirm(`Bạn có chắc chắn muốn kết thúc sớm vòng gọi vốn "${round.name}" và rút toàn bộ số tiền đã huy động được về ví quỹ doanh nghiệp?`)) {
+      return;
+    }
+
+    const comp = this.stateService.currentCompany();
+    if (!comp || !comp.funding_address) return;
+
+    try {
+      this.stateService.isLoading.set(true);
+      this.stateService.showToast('Đang kết nối ví gửi giao dịch hoàn tất sớm...', 'warning');
+
+      const signer = await this.stateService.getSigner();
+      const financeContract = new Contract(comp.funding_address, FINANCE_MANAGER_ABI, signer);
+      const gasOverrides = await this.stateService.getGasOverrides(signer);
+
+      const tx = await financeContract['finalizeFundingRound'](round.id, gasOverrides);
+      this.stateService.showToast('Giao dịch đang chờ xác nhận...', 'warning');
+      await tx.wait();
+
+      this.stateService.showToast('Đóng sớm vòng gọi vốn thành công! Đang đồng bộ trạng thái...', 'warning');
+
+      // Đồng bộ Backend: đặt trạng thái thành COMPLETED
+      // Lấy soldAmount từ contract để cập nhật raisedAmount chính xác
+      const updatedRoundInfo = await financeContract['rounds'](round.id);
+      const soldAmount = updatedRoundInfo.soldAmount;
+      const price = updatedRoundInfo.price;
+      const paymentToken = updatedRoundInfo.paymentToken;
+      const raisedWei = (BigInt(soldAmount) * BigInt(price)) / 1000000000000000000n;
+
+      let raisedEth = 0;
+      if (paymentToken !== ethers.ZeroAddress) {
+        const tokenContract = new Contract(paymentToken, ERC20_ABI, signer);
+        const tokenDecimals = await tokenContract['decimals']();
+        raisedEth = Number(ethers.formatUnits(raisedWei, tokenDecimals));
+      } else {
+        raisedEth = Number(ethers.formatEther(raisedWei));
+      }
+
+      await firstValueFrom(
+        this.apiService.post<any>(`funding/${round.id}/sync`, {
+          raised_amount: raisedEth,
+          status: 'COMPLETED'
+        }, comp.id)
+      );
+
+      this.stateService.showToast('Đã hoàn tất sớm và rút tiền thành công!', 'success');
+      await this.loadFundingData();
+    } catch (e: any) {
+      console.error(e);
+      this.stateService.showToast(e.message || 'Lỗi giao dịch hoàn tất sớm!', 'error');
+    } finally {
+      this.stateService.isLoading.set(false);
+    }
+  }
+
+  // Hủy vòng gọi vốn và thu hồi cổ phần
+  public async handleCancelRound(round: any) {
+    if (!confirm(`CẢNH BÁO: Bạn có chắc chắn muốn HỦY vòng gọi vốn "${round.name}"? Hành động này sẽ cho phép toàn bộ nhà đầu tư rút lại tiền đã nạp và thu hồi cổ phần về quỹ doanh nghiệp.`)) {
+      return;
+    }
+
+    const comp = this.stateService.currentCompany();
+    if (!comp || !comp.funding_address) return;
+
+    try {
+      this.stateService.isLoading.set(true);
+      this.stateService.showToast('Đang kết nối ví gửi giao dịch hủy vòng gọi vốn...', 'warning');
+
+      const signer = await this.stateService.getSigner();
+      const financeContract = new Contract(comp.funding_address, FINANCE_MANAGER_ABI, signer);
+      const gasOverrides = await this.stateService.getGasOverrides(signer);
+
+      const tx = await financeContract['cancelFundingRound'](round.id, gasOverrides);
+      this.stateService.showToast('Giao dịch đang chờ xác nhận...', 'warning');
+      await tx.wait();
+
+      this.stateService.showToast('Đã hủy vòng gọi vốn trên Blockchain! Đang đồng bộ trạng thái...', 'warning');
+
+      // Đồng bộ Backend: đặt trạng thái thành CANCELLED
+      await firstValueFrom(
+        this.apiService.post<any>(`funding/${round.id}/sync`, {
+          raised_amount: round.raised_amount,
+          status: 'CANCELLED'
+        }, comp.id)
+      );
+
+      this.stateService.showToast('Đã hủy vòng gọi vốn thành công!', 'success');
+      await this.loadFundingData();
+    } catch (e: any) {
+      console.error(e);
+      this.stateService.showToast(e.message || 'Lỗi giao dịch hủy vòng gọi vốn!', 'error');
+    } finally {
+      this.stateService.isLoading.set(false);
+    }
+  }
+
+  // Nhận lại tiền hoàn trả (Refund)
+  public async handleClaimRefund(round: any) {
+    const comp = this.stateService.currentCompany();
+    if (!comp || !comp.funding_address) return;
+
+    try {
+      this.stateService.isLoading.set(true);
+      this.stateService.showToast('Đang kết nối ví kiểm tra thông tin đầu tư...', 'warning');
+
+      const signer = await this.stateService.getSigner();
+      const userAddress = await signer.getAddress();
+      const financeContract = new Contract(comp.funding_address, FINANCE_MANAGER_ABI, signer);
+
+      const shares = await financeContract['investorPurchases'](round.id, userAddress);
+      const payment = await financeContract['investorPayments'](round.id, userAddress);
+
+      if (BigInt(shares) === 0n || BigInt(payment) === 0n) {
+        this.stateService.showToast('Bạn không có khoản đầu tư nào để hoàn trả trong vòng gọi vốn này!', 'error');
+        return;
+      }
+
+      const updatedRoundInfo = await financeContract['rounds'](round.id);
+      const shareToken = updatedRoundInfo.shareToken;
+      const paymentToken = updatedRoundInfo.paymentToken;
+
+      const gasOverrides = await this.stateService.getGasOverrides(signer);
+
+      this.stateService.showToast('Vui lòng phê duyệt (Approve) trả lại token cổ phần cho contract...', 'warning');
+      const shareTokenContract = new Contract(shareToken, ERC20_ABI, signer);
+      
+      const allowance = await shareTokenContract['allowance'](userAddress, comp.funding_address);
+      if (BigInt(allowance) < BigInt(shares)) {
+        const approveTx = await shareTokenContract['approve'](comp.funding_address, shares, gasOverrides);
+        await approveTx.wait();
+        this.stateService.showToast('Phê duyệt thành công! Tiến hành nhận lại tiền hoàn trả...', 'warning');
+      }
+
+      this.stateService.showToast('Đang gửi giao dịch rút tiền hoàn trả...', 'warning');
+      const tx = await financeContract['claimRefund'](round.id, gasOverrides);
+      this.stateService.showToast('Giao dịch đang chờ xác nhận...', 'warning');
+      await tx.wait();
+
+      this.stateService.showToast('Hoàn tiền thành công! Tiền thanh toán đã được chuyển về ví của bạn.', 'success');
+      await this.loadFundingData();
+    } catch (e: any) {
+      console.error(e);
+      this.stateService.showToast(e.message || 'Lỗi thực thi giao dịch nhận lại tiền hoàn trả!', 'error');
     } finally {
       this.stateService.isLoading.set(false);
     }
