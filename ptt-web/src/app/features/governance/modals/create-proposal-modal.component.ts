@@ -42,6 +42,11 @@ export class CreateProposalModalComponent {
     { value: 'UNPAUSE_TOKEN', label: 'Mở khóa giao dịch cổ phần', parentGroup: 'GRP3' }
   ];
 
+  public nftTypes = [
+    { value: 'ERC721', label: 'ERC-721 (Single NFT)' },
+    { value: 'ERC1155', label: 'ERC-1155 (Multi-token NFT)' }
+  ];
+
   public newProposal = {
     title: '',
     description: '',

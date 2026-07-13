@@ -162,13 +162,14 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
       <div class="form-field">
         <label>Chuẩn NFT</label>
-        <select
-          [(ngModel)]="newProposal.withdrawNftParams.nftType"
-          class="w-full h-[42px] px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs font-semibold outline-none focus:border-violet-500 text-slate-800 dark:text-slate-100"
-        >
-          <option value="ERC721">ERC-721 (Single NFT)</option>
-          <option value="ERC1155">ERC-1155 (Multi-token NFT)</option>
-        </select>
+        <app-custom-select
+          [options]="nftTypes"
+          valueKey="value"
+          labelKey="label"
+          [(value)]="newProposal.withdrawNftParams.nftType"
+          placeholder="Chọn chuẩn NFT..."
+          triggerClass="w-full form-input !h-[42px] !bg-slate-50 !border-slate-200/40 dark:!bg-slate-900 dark:!border-slate-800 text-sm"
+        />
       </div>
       <div class="form-field">
         <label>Địa chỉ contract NFT</label>
