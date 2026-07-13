@@ -25,14 +25,19 @@ export class CreateProposalModalComponent {
   public isLoading = signal(false);
 
   public proposalTypes = [
-    { value: 'MINT', label: 'Phát hành cổ phần' },
-    { value: 'BURN', label: 'Hủy cổ phần' },
-    { value: 'WITHDRAW', label: 'Rút quỹ BNB' },
-    { value: 'ADD_MEMBER', label: 'Thêm thành viên HĐQT' },
-    { value: 'REMOVE_MEMBER', label: 'Xóa thành viên HĐQT' },
-    { value: 'CHANGE_THRESHOLD', label: 'Thay đổi số chữ ký duyệt đề xuất' },
-    { value: 'PAUSE_TOKEN', label: 'Khóa giao dịch cổ phần' },
-    { value: 'UNPAUSE_TOKEN', label: 'Mở khóa giao dịch cổ phần' }
+    { value: 'GRP1', label: 'Cổ phần & Quỹ doanh nghiệp', isHeader: true },
+    { value: 'MINT', label: 'Phát hành cổ phần', parentGroup: 'GRP1' },
+    { value: 'BURN', label: 'Hủy cổ phần', parentGroup: 'GRP1' },
+    { value: 'WITHDRAW', label: 'Rút quỹ BNB', parentGroup: 'GRP1' },
+    
+    { value: 'GRP2', label: 'Thành viên & Biểu quyết', isHeader: true },
+    { value: 'ADD_MEMBER', label: 'Thêm thành viên HĐQT', parentGroup: 'GRP2' },
+    { value: 'REMOVE_MEMBER', label: 'Xóa thành viên HĐQT', parentGroup: 'GRP2' },
+    { value: 'CHANGE_THRESHOLD', label: 'Thay đổi số chữ ký duyệt đề xuất', parentGroup: 'GRP2' },
+    
+    { value: 'GRP3', label: 'Trạng thái chuyển nhượng', isHeader: true },
+    { value: 'PAUSE_TOKEN', label: 'Khóa giao dịch cổ phần', parentGroup: 'GRP3' },
+    { value: 'UNPAUSE_TOKEN', label: 'Mở khóa giao dịch cổ phần', parentGroup: 'GRP3' }
   ];
 
   public newProposal = {
