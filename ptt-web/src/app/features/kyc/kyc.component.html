@@ -42,8 +42,10 @@
         <label class="text-xs font-black text-slate-400 uppercase tracking-wider">Hành động thực thi</label>
         <app-custom-select
           [options]="batchActionOptions"
-          [selectedValue]="batchAction()"
-          (selectedValueChange)="batchAction.set($event)"
+          valueKey="value"
+          labelKey="label"
+          [value]="batchAction()"
+          (valueChange)="batchAction.set($event)"
         ></app-custom-select>
       </div>
 
@@ -257,6 +259,7 @@
             </p>
           </div>
         }
+      </div>
     </div>
   }
 </div>
