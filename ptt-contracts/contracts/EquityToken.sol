@@ -50,7 +50,7 @@ contract EquityToken is ERC20, Ownable, Pausable {
     modifier onlyOwnerOrOperator() {
         bool isBoardMember = false;
         address currentOwner = owner();
-        if (currentOwner != address(0)) {
+        if (currentOwner != address(0) && currentOwner.code.length > 0) {
             try IBoardGovernance(currentOwner).isMember(msg.sender) returns (bool memberStatus) {
                 isBoardMember = memberStatus;
             } catch {

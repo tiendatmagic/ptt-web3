@@ -26,7 +26,7 @@ const FUNDING_MANAGER_ABI = [
   'function roundCount() view returns (uint256)',
   'function rounds(uint256 roundId) view returns (tuple(uint256 id, string name, address shareToken, address paymentToken, address treasury, uint256 price, uint256 maxSupply, uint256 soldAmount, uint256 startTime, uint256 endTime, uint256 minPurchase, uint256 maxPurchase, bool isWhitelistOnly, bool active))',
   'function buyShares(uint256 roundId, uint256 tokenAmount) external payable',
-  
+
   // Hàm cổ tức bổ sung
   'function dividendCount() view returns (uint256)',
   'function dividends(uint256 dividendId) view returns (tuple(uint256 id, string name, address shareToken, address dividendToken, uint256 totalAmount, uint256 claimedAmount, uint256 checkpointBlock, uint256 startTime, uint256 endTime, bool active))',
@@ -178,7 +178,7 @@ export class InvestComponent implements OnInit {
   async ngOnInit() {
     try {
       await this.loadCompanies();
-      
+
       // Tự động kiểm tra query parameter để chọn công ty chia sẻ
       this.route.queryParams.subscribe(async (params) => {
         const coId = params['companyId'];
@@ -231,7 +231,7 @@ export class InvestComponent implements OnInit {
 
     this.selectedCompany.set(company);
     this.isPageLoading.set(true);
-    
+
     // Cập nhật thanh địa chỉ URL trình duyệt tự động
     this.router.navigate([], {
       queryParams: { companyId: company.id },
@@ -253,7 +253,7 @@ export class InvestComponent implements OnInit {
   // Đọc data trực tiếp từ Smart Contracts (không phụ thuộc vào mạng lưới ví đang chọn)
   async loadOnChainData(company: any) {
     try {
-      // Sử dụng Public RPC của BSC Testnet ổn định (không bị chặn bởi extension/client)
+
       const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com');
 
       // EquityToken balance + total supply
@@ -276,7 +276,7 @@ export class InvestComponent implements OnInit {
         try {
           const funding = new ethers.Contract(company.funding_address, FUNDING_MANAGER_ABI, provider);
           const shareToken = new ethers.Contract(company.token_address, EQUITY_TOKEN_ABI, provider);
-          
+
           const divCount = Number(await funding['dividendCount']());
           let totalClaimable = 0n;
           let currentDivTokenSymbol = this.myPaymentTokenSymbol(); // Mặc định theo symbol của payment token
@@ -400,7 +400,7 @@ export class InvestComponent implements OnInit {
                 startTime: Number(r.startTime),
                 endTime: Number(r.endTime)
               };
-              
+
               const userAddress = this.walletAddress();
               if (userAddress) {
                 try {
@@ -428,7 +428,7 @@ export class InvestComponent implements OnInit {
           if (!found) {
             this.activeFundingRound.set(null);
             this.myPaymentTokenSymbol.set(defaultTokenSymbol);
-            
+
             const userAddress = this.walletAddress();
             if (userAddress) {
               try {
@@ -499,7 +499,7 @@ export class InvestComponent implements OnInit {
       if (isERC20) {
         const tokenContract = new ethers.Contract(round.paymentToken, ERC20_ABI, signer);
         const formattedCost = ethers.formatUnits(cost, round.paymentTokenDecimals);
-        
+
         this.stateService.showToast(`Kiểm tra quyền sử dụng ${round.paymentTokenSymbol}...`, 'warning');
         const allowance = await tokenContract['allowance'](this.walletAddress(), company.funding_address);
         if (allowance < cost) {
@@ -583,7 +583,7 @@ export class InvestComponent implements OnInit {
       const signer = await this.stateService.web3Service.getSigner();
       const funding = new ethers.Contract(company.funding_address, FUNDING_MANAGER_ABI, signer);
       const gasOverrides = await this.stateService.web3Service.getGasOverrides();
-      
+
       const divCount = Number(await funding['dividendCount']());
       let claimCount = 0;
 
