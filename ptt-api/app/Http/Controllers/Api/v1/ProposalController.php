@@ -77,7 +77,7 @@ class ProposalController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'type' => 'required|string|in:MINT,BURN,WITHDRAW,DIVIDEND,FUNDING_ROUND,CONFIG',
+            'type' => 'required|string|in:MINT,BURN,WITHDRAW,DIVIDEND,FUNDING_ROUND,CONFIG,ADD_MEMBER,REMOVE_MEMBER,CHANGE_THRESHOLD,PAUSE_TOKEN,UNPAUSE_TOKEN',
             'params' => 'nullable|array',
             'expiration_date' => 'nullable|date|after:now',
         ]);
