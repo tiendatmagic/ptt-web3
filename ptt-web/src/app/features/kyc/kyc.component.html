@@ -94,6 +94,212 @@
         </button>
       </div>
     </div>
+  } @else if (activeFilter() === 'ONCHAIN_LISTS') {
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
+      <!-- BLOCK 1: WHITELIST ON-CHAIN -->
+      <div
+        class="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm space-y-4 flex flex-col justify-between"
+      >
+        <div class="space-y-4">
+          <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-900/60 pb-3">
+            <div>
+              <h2
+                class="text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5"
+              >
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                Whitelist On-chain
+              </h2>
+              <p class="text-[11px] text-slate-400 mt-0.5">Tổng số: {{ whitelistTotal() }} ví được Whitelist</p>
+            </div>
+            <button
+              (click)="loadOnchainLists()"
+              class="p-1.5 text-slate-400 hover:text-[var(--color-primary)] transition-colors"
+              title="Làm mới"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 12h-2.12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto border border-slate-100 dark:border-slate-900 rounded-xl">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr
+                  class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 font-bold uppercase tracking-wider select-none"
+                >
+                  <th class="p-3 pl-4">Địa chỉ ví</th>
+                  <th class="p-3 pr-4 text-right">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (addr of onchainWhitelist(); track addr) {
+                  <tr
+                    class="border-t border-slate-100 dark:border-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
+                  >
+                    <td class="p-3 pl-4 font-mono text-slate-600 dark:text-slate-300">{{ addr }}</td>
+                    <td class="p-3 pr-4 text-right">
+                      <button
+                        (click)="stateService.copyToClipboard(addr, 'Đã sao chép địa chỉ ví!')"
+                        class="text-slate-400 hover:text-[var(--color-primary)] transition-colors"
+                        title="Sao chép ví"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2.5"
+                            d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                          />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="2" class="p-10 text-center text-slate-400">Không có ví nào trong Whitelist.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- PHÂN TRANG WHITELIST -->
+        @if (whitelistTotal() > pageSize) {
+          <div class="pt-3 border-t border-slate-100 dark:border-slate-900/60 flex items-center justify-between">
+            <span class="text-[11px] text-slate-400">Trang {{ whitelistPage() }} / {{ totalWhitelistPages() }}</span>
+            <div class="flex items-center gap-1">
+              <button
+                [disabled]="whitelistPage() === 1"
+                (click)="onWlPageChange(whitelistPage() - 1)"
+                class="p-1 border border-slate-200 dark:border-slate-800 rounded hover:bg-slate-50 disabled:opacity-40"
+              >
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                [disabled]="whitelistPage() >= totalWhitelistPages()"
+                (click)="onWlPageChange(whitelistPage() + 1)"
+                class="p-1 border border-slate-200 dark:border-slate-800 rounded hover:bg-slate-50 disabled:opacity-40"
+              >
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- BLOCK 2: BLACKLIST ON-CHAIN -->
+      <div
+        class="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm space-y-4 flex flex-col justify-between"
+      >
+        <div class="space-y-4">
+          <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-900/60 pb-3">
+            <div>
+              <h2
+                class="text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5"
+              >
+                <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                Blacklist On-chain
+              </h2>
+              <p class="text-[11px] text-slate-400 mt-0.5">Tổng số: {{ blacklistTotal() }} ví bị Blacklist</p>
+            </div>
+            <button
+              (click)="loadOnchainLists()"
+              class="p-1.5 text-slate-400 hover:text-[var(--color-primary)] transition-colors"
+              title="Làm mới"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 12h-2.12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto border border-slate-100 dark:border-slate-900 rounded-xl">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr
+                  class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 font-bold uppercase tracking-wider select-none"
+                >
+                  <th class="p-3 pl-4">Địa chỉ ví</th>
+                  <th class="p-3 pr-4 text-right">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (addr of onchainBlacklist(); track addr) {
+                  <tr
+                    class="border-t border-slate-100 dark:border-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
+                  >
+                    <td class="p-3 pl-4 font-mono text-slate-600 dark:text-slate-300">{{ addr }}</td>
+                    <td class="p-3 pr-4 text-right">
+                      <button
+                        (click)="stateService.copyToClipboard(addr, 'Đã sao chép địa chỉ ví!')"
+                        class="text-slate-400 hover:text-[var(--color-primary)] transition-colors"
+                        title="Sao chép ví"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2.5"
+                            d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                          />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="2" class="p-10 text-center text-slate-400">Không có ví nào trong Blacklist.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- PHÂN TRANG BLACKLIST -->
+        @if (blacklistTotal() > pageSize) {
+          <div class="pt-3 border-t border-slate-100 dark:border-slate-900/60 flex items-center justify-between">
+            <span class="text-[11px] text-slate-400">Trang {{ blacklistPage() }} / {{ totalBlacklistPages() }}</span>
+            <div class="flex items-center gap-1">
+              <button
+                [disabled]="blacklistPage() === 1"
+                (click)="onBlPageChange(blacklistPage() - 1)"
+                class="p-1 border border-slate-200 dark:border-slate-800 rounded hover:bg-slate-50 disabled:opacity-40"
+              >
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                [disabled]="blacklistPage() >= totalBlacklistPages()"
+                (click)="onBlPageChange(blacklistPage() + 1)"
+                class="p-1 border border-slate-200 dark:border-slate-800 rounded hover:bg-slate-50 disabled:opacity-40"
+              >
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
   } @else {
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- DANH SÁCH KYC -->

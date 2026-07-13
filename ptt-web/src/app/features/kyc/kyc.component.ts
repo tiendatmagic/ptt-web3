@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, effect } from '@angular/core';
+import { Component, OnInit, inject, signal, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '@core/services/state.service';
@@ -9,6 +9,7 @@ import { TabGroupComponent } from '@shared/components/tab-group/tab-group.compon
 import { CustomSelectComponent } from '@shared/components/custom-select/custom-select.component';
 import { firstValueFrom } from 'rxjs';
 import { Contract, ethers } from 'ethers';
+import { EquityToken } from '../../core/constants/contracts';
 
 @Component({
   selector: 'app-kyc',
@@ -26,10 +27,23 @@ export class KycComponent implements OnInit {
     { value: 'PENDING', label: 'Chờ duyệt' },
     { value: 'APPROVED', label: 'Đã duyệt' },
     { value: 'REJECTED', label: 'Từ chối' },
-    { value: 'BATCH_MANAGE', label: 'Duyệt hàng loạt' }
+    { value: 'BATCH_MANAGE', label: 'Duyệt hàng loạt' },
+    { value: 'ONCHAIN_LISTS', label: 'Danh sách On-chain' }
   ];
   public selectedUser = signal<any | null>(null);
   public rejectionReason = '';
+
+  // Danh sách on-chain whitelist & blacklist
+  public onchainWhitelist = signal<string[]>([]);
+  public onchainBlacklist = signal<string[]>([]);
+  public whitelistTotal = signal<number>(0);
+  public blacklistTotal = signal<number>(0);
+  public whitelistPage = signal<number>(1);
+  public blacklistPage = signal<number>(1);
+  public readonly pageSize = 10;
+
+  public totalWhitelistPages = computed(() => Math.ceil(this.whitelistTotal() / this.pageSize));
+  public totalBlacklistPages = computed(() => Math.ceil(this.blacklistTotal() / this.pageSize));
 
   // Whitelist/Blacklist hàng loạt
   public batchAddressesInput = signal<string>('');
@@ -47,9 +61,14 @@ export class KycComponent implements OnInit {
       const comp = this.stateService.currentCompany();
       if (comp) {
         this.loadKycList();
+        this.loadOnchainLists();
       } else {
         this.kycList.set([]);
         this.selectedUser.set(null);
+        this.onchainWhitelist.set([]);
+        this.onchainBlacklist.set([]);
+        this.whitelistTotal.set(0);
+        this.blacklistTotal.set(0);
       }
     }, { allowSignalWrites: true });
   }
@@ -75,6 +94,40 @@ export class KycComponent implements OnInit {
     }
   }
 
+  public async loadOnchainLists() {
+    const comp = this.stateService.currentCompany();
+    if (!comp || !comp.token_address || comp.token_address === '—') return;
+
+    try {
+      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com');
+      const tokenContract = new Contract(comp.token_address, EquityToken.abi, provider);
+
+      // 1. Load Whitelist Page
+      const wlOffset = (this.whitelistPage() - 1) * this.pageSize;
+      const [wlResult, wlTotal] = await tokenContract['getWhitelistedAddresses'](wlOffset, this.pageSize);
+      this.onchainWhitelist.set(wlResult || []);
+      this.whitelistTotal.set(Number(wlTotal));
+
+      // 2. Load Blacklist Page
+      const blOffset = (this.blacklistPage() - 1) * this.pageSize;
+      const [blResult, blTotal] = await tokenContract['getBlacklistedAddresses'](blOffset, this.pageSize);
+      this.onchainBlacklist.set(blResult || []);
+      this.blacklistTotal.set(Number(blTotal));
+    } catch (e) {
+      console.error('Lỗi load danh sách onchain whitelist/blacklist:', e);
+    }
+  }
+
+  public onWlPageChange(page: number) {
+    this.whitelistPage.set(page);
+    this.loadOnchainLists();
+  }
+
+  public onBlPageChange(page: number) {
+    this.blacklistPage.set(page);
+    this.loadOnchainLists();
+  }
+
   public setFilter(status: string) {
     this.activeFilter.set(status);
     this.selectedUser.set(null);
@@ -91,6 +144,7 @@ export class KycComponent implements OnInit {
       this.stateService.showToast('Duyệt KYC thành công! Địa chỉ ví đã được Whitelist lên Blockchain.', 'success');
       this.selectedUser.set(null);
       await this.loadKycList();
+      await this.loadOnchainLists();
     } catch (e: any) {
       this.stateService.showToast(e.error?.message || 'Lỗi xử lý duyệt KYC!', 'error');
     } finally {
@@ -196,6 +250,7 @@ export class KycComponent implements OnInit {
 
       this.stateService.showToast(`Đã cập nhật và đồng bộ hàng loạt thành công cho ${uniqueAddresses.length} địa chỉ ví!`, 'success');
       this.batchAddressesInput.set('');
+      await this.loadOnchainLists();
     } catch (e: any) {
       console.error(e);
       this.stateService.showToast(e.message || 'Lỗi xử lý giao dịch hoặc đồng bộ database!', 'error');

@@ -856,6 +856,12 @@ contract EquityToken is ERC20, Ownable, Pausable {
 
     mapping(address => bool) public isWhitelisted;
     mapping(address => bool) public isBlacklisted;
+
+    address[] public whitelistAddresses;
+    address[] public blacklistAddresses;
+
+    mapping(address => uint256) private _whitelistAddressIndex;
+    mapping(address => uint256) private _blacklistAddressIndex;
     
     mapping(address => bool) public isOperator;
     
@@ -895,6 +901,8 @@ contract EquityToken is ERC20, Ownable, Pausable {
         address initialOwner
     ) ERC20(name, symbol) Ownable(initialOwner) {
         isWhitelisted[initialOwner] = true;
+        _whitelistAddressIndex[initialOwner] = whitelistAddresses.length;
+        whitelistAddresses.push(initialOwner);
     }
 
     function mint(address to, uint256 amount) external onlyMinterOrOwner whenNotPaused {
@@ -918,28 +926,128 @@ contract EquityToken is ERC20, Ownable, Pausable {
         emit OperatorStatusUpdated(operator, status);
     }
 
+    function _addWhitelist(address account) private {
+        if (!isWhitelisted[account]) {
+            isWhitelisted[account] = true;
+            _whitelistAddressIndex[account] = whitelistAddresses.length;
+            whitelistAddresses.push(account);
+            emit WhitelistedUpdated(account, true);
+        }
+    }
+
+    function _removeWhitelist(address account) private {
+        if (isWhitelisted[account]) {
+            isWhitelisted[account] = false;
+            uint256 indexToDelete = _whitelistAddressIndex[account];
+            uint256 lastIndex = whitelistAddresses.length - 1;
+            address lastAddress = whitelistAddresses[lastIndex];
+
+            whitelistAddresses[indexToDelete] = lastAddress;
+            _whitelistAddressIndex[lastAddress] = indexToDelete;
+
+            whitelistAddresses.pop();
+            delete _whitelistAddressIndex[account];
+            emit WhitelistedUpdated(account, false);
+        }
+    }
+
+    function _addBlacklist(address account) private {
+        if (!isBlacklisted[account]) {
+            isBlacklisted[account] = true;
+            _blacklistAddressIndex[account] = blacklistAddresses.length;
+            blacklistAddresses.push(account);
+            emit BlacklistedUpdated(account, true);
+        }
+    }
+
+    function _removeBlacklist(address account) private {
+        if (isBlacklisted[account]) {
+            isBlacklisted[account] = false;
+            uint256 indexToDelete = _blacklistAddressIndex[account];
+            uint256 lastIndex = blacklistAddresses.length - 1;
+            address lastAddress = blacklistAddresses[lastIndex];
+
+            blacklistAddresses[indexToDelete] = lastAddress;
+            _blacklistAddressIndex[lastAddress] = indexToDelete;
+
+            blacklistAddresses.pop();
+            delete _blacklistAddressIndex[account];
+            emit BlacklistedUpdated(account, false);
+        }
+    }
+
     function setWhitelisted(address account, bool status) external onlyOwnerOrOperator {
-        isWhitelisted[account] = status;
-        emit WhitelistedUpdated(account, status);
+        if (status) {
+            _addWhitelist(account);
+        } else {
+            _removeWhitelist(account);
+        }
     }
 
     function setBlacklisted(address account, bool status) external onlyOwnerOrOperator {
-        isBlacklisted[account] = status;
-        emit BlacklistedUpdated(account, status);
+        if (status) {
+            _addBlacklist(account);
+        } else {
+            _removeBlacklist(account);
+        }
     }
 
     function setWhitelistedBatch(address[] calldata accounts, bool status) external onlyOwnerOrOperator {
         for (uint256 i = 0; i < accounts.length; i++) {
-            isWhitelisted[accounts[i]] = status;
-            emit WhitelistedUpdated(accounts[i], status);
+            if (status) {
+                _addWhitelist(accounts[i]);
+            } else {
+                _removeWhitelist(accounts[i]);
+            }
         }
     }
 
     function setBlacklistedBatch(address[] calldata accounts, bool status) external onlyOwnerOrOperator {
         for (uint256 i = 0; i < accounts.length; i++) {
-            isBlacklisted[accounts[i]] = status;
-            emit BlacklistedUpdated(accounts[i], status);
+            if (status) {
+                _addBlacklist(accounts[i]);
+            } else {
+                _removeBlacklist(accounts[i]);
+            }
         }
+    }
+
+    function getWhitelistedAddresses(uint256 offset, uint256 limit) external view returns (address[] memory result, uint256 total) {
+        uint256 totalAddresses = whitelistAddresses.length;
+        if (offset >= totalAddresses) {
+            return (new address[](0), totalAddresses);
+        }
+        
+        uint256 size = limit;
+        if (offset + limit > totalAddresses) {
+            size = totalAddresses - offset;
+        }
+        
+        result = new address[](size);
+        for (uint256 i = 0; i < size; i++) {
+            result[i] = whitelistAddresses[offset + i];
+        }
+        
+        return (result, totalAddresses);
+    }
+
+    function getBlacklistedAddresses(uint256 offset, uint256 limit) external view returns (address[] memory result, uint256 total) {
+        uint256 totalAddresses = blacklistAddresses.length;
+        if (offset >= totalAddresses) {
+            return (new address[](0), totalAddresses);
+        }
+        
+        uint256 size = limit;
+        if (offset + limit > totalAddresses) {
+            size = totalAddresses - offset;
+        }
+        
+        result = new address[](size);
+        for (uint256 i = 0; i < size; i++) {
+            result[i] = blacklistAddresses[offset + i];
+        }
+        
+        return (result, totalAddresses);
     }
 
     function setWhitelistEnabled(bool enabled) external onlyOwner {
