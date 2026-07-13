@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '@core/services/state.service';
@@ -63,8 +63,20 @@ export class MarketplaceComponent implements OnInit {
     this.orderForm.side = side as 'BUY' | 'SELL';
   }
 
+  constructor() {
+    effect(() => {
+      const comp = this.stateService.currentCompany();
+      if (comp) {
+        this.loadMarketplaceData();
+      } else {
+        this.buyOrders.set([]);
+        this.sellOrders.set([]);
+        this.tradesList.set([]);
+      }
+    }, { allowSignalWrites: true });
+  }
+
   ngOnInit() {
-    this.loadMarketplaceData();
   }
 
   public async loadMarketplaceData() {

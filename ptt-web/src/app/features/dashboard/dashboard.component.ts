@@ -71,11 +71,18 @@ export class DashboardComponent implements OnInit {
     return !user.name.startsWith('User_') && user.name.trim() !== '';
   }
 
-  constructor() {}
+  constructor() {
+    effect(() => {
+      const comp = this.stateService.currentCompany();
+      if (comp) {
+        this.loadStaffsData();
+      } else {
+        this.staffsList.set([]);
+      }
+    }, { allowSignalWrites: true });
+  }
 
   ngOnInit() {
-    // Tự động load dữ liệu khi công ty hiện tại thay đổi
-    this.loadStaffsData();
   }
 
   public async loadStaffsData() {

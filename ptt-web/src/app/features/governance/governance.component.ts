@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '@core/services/state.service';
@@ -75,6 +75,20 @@ export class GovernanceComponent implements OnInit {
     return Math.ceil(this.filteredProposals().length / this.itemsPerPage) || 1;
   });
 
+  constructor() {
+    effect(() => {
+      const comp = this.stateService.currentCompany();
+      if (comp) {
+        this.loadProposals();
+      } else {
+        this.proposalsList.set([]);
+        this.selectedProposal.set(null);
+        this.proposalSignatures.set([]);
+        this.isPageLoading.set(false);
+      }
+    }, { allowSignalWrites: true });
+  }
+
   public onSearchQueryChange(query: string) {
     this.searchQuery.set(query);
     this.currentPage.set(1);
@@ -110,8 +124,6 @@ export class GovernanceComponent implements OnInit {
   }
 
   private async initComponent() {
-    await this.loadProposals();
-
     // Lắng nghe sự thay đổi của query parameters để tự động chọn đề xuất
     this.route.queryParams.subscribe(params => {
       const proposalId = params['proposalId'] ? Number(params['proposalId']) : null;
@@ -136,7 +148,10 @@ export class GovernanceComponent implements OnInit {
 
   public async loadProposals() {
     const comp = this.stateService.currentCompany();
-    if (!comp) return;
+    if (!comp) {
+      this.isPageLoading.set(false);
+      return;
+    }
 
     this.isPageLoading.set(true);
     try {

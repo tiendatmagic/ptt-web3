@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '@core/services/state.service';
@@ -42,8 +42,19 @@ export class KycComponent implements OnInit {
     { value: 'remove_blacklist', label: 'Xóa khỏi Blacklist' }
   ];
 
+  constructor() {
+    effect(() => {
+      const comp = this.stateService.currentCompany();
+      if (comp) {
+        this.loadKycList();
+      } else {
+        this.kycList.set([]);
+        this.selectedUser.set(null);
+      }
+    }, { allowSignalWrites: true });
+  }
+
   ngOnInit() {
-    this.loadKycList();
   }
 
   public async loadKycList() {

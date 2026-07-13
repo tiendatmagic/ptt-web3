@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -54,13 +54,28 @@ export class FundingComponent implements OnInit {
   // Loading state
   public isPageLoading = signal(true);
 
+  constructor() {
+    effect(() => {
+      const comp = this.stateService.currentCompany();
+      if (comp) {
+        this.loadFundingData();
+      } else {
+        this.roundsList.set([]);
+        this.dividendsList.set([]);
+        this.isPageLoading.set(false);
+      }
+    }, { allowSignalWrites: true });
+  }
+
   ngOnInit() {
-    this.loadFundingData();
   }
 
   public async loadFundingData() {
     const comp = this.stateService.currentCompany();
-    if (!comp) return;
+    if (!comp) {
+      this.isPageLoading.set(false);
+      return;
+    }
 
     this.isPageLoading.set(true);
     try {
