@@ -86,6 +86,14 @@ export class InvestComponent implements OnInit {
   public myPaymentTokenBalance = signal<string>('0'); // Số dư ví dùng thanh toán (USDT/BNB)
   public myPaymentTokenSymbol = signal<string>('BNB');
 
+  // Cấu hình các payment tokens được hỗ trợ cho P2P
+  public supportedPaymentTokens = [
+    { symbol: 'USDT', address: '0x337610d27c682E347C9cD60BD4b3b107c913E45f', decimals: 18 },
+    { symbol: 'USDC', address: '0x645421226040516109Ed565B1b4a6ECd3159a2D5', decimals: 18 },
+    { symbol: 'LINK', address: '0x84b9B910527Ad5C03A9Ca831909EE2157D0b7b72', decimals: 18 }
+  ];
+  public selectedPaymentToken = signal<any>(this.supportedPaymentTokens[0]);
+
   // Funding round
   public activeFundingRound = signal<any | null>(null);
   public buyAmount = signal<number>(1);
@@ -129,10 +137,42 @@ export class InvestComponent implements OnInit {
 
   public setActiveTab(tab: string) {
     this.activeTab.set(tab as 'funding' | 'trade' | 'dividends' | 'portfolio');
+    if (tab === 'trade') {
+      this.loadPaymentTokenBalance();
+    }
   }
 
   public setOrderSide(side: string) {
     this.orderSide.set(side as 'BUY' | 'SELL');
+  }
+
+  public changePaymentToken(token: any) {
+    this.selectedPaymentToken.set(token);
+    this.loadOrderBook(this.selectedCompany());
+    this.loadPaymentTokenBalance();
+  }
+
+  async loadPaymentTokenBalance() {
+    const userAddress = this.walletAddress();
+    const token = this.selectedPaymentToken();
+    if (!userAddress || !token) {
+      if (!this.activeFundingRound()) {
+        this.myPaymentTokenBalance.set('0');
+      }
+      return;
+    }
+    // Chỉ tự cập nhật số dư cho P2P khi tab hiện tại là tab Trade
+    if (this.activeTab() !== 'trade') return;
+
+    try {
+      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com');
+      const tokenContract = new ethers.Contract(token.address, ERC20_ABI, provider);
+      const bal = await tokenContract['balanceOf'](userAddress);
+      this.myPaymentTokenBalance.set(ethers.formatUnits(bal, token.decimals));
+      this.myPaymentTokenSymbol.set(token.symbol);
+    } catch (e) {
+      console.warn('Lỗi load số dư P2P token:', e);
+    }
   }
 
   async ngOnInit() {
@@ -418,13 +458,20 @@ export class InvestComponent implements OnInit {
     } catch (e) {
       console.error('On-chain read error:', e);
     }
+
+    // Luôn tải số dư payment token cho P2P nếu đang ở tab Trade
+    await this.loadPaymentTokenBalance();
   }
 
   // Load order book từ public API
   async loadOrderBook(company: any) {
+    if (!company) return;
     try {
       const data = await firstValueFrom(
-        this.apiService.get<any>('marketplace/orderbook', undefined, { company_id: company.id })
+        this.apiService.get<any>('marketplace/orderbook', undefined, {
+          company_id: company.id,
+          payment_token_address: this.selectedPaymentToken().address
+        })
       );
       this.orderBook.set(data || { bids: [], asks: [] });
     } catch (e) {
@@ -489,6 +536,7 @@ export class InvestComponent implements OnInit {
     try {
       const price = parseFloat(this.orderPrice());
       const amount = this.orderAmount();
+      const token = this.selectedPaymentToken();
 
       if (!price || !amount) {
         this.stateService.showToast('Vui lòng nhập đầy đủ giá và số lượng', 'warning');
@@ -496,7 +544,7 @@ export class InvestComponent implements OnInit {
       }
 
       // 1. Tạo thông điệp EIP-712 / personal_sign đặt lệnh
-      const message = `Place ${this.orderSide()} Order for ${company.name}\nPrice: ${price} USD\nAmount: ${amount} Shares`;
+      const message = `Place ${this.orderSide()} Order for ${company.name}\nPrice: ${price} ${token.symbol}\nAmount: ${amount} Shares\nPayment Token: ${token.address}`;
 
       // 2. Ký ví
       const signer = await this.stateService.web3Service.getSigner();
@@ -508,13 +556,16 @@ export class InvestComponent implements OnInit {
         price: price,
         amount: amount,
         signature: signature,
-        message: message
+        message: message,
+        payment_token_address: token.address,
+        payment_token_symbol: token.symbol
       }, company.id));
 
       this.stateService.showToast('Đặt lệnh thành công! Hệ thống đang tự động khớp lệnh...', 'success');
       this.orderPrice.set('');
       this.orderAmount.set(1);
       await this.loadOrderBook(company);
+      await this.loadPaymentTokenBalance();
     } catch (e: any) {
       this.stateService.showToast(e.reason || 'Đặt lệnh thất bại!', 'error');
     } finally {

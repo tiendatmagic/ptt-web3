@@ -18,7 +18,22 @@
     <div
       class="xl:col-span-1 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm space-y-6 h-fit"
     >
-      <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300">Đặt lệnh mới</h2>
+      <div class="flex justify-between items-center gap-3">
+        <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300">Đặt lệnh mới</h2>
+        <div class="flex items-center gap-1.5 select-none shrink-0">
+          <div class="flex rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-0.5">
+            @for (tok of supportedPaymentTokens; track tok.symbol) {
+              <button
+                (click)="changePaymentToken(tok)"
+                [class]="selectedPaymentToken().symbol === tok.symbol ? 'bg-[var(--color-primary)] text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+                class="px-2 py-0.5 text-[10px] font-black rounded-md transition-all uppercase tracking-wider"
+              >
+                {{ tok.symbol }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
 
       <div class="space-y-4">
         <!-- Side Selector -->
@@ -32,7 +47,7 @@
         <!-- Price -->
         <div class="space-y-1">
           <label class="text-[12px] font-black text-slate-400 uppercase tracking-wider"
-            >Giá cổ phần ($ USD / Share)</label
+            >Giá cổ phần ({{ selectedPaymentToken().symbol }} / Share)</label
           >
           <input
             type="number"
@@ -109,7 +124,7 @@
                     <tr
                       class="border-t border-slate-100 dark:border-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-900/10"
                     >
-                      <td class="p-2.5 pl-3 font-extrabold text-emerald-500">${{ order.price }}</td>
+                      <td class="p-2.5 pl-3 font-extrabold text-emerald-500">{{ order.price }} {{ order.payment_token_symbol || 'USDT' }}</td>
                       <td class="p-2.5 font-semibold text-slate-700 dark:text-slate-300">
                         {{ order.amount }}
                       </td>
@@ -156,7 +171,7 @@
                     <tr
                       class="border-t border-slate-100 dark:border-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-900/10"
                     >
-                      <td class="p-2.5 pl-3 font-extrabold text-red-500">${{ order.price }}</td>
+                      <td class="p-2.5 pl-3 font-extrabold text-red-500">{{ order.price }} {{ order.payment_token_symbol || 'USDT' }}</td>
                       <td class="p-2.5 font-semibold text-slate-700 dark:text-slate-300">
                         {{ order.amount }}
                       </td>
@@ -213,7 +228,7 @@
                     </div>
                   </td>
                   <td class="p-3.5 font-extrabold text-slate-700 dark:text-slate-200">
-                    ${{ trade.price }}
+                    {{ trade.price }} {{ trade.payment_token_symbol || 'USDT' }}
                   </td>
                   <td class="p-3.5 font-bold text-slate-700 dark:text-slate-300">
                     {{ trade.amount }}

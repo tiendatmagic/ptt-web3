@@ -7,15 +7,10 @@ import { IconComponent } from '@shared/components/icon/icon.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 import { firstValueFrom } from 'rxjs';
-import { Contract } from 'ethers';
+import { Contract, ethers } from 'ethers';
 import { ModalService } from '@core/services/modal.service';
 import { TabGroupComponent, TabOption } from '@shared/components/tab-group/tab-group.component';
-
-// ABI rút gọn của Marketplace contract phục vụ settleTrade
-const MARKETPLACE_ABI = [
-  "function settleTrade(uint256 buyOrderId, uint256 sellOrderId, uint256 price, uint256 amount, bytes memory buyerSig, bytes memory sellerSig) external",
-  "function cancelOrder(uint256 orderId) external"
-];
+import { Marketplace } from '../../core/constants/contracts';
 
 @Component({
   selector: 'app-marketplace',
@@ -32,6 +27,14 @@ export class MarketplaceComponent implements OnInit {
   public buyOrders = signal<any[]>([]);
   public sellOrders = signal<any[]>([]);
   public tradesList = signal<any[]>([]);
+
+  // Cấu hình các payment tokens được hỗ trợ
+  public supportedPaymentTokens = [
+    { symbol: 'USDT', address: '0x337610d27c682E347C9cD60BD4b3b107c913E45f', decimals: 18 },
+    { symbol: 'USDC', address: '0x645421226040516109Ed565B1b4a6ECd3159a2D5', decimals: 18 },
+    { symbol: 'LINK', address: '0x84b9B910527Ad5C03A9Ca831909EE2157D0b7b72', decimals: 18 }
+  ];
+  public selectedPaymentToken = signal<any>(this.supportedPaymentTokens[0]);
 
   // Phân trang Lịch sử giao dịch (Trades History)
   public currentPageTrades = signal(1);
@@ -79,18 +82,31 @@ export class MarketplaceComponent implements OnInit {
   ngOnInit() {
   }
 
+  public changePaymentToken(token: any) {
+    this.selectedPaymentToken.set(token);
+    this.loadMarketplaceData();
+  }
+
   public async loadMarketplaceData() {
     const comp = this.stateService.currentCompany();
     if (!comp) return;
 
     try {
       // 1. Tải sổ lệnh
-      const book = await firstValueFrom(this.apiService.get<any>('marketplace/orderbook', comp.id));
+      const book = await firstValueFrom(
+        this.apiService.get<any>('marketplace/orderbook', comp.id, {
+          payment_token_address: this.selectedPaymentToken().address
+        })
+      );
       this.buyOrders.set(book.buy || []);
       this.sellOrders.set(book.sell || []);
 
       // 2. Tải lịch sử giao dịch
-      const trades = await firstValueFrom(this.apiService.get<any[]>('marketplace/trades', comp.id));
+      const trades = await firstValueFrom(
+        this.apiService.get<any[]>('marketplace/trades', comp.id, {
+          payment_token_address: this.selectedPaymentToken().address
+        })
+      );
       this.tradesList.set(trades || []);
       this.currentPageTrades.set(1); // Reset về trang 1
     } catch (e) {
@@ -117,10 +133,11 @@ export class MarketplaceComponent implements OnInit {
 
       const price = parseFloat(this.orderForm.price);
       const amount = parseFloat(this.orderForm.amount);
+      const token = this.selectedPaymentToken();
 
       // 1. Tạo thông điệp EIP-712 / personal_sign đặt lệnh
       const walletAddress = this.stateService.address();
-      const message = `Place ${this.orderForm.side} Order for ${comp.name}\nPrice: ${price} USD\nAmount: ${amount} Shares`;
+      const message = `Place ${this.orderForm.side} Order for ${comp.name}\nPrice: ${price} ${token.symbol}\nAmount: ${amount} Shares\nPayment Token: ${token.address}`;
 
       // 2. Ký ví
       const signer = await this.stateService.getSigner();
@@ -132,7 +149,9 @@ export class MarketplaceComponent implements OnInit {
         price: price,
         amount: amount,
         signature: signature,
-        message: message
+        message: message,
+        payment_token_address: token.address,
+        payment_token_symbol: token.symbol
       }, comp.id));
 
       this.stateService.showToast('Đặt lệnh thành công! Hệ thống đang tự động khớp lệnh...', 'success');
@@ -176,7 +195,6 @@ export class MarketplaceComponent implements OnInit {
     });
   }
 
-  // Thực thi Settlement On-chain (Settle Trade)
   public async handleSettleTrade(trade: any) {
     const comp = this.stateService.currentCompany();
     if (!comp || !comp.marketplace_address) return;
@@ -187,32 +205,36 @@ export class MarketplaceComponent implements OnInit {
 
       // 1. Lấy signer và khởi tạo contract Marketplace
       const signer = await this.stateService.getSigner();
-      const marketContract = new Contract(comp.marketplace_address, MARKETPLACE_ABI, signer);
+      const marketContract = new Contract(comp.marketplace_address, Marketplace.abi, signer);
 
-      // 2. Mock signatures hoặc lấy signatures của buyer/seller từ DB
-      // Vì trên testnet, để đơn giản và mượt mà trong việc hoàn tất test:
-      // Contract Marketplace.sol yêu cầu verify chữ ký EIP-712 của buyer và seller.
-      // Chúng ta có thể lấy chúng từ các order tương ứng đã được lưu trữ chữ ký ở Backend!
-      // Ở đây ta sẽ mock hoặc giả định chữ ký đã được Backend verify và pass vào qua api.
-      // Để thực tế, ta truyền các chữ ký thật mà buyer/seller đã ký khi đặt lệnh:
-      const buyerSig = trade.buyer_signature || "0x"; 
+      // 2. Lấy chữ ký thực tế của buyer & seller đã được lưu ở Backend
+      const buyerSig = trade.buyer_signature || "0x";
       const sellerSig = trade.seller_signature || "0x";
 
-      const priceWei = BigInt(Math.round(trade.price * 1e18)); // chuyển sang wei nếu dùng stablecoin decimal 18
-      const amountWei = BigInt(Math.round(trade.amount * 1e18)); // decimal token cổ phần 18
+      const token = this.selectedPaymentToken();
+      const priceWei = ethers.parseUnits(String(trade.price), token.decimals); // Decimals của USDT/USDC (thường là 18 hoặc 6)
+      const amountWei = ethers.parseEther(String(trade.amount)); // Cổ phần 18 decimals
 
       const gasOverrides = await this.stateService.getGasOverrides(signer);
 
-      // Gọi hàm settleTrade on-chain
-      const tx = await marketContract['settleTrade'](
-        trade.buy_order_id,
-        trade.sell_order_id,
-        priceWei,
-        amountWei,
-        buyerSig,
-        sellerSig,
-        gasOverrides
-      );
+      // Build parameters object (struct TradeParams) matching smart contract executeTrade
+      const tradeParams = {
+        token: comp.token_address,
+        paymentToken: trade.payment_token_address || token.address,
+        buyer: trade.buyer_address,
+        seller: trade.seller_address,
+        amount: amountWei,
+        price: priceWei,
+        buyerNonce: BigInt(trade.buy_order_id),
+        sellerNonce: BigInt(trade.sell_order_id),
+        buyerDeadline: BigInt(Math.floor(Date.now() / 1000) + 86400 * 365), // 1 năm
+        sellerDeadline: BigInt(Math.floor(Date.now() / 1000) + 86400 * 365),
+        buyerSig: buyerSig,
+        sellerSig: sellerSig
+      };
+
+      // Gọi hàm executeTrade on-chain của hợp đồng Marketplace
+      const tx = await marketContract['executeTrade'](tradeParams, gasOverrides);
 
       this.stateService.showToast('Giao dịch Settle đã gửi. Đang xác nhận...', 'warning');
       const receipt = await tx.wait();

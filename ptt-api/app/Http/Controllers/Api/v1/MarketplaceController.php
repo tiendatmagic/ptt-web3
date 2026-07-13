@@ -20,22 +20,34 @@ class MarketplaceController extends Controller
             return response()->json(['message' => 'Missing company_id'], 400);
         }
 
+        $paymentToken = $request->query('payment_token_address');
+
         // Lấy danh sách lệnh mua
-        $buyOrders = DB::table('orders')
+        $buyOrdersQuery = DB::table('orders')
             ->where('company_id', $companyId)
             ->where('side', 'BUY')
-            ->whereIn('status', ['PENDING', 'PARTIALLY_FILLED'])
-            ->select('id', 'user_address', 'price', 'amount', 'filled_amount', 'created_at')
+            ->whereIn('status', ['PENDING', 'PARTIALLY_FILLED']);
+
+        if ($paymentToken) {
+            $buyOrdersQuery->where('payment_token_address', $paymentToken);
+        }
+
+        $buyOrders = $buyOrdersQuery->select('id', 'user_address', 'price', 'amount', 'filled_amount', 'payment_token_address', 'payment_token_symbol', 'created_at')
             ->orderBy('price', 'desc')
             ->orderBy('created_at', 'asc')
             ->get();
 
         // Lấy danh sách lệnh bán
-        $sellOrders = DB::table('orders')
+        $sellOrdersQuery = DB::table('orders')
             ->where('company_id', $companyId)
             ->where('side', 'SELL')
-            ->whereIn('status', ['PENDING', 'PARTIALLY_FILLED'])
-            ->select('id', 'user_address', 'price', 'amount', 'filled_amount', 'created_at')
+            ->whereIn('status', ['PENDING', 'PARTIALLY_FILLED']);
+
+        if ($paymentToken) {
+            $sellOrdersQuery->where('payment_token_address', $paymentToken);
+        }
+
+        $sellOrders = $sellOrdersQuery->select('id', 'user_address', 'price', 'amount', 'filled_amount', 'payment_token_address', 'payment_token_symbol', 'created_at')
             ->orderBy('price', 'asc')
             ->orderBy('created_at', 'asc')
             ->get();
@@ -57,6 +69,8 @@ class MarketplaceController extends Controller
             'amount' => 'required|numeric|gt:0',
             'signature' => 'required|string',
             'message' => 'required|string', // Thông điệp EIP-712 phê duyệt giao dịch khớp lệnh
+            'payment_token_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
+            'payment_token_symbol' => 'nullable|string|max:50',
         ]);
 
         $companyId = $request->header('X-Company-Id');
@@ -66,6 +80,8 @@ class MarketplaceController extends Controller
         $amount = $request->input('amount');
         $signature = $request->input('signature');
         $message = $request->input('message');
+        $paymentTokenAddress = $request->input('payment_token_address');
+        $paymentTokenSymbol = $request->input('payment_token_symbol') ?: 'USDT';
         $walletAddress = strtolower($user->wallet_address);
 
         // 1. Xác thực chữ ký ví Web3
@@ -75,7 +91,7 @@ class MarketplaceController extends Controller
         }
 
         // 2. Lưu order mới vào Database
-        $orderId = DB::transaction(function () use ($companyId, $walletAddress, $side, $price, $amount, $signature) {
+        $orderId = DB::transaction(function () use ($companyId, $walletAddress, $side, $price, $amount, $signature, $paymentTokenAddress, $paymentTokenSymbol) {
             return DB::table('orders')->insertGetId([
                 'company_id' => $companyId,
                 'user_address' => $walletAddress,
@@ -84,6 +100,8 @@ class MarketplaceController extends Controller
                 'amount' => $amount,
                 'filled_amount' => 0,
                 'signature' => $signature,
+                'payment_token_address' => $paymentTokenAddress,
+                'payment_token_symbol' => $paymentTokenSymbol,
                 'status' => 'PENDING',
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -149,16 +167,29 @@ class MarketplaceController extends Controller
             return response()->json(['message' => 'Missing company_id'], 400);
         }
 
-        $trades = DB::table('trades')
+        $paymentToken = $request->query('payment_token_address');
+
+        $tradesQuery = DB::table('trades')
             ->join('orders as buy_order', 'trades.buy_order_id', '=', 'buy_order.id')
             ->join('orders as sell_order', 'trades.sell_order_id', '=', 'sell_order.id')
-            ->where('buy_order.company_id', $companyId)
-            ->select(
+            ->where('buy_order.company_id', $companyId);
+
+        if ($paymentToken) {
+            $tradesQuery->where('trades.payment_token_address', $paymentToken);
+        }
+
+        $trades = $tradesQuery->select(
                 'trades.id',
+                'buy_order.id as buy_order_id',
+                'sell_order.id as sell_order_id',
                 'buy_order.user_address as buyer_address',
                 'sell_order.user_address as seller_address',
+                'buy_order.signature as buyer_signature',
+                'sell_order.signature as seller_signature',
                 'trades.price',
                 'trades.amount',
+                'trades.payment_token_address',
+                'trades.payment_token_symbol',
                 'trades.tx_hash',
                 'trades.created_at'
             )
@@ -198,11 +229,14 @@ class MarketplaceController extends Controller
                         'updated_at' => now()
                     ]);
             } else {
+                $buyOrder = DB::table('orders')->where('id', $request->input('buy_order_id'))->first();
                 DB::table('trades')->insert([
                     'buy_order_id' => $request->input('buy_order_id'),
                     'sell_order_id' => $request->input('sell_order_id'),
                     'price' => $request->input('price'),
                     'amount' => $request->input('amount'),
+                    'payment_token_address' => $buyOrder ? $buyOrder->payment_token_address : null,
+                    'payment_token_symbol' => $buyOrder ? $buyOrder->payment_token_symbol : 'USDT',
                     'tx_hash' => $request->input('tx_hash'),
                     'created_at' => now(),
                     'updated_at' => now()
@@ -226,26 +260,29 @@ class MarketplaceController extends Controller
         $companyId = $order->company_id;
         $side = $order->side;
         $price = $order->price;
+        $paymentToken = $order->payment_token_address;
 
-        DB::transaction(function () use ($order, $companyId, $side, $price) {
+        DB::transaction(function () use ($order, $companyId, $side, $price, $paymentToken) {
             $remaining = $order->amount - $order->filled_amount;
             if ($remaining <= 0) return;
 
             if ($side === 'BUY') {
-                // Tìm các lệnh bán đối ứng có giá bán <= giá mua, sắp xếp giá rẻ nhất trước
+                // Tìm các lệnh bán đối ứng có giá bán <= giá mua, cùng payment token
                 $matches = DB::table('orders')
                     ->where('company_id', $companyId)
                     ->where('side', 'SELL')
+                    ->where('payment_token_address', $paymentToken)
                     ->whereIn('status', ['PENDING', 'PARTIALLY_FILLED'])
                     ->where('price', '<=', $price)
                     ->orderBy('price', 'asc')
                     ->orderBy('created_at', 'asc')
                     ->get();
             } else {
-                // Tìm các lệnh mua đối ứng có giá mua >= giá bán, sắp xếp giá cao nhất trước
+                // Tìm các lệnh mua đối ứng có giá mua >= giá bán, cùng payment token
                 $matches = DB::table('orders')
                     ->where('company_id', $companyId)
                     ->where('side', 'BUY')
+                    ->where('payment_token_address', $paymentToken)
                     ->whereIn('status', ['PENDING', 'PARTIALLY_FILLED'])
                     ->where('price', '>=', $price)
                     ->orderBy('price', 'desc')
@@ -291,12 +328,13 @@ class MarketplaceController extends Controller
                     ]);
 
                 // Ghi nhận bản ghi khớp lệnh (Trade) tạm thời chờ On-chain Settlement
-                // Cột tx_hash tạm thời để trống hoặc ghi nhận trạng thái MATCHED
                 DB::table('trades')->insert([
                     'buy_order_id' => ($side === 'BUY') ? $order->id : $match->id,
                     'sell_order_id' => ($side === 'SELL') ? $order->id : $match->id,
                     'price' => $matchedPrice,
                     'amount' => $matchedAmount,
+                    'payment_token_address' => $paymentToken,
+                    'payment_token_symbol' => $order->payment_token_symbol,
                     'tx_hash' => 'MATCHED_PENDING_SETTLEMENT', // Chờ frontend trigger smart contract settleTrade
                     'created_at' => now(),
                 ]);

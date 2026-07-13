@@ -3756,7 +3756,7 @@ contract Marketplace is Ownable {
         emit FeeConfigUpdated(feeBps, treasury);
     }
 
-    function executeTrade(TradeParams calldata p) external onlyOperator {
+    function executeTrade(TradeParams calldata p) external {
         require(block.timestamp <= p.buyerDeadline, "Buyer signature expired");
         require(block.timestamp <= p.sellerDeadline, "Seller signature expired");
         require(!usedNonces[p.buyer][p.buyerNonce], "Buyer nonce already used");
