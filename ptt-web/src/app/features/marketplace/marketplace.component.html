@@ -22,30 +22,12 @@
 
       <div class="space-y-4">
         <!-- Side Selector -->
-        <div
-          class="flex bg-slate-50 dark:bg-slate-900 p-1 rounded-xl border border-slate-100 dark:border-slate-900/50"
-        >
-          <button
-            (click)="orderForm.side = 'BUY'"
-            [class.bg-white]="orderForm.side === 'BUY'"
-            [class.dark:bg-slate-950]="orderForm.side === 'BUY'"
-            [class.text-emerald-500]="orderForm.side === 'BUY'"
-            [class.shadow-sm]="orderForm.side === 'BUY'"
-            class="flex-1 py-2.5 rounded-lg text-xs font-black uppercase text-slate-400 transition-all"
-          >
-            MUA (BUY)
-          </button>
-          <button
-            (click)="orderForm.side = 'SELL'"
-            [class.bg-white]="orderForm.side === 'SELL'"
-            [class.dark:bg-slate-950]="orderForm.side === 'SELL'"
-            [class.text-red-500]="orderForm.side === 'SELL'"
-            [class.shadow-sm]="orderForm.side === 'SELL'"
-            class="flex-1 py-2.5 rounded-lg text-xs font-black uppercase text-slate-400 transition-all"
-          >
-            BÁN (SELL)
-          </button>
-        </div>
+        <app-tab-group
+          [options]="orderSideOptions"
+          [activeValue]="orderForm.side"
+          (valueChange)="setOrderSide($event)"
+          buttonClass="font-black text-xs uppercase tracking-wider"
+        ></app-tab-group>
 
         <!-- Price -->
         <div class="space-y-1">
@@ -106,7 +88,7 @@
               class="text-xs font-extrabold text-emerald-500 uppercase tracking-wider flex items-center gap-1.5"
             >
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              Lệnh mua (BUY)
+              Lệnh mua
             </h3>
 
             <div
@@ -153,7 +135,7 @@
               class="text-xs font-extrabold text-red-500 uppercase tracking-wider flex items-center gap-1.5"
             >
               <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-              Lệnh bán (SELL)
+              Lệnh bán
             </h3>
 
             <div

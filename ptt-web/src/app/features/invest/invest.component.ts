@@ -7,7 +7,7 @@ import { ApiService } from '@core/services/api.service';
 import { firstValueFrom } from 'rxjs';
 import { ethers } from 'ethers';
 
-import { TabGroupComponent } from '@shared/components/tab-group/tab-group.component';
+import { TabGroupComponent, TabOption } from '@shared/components/tab-group/tab-group.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { IconComponent } from '@shared/components/icon/icon.component';
 
@@ -66,6 +66,11 @@ export class InvestComponent implements OnInit {
     { value: 'trade', label: 'Giao dịch P2P', icon: 'blockchain' },
     { value: 'dividends', label: 'Cổ tức', icon: 'financials' },
     { value: 'portfolio', label: 'Portfolio', icon: 'staffs' }
+  ];
+
+  public orderSideOptions: TabOption[] = [
+    { value: 'BUY', label: 'MUA' },
+    { value: 'SELL', label: 'BÁN' }
   ];
 
   // Dữ liệu công ty (từ Public API, không cần auth)

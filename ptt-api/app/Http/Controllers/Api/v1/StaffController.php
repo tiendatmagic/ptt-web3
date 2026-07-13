@@ -64,7 +64,8 @@ class StaffController extends Controller
                     $user = UserModel::firstOrCreate(
                         ['wallet_address' => $walletAddress],
                         [
-                            'name' => 'Staff_' . substr($walletAddress, 2, 6),
+                            'name' => 'User-' . substr($walletAddress, -6),
+                            'email' => 'user-' . substr($walletAddress, -6) . '@ptt-web3.com',
                             'kyc_status' => 'PENDING',
                             'is_whitelisted' => false
                         ]
@@ -144,11 +145,11 @@ class StaffController extends Controller
             return response()->json(['message' => 'Role not found or does not belong to this company'], 404);
         }
 
-        // 2. Tìm hoặc tạo user với wallet_address này
         $user = UserModel::firstOrCreate(
             ['wallet_address' => $walletAddress],
             [
-                'name' => 'Staff_' . substr($walletAddress, 2, 6),
+                'name' => 'User-' . substr($walletAddress, -6),
+                'email' => 'user-' . substr($walletAddress, -6) . '@ptt-web3.com',
                 'kyc_status' => 'PENDING',
                 'is_whitelisted' => false
             ]

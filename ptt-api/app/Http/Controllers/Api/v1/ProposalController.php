@@ -250,7 +250,8 @@ class ProposalController extends Controller
                     $user = UserModel::firstOrCreate(
                         ['wallet_address' => $walletAddress],
                         [
-                            'name' => 'Staff_' . substr($walletAddress, 2, 6),
+                            'name' => 'User-' . substr($walletAddress, -6),
+                            'email' => 'user-' . substr($walletAddress, -6) . '@ptt-web3.com',
                             'kyc_status' => 'PENDING',
                             'is_whitelisted' => false
                         ]

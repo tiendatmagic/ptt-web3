@@ -16,9 +16,9 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         UserModel::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'wallet_address' => '0x75AD18eF47eDa21Baff837CAC0f1563D0C355555',
+            'name' => 'User-d35555',
+            'email' => 'user-d35555@ptt-web3.com',
+            'wallet_address' => '0x75AD18eF47eDa21Baff837CAC0f1563D0C35555',
         ]);
     }
 }

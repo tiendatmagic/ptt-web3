@@ -158,7 +158,13 @@ export class DashboardComponent implements OnInit {
   public getStaffDisplayName(staff: any): string {
     if (!staff || !staff.name) return '';
     const name = staff.name.trim();
-    if (name.startsWith('Staff_') || name.startsWith('User_') || name === 'Test User' || name === '') {
+    if (
+      name.startsWith('Staff_') ||
+      name.startsWith('User_') ||
+      name.startsWith('User-') ||
+      name === 'Test User' ||
+      name === ''
+    ) {
       return '';
     }
     return name;

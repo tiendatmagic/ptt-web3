@@ -305,22 +305,12 @@
             <!-- Form đặt lệnh -->
             <div class="space-y-4">
               <h3 class="text-base font-black text-slate-700 dark:text-slate-200">Đặt lệnh</h3>
-              <div class="flex gap-2">
-                @for (side of ['BUY','SELL']; track side) {
-                  <button (click)="setOrderSide(side)"
-                    class="flex-1 h-10 text-sm font-extrabold rounded-xl border-2 transition-all"
-                    [class.bg-[var(--color-primary)]]="orderSide() === side && side === 'BUY'"
-                    [class.text-white]="orderSide() === side"
-                    [class.border-[var(--color-primary)]]="orderSide() === side && side === 'BUY'"
-                    [class.bg-red-600]="orderSide() === side && side === 'SELL'"
-                    [class.border-red-500]="orderSide() === side && side === 'SELL'"
-                    [class.border-slate-200]="orderSide() !== side"
-                    [class.dark:border-slate-700]="orderSide() !== side"
-                    [class.text-slate-500]="orderSide() !== side">
-                    {{ side === 'BUY' ? '▲ MUA' : '▼ BÁN' }}
-                  </button>
-                }
-              </div>
+              <app-tab-group
+                [options]="orderSideOptions"
+                [activeValue]="orderSide()"
+                (valueChange)="setOrderSide($event)"
+                buttonClass="font-black text-xs uppercase tracking-wider"
+              ></app-tab-group>
 
               <div class="grid grid-cols-2 gap-3">
                 <div class="space-y-1.5">

@@ -9,6 +9,7 @@ import { PaginationComponent } from '@shared/components/pagination/pagination.co
 import { firstValueFrom } from 'rxjs';
 import { Contract } from 'ethers';
 import { ModalService } from '@core/services/modal.service';
+import { TabGroupComponent, TabOption } from '@shared/components/tab-group/tab-group.component';
 
 // ABI rút gọn của Marketplace contract phục vụ settleTrade
 const MARKETPLACE_ABI = [
@@ -19,7 +20,7 @@ const MARKETPLACE_ABI = [
 @Component({
   selector: 'app-marketplace',
   standalone: true,
-  imports: [CommonModule, FormsModule, IconComponent, ButtonComponent, PaginationComponent],
+  imports: [CommonModule, FormsModule, IconComponent, ButtonComponent, PaginationComponent, TabGroupComponent],
   templateUrl: './marketplace.component.html'
 })
 export class MarketplaceComponent implements OnInit {
@@ -52,6 +53,15 @@ export class MarketplaceComponent implements OnInit {
     price: '',
     amount: ''
   };
+
+  public orderSideOptions: TabOption[] = [
+    { value: 'BUY', label: 'MUA' },
+    { value: 'SELL', label: 'BÁN' }
+  ];
+
+  public setOrderSide(side: string) {
+    this.orderForm.side = side as 'BUY' | 'SELL';
+  }
 
   ngOnInit() {
     this.loadMarketplaceData();

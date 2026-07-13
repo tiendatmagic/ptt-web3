@@ -14,8 +14,9 @@ class UserController extends Controller
      */
     public function indexKyc(Request $request)
     {
-        // Platform level check hoặc staff level check
-        $users = UserModel::where('kyc_status', 'PENDING')
+        $status = $request->query('status', 'PENDING');
+
+        $users = UserModel::where('kyc_status', $status)
             ->select('id', 'name', 'wallet_address', 'email', 'kyc_status', 'created_at')
             ->get();
 

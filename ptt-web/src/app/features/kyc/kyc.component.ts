@@ -76,7 +76,7 @@ export class KycComponent implements OnInit {
 
     try {
       this.stateService.isLoading.set(true);
-      await firstValueFrom(this.apiService.post<any>(`users/${userId}/kyc/approve`, {}, comp.id));
+      await firstValueFrom(this.apiService.post<any>(`users/kyc/${userId}/approve`, {}, comp.id));
       this.stateService.showToast('Duyệt KYC thành công! Địa chỉ ví đã được Whitelist lên Blockchain.', 'success');
       this.selectedUser.set(null);
       await this.loadKycList();
@@ -98,7 +98,7 @@ export class KycComponent implements OnInit {
 
     try {
       this.stateService.isLoading.set(true);
-      await firstValueFrom(this.apiService.post<any>(`users/${userId}/kyc/reject`, {
+      await firstValueFrom(this.apiService.post<any>(`users/kyc/${userId}/reject`, {
         reason: this.rejectionReason
       }, comp.id));
       this.stateService.showToast('Đã từ chối KYC!', 'success');
