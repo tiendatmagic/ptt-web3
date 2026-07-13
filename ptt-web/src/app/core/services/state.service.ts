@@ -167,6 +167,18 @@ export class StateService {
     localStorage.removeItem('ptt_selected_company_id');
   }
 
+  // Refresh thông tin user hiện tại từ server (dùng khi KYC status thay đổi)
+  public async refreshCurrentUser(): Promise<void> {
+    try {
+      const response = await firstValueFrom(this.apiService.get<any>('auth/me'));
+      if (response?.user) {
+        this.currentUser.set(response.user);
+      }
+    } catch (e) {
+      // Ignore — user vẫn giữ trạng thái cũ nếu lỗi mạng
+    }
+  }
+
   // Tải danh sách các công ty doanh nghiệp
   public async loadCompanies() {
     this.isCompaniesLoading.set(true);

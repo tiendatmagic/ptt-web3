@@ -103,6 +103,9 @@ export class FundingComponent implements OnInit {
     const comp = this.stateService.currentCompany();
     if (!comp || !comp.funding_address) return;
 
+    // Refresh thông tin user để lấy kyc_status mới nhất từ server
+    await this.stateService.refreshCurrentUser();
+
     // Check KYC status
     if (this.stateService.currentUser()?.kyc_status !== 'APPROVED') {
       this.stateService.showToast('Tài khoản của bạn chưa vượt qua KYC của hệ thống!', 'error');
@@ -123,7 +126,7 @@ export class FundingComponent implements OnInit {
       const price = roundInfo.price;
       const paymentToken = roundInfo.paymentToken;
 
-      const tokenAmount = parseEther(this.purchaseAmount); // Số lượng cổ phần quy đổi sang Wei (18 decimals)
+      const tokenAmount = parseEther(String(this.purchaseAmount)); // Số lượng cổ phần quy đổi sang Wei (18 decimals) — String() đảm bảo type an toàn với ethers v6
       const cost = (tokenAmount * BigInt(price)) / 1000000000000000000n;
 
       const isERC20 = paymentToken !== ethers.ZeroAddress;
