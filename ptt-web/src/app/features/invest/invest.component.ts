@@ -173,9 +173,14 @@ export class InvestComponent implements OnInit {
   }
 
   // Chia sẻ liên kết của công ty
-  getShareLink(company: any): string {
-    const origin = window.location.origin;
-    return `${origin}/invest?companyCode=${company.code}`;
+  handleShareLink(co: any) {
+    if (!co) return;
+    const shareUrl = `${window.location.origin}/invest?companyCode=${encodeURIComponent(co.code)}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      this.stateService.showToast(`Đã sao chép liên kết chia sẻ của công ty ${co.name}!`, 'success');
+    }).catch(err => {
+      this.stateService.showToast('Không thể sao chép liên kết chia sẻ!', 'error');
+    });
   }
 
   async selectCompany(company: any) {
