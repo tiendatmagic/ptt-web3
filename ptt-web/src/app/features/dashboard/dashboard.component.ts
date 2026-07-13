@@ -33,7 +33,7 @@ export class DashboardComponent implements OnInit {
       { value: 'overview', label: 'Tổng quan', icon: 'pos' }
     ];
     if (this.stateService.hasPermission('staffs.view')) {
-      options.push({ value: 'staffs', label: 'Nhân sự', icon: 'staffs' });
+      options.push({ value: 'staffs', label: 'Thành viên', icon: 'staffs' });
     }
     return options;
   });
@@ -85,10 +85,47 @@ export class DashboardComponent implements OnInit {
     try {
       if (this.stateService.hasPermission('staffs.view')) {
         const staffs = await firstValueFrom(this.apiService.get<any[]>('staffs', comp.id));
-        this.staffsList.set(staffs || []);
         
         const roles = await firstValueFrom(this.apiService.get<any[]>('roles', comp.id));
         this.rolesList.set(roles || []);
+
+        // Nếu đã deploy governance_address -> Đọc trực tiếp từ Smart Contract
+        if (comp.governance_address && comp.governance_address !== ethers.ZeroAddress) {
+          try {
+            const provider = this.stateService.getProvider();
+            if (provider) {
+              const govContract = new ethers.Contract(
+                comp.governance_address,
+                ['function getMembers() view returns (address[])'],
+                provider
+              );
+              const members: string[] = await govContract['getMembers']();
+              
+              // Map & Merge với thông tin tên/role từ DB
+              const merged = members.map((addr, idx) => {
+                const cleanAddr = addr.toLowerCase();
+                const dbStaff = staffs?.find(s => s.wallet_address?.toLowerCase() === cleanAddr);
+                
+                return {
+                  id: idx + 1,
+                  user_id: dbStaff?.user_id || null,
+                  name: dbStaff ? this.getStaffDisplayName(dbStaff) : '',
+                  wallet_address: addr, // Hiển thị đúng địa chỉ ví gốc từ contract
+                  role_name: dbStaff?.role_name || 'Board Member',
+                  status: 'ACTIVE'
+                };
+              });
+
+              this.staffsList.set(merged);
+              return;
+            }
+          } catch (contractErr) {
+            console.warn('Lỗi khi đọc thành viên từ contract, fallback về DB:', contractErr);
+          }
+        }
+
+        // Fallback: nếu chưa deploy hoặc lỗi, hiển thị từ DB
+        this.staffsList.set(staffs || []);
       }
     } catch (e) {
       console.error('Lỗi khi tải thông tin nhân viên:', e);
@@ -116,6 +153,15 @@ export class DashboardComponent implements OnInit {
       'Accountant': 'Kế toán'
     };
     return map[roleName] || roleName;
+  }
+
+  public getStaffDisplayName(staff: any): string {
+    if (!staff || !staff.name) return '';
+    const name = staff.name.trim();
+    if (name.startsWith('Staff_') || name.startsWith('User_') || name === 'Test User' || name === '') {
+      return '';
+    }
+    return name;
   }
 
 

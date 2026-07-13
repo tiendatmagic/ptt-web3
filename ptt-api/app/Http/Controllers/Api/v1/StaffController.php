@@ -16,6 +16,8 @@ class StaffController extends Controller
     {
         $companyId = $request->header('X-Company-Id');
 
+        $this->syncExecutedMembers($companyId);
+
         $staffs = DB::table('staffs')
             ->join('users', 'staffs.user_id', '=', 'users.id')
             ->join('roles', 'staffs.role_id', '=', 'roles.id')
@@ -34,6 +36,88 @@ class StaffController extends Controller
             ->get();
 
         return response()->json($staffs);
+    }
+
+    /**
+     * Đồng bộ hồi tố từ các đề xuất HĐQT đã thực thi.
+     */
+    private function syncExecutedMembers($companyId)
+    {
+        $proposals = DB::table('proposals')
+            ->where('company_id', $companyId)
+            ->whereIn('type', ['ADD_MEMBER', 'REMOVE_MEMBER'])
+            ->where('status', 'EXECUTED')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        foreach ($proposals as $proposal) {
+            $params = json_decode($proposal->params);
+            $walletAddress = null;
+            if (isset($params->member_address)) {
+                $walletAddress = strtolower($params->member_address);
+            } elseif (isset($params->calldata) && strlen($params->calldata) >= 74) {
+                $walletAddress = '0x' . strtolower(substr($params->calldata, -40));
+            }
+
+            if ($walletAddress) {
+                if ($proposal->type === 'ADD_MEMBER') {
+                    $user = UserModel::firstOrCreate(
+                        ['wallet_address' => $walletAddress],
+                        [
+                            'name' => 'Staff_' . substr($walletAddress, 2, 6),
+                            'kyc_status' => 'PENDING',
+                            'is_whitelisted' => false
+                        ]
+                    );
+
+                    $role = DB::table('roles')
+                        ->where('company_id', $companyId)
+                        ->where(function($q) {
+                            $q->where('name', 'Board Member')
+                              ->orWhere('name', 'Owner')
+                              ->orWhere('name', 'Quản lý');
+                        })
+                        ->first();
+                    
+                    if ($role) {
+                        $existingStaff = DB::table('staffs')
+                            ->where('user_id', $user->id)
+                            ->where('company_id', $companyId)
+                            ->first();
+
+                        if ($existingStaff) {
+                            DB::table('staffs')
+                                ->where('id', $existingStaff->id)
+                                ->update([
+                                    'role_id' => $role->id,
+                                    'status' => 'ACTIVE',
+                                    'updated_at' => now()
+                                ]);
+                        } else {
+                            DB::table('staffs')->insert([
+                                'user_id' => $user->id,
+                                'company_id' => $companyId,
+                                'role_id' => $role->id,
+                                'status' => 'ACTIVE',
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ]);
+                        }
+                    }
+                } elseif ($proposal->type === 'REMOVE_MEMBER') {
+                    $user = DB::table('users')->where('wallet_address', $walletAddress)->first();
+                    if ($user) {
+                        DB::table('staffs')
+                            ->where('user_id', $user->id)
+                            ->where('company_id', $companyId)
+                            ->update([
+                                'status' => 'INACTIVE',
+                                'updated_at' => now()
+                            ]);
+                    }
+                }
+            }
+        }
     }
 
     /**

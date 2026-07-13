@@ -167,7 +167,9 @@ export class CreateProposalModalComponent {
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
       };
 
-      const extraParams = {};
+      const extraParams = (this.newProposal.type === 'ADD_MEMBER' || this.newProposal.type === 'REMOVE_MEMBER')
+        ? { member_address: this.newProposal.memberParams.address }
+        : {};
 
       const createResponse = await firstValueFrom(this.apiService.post<any>('proposals', {
         title: this.newProposal.title,

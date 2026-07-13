@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
 use App\Domain\Utils\Web3SignatureVerifier;
+use App\Infrastructure\Persistence\Eloquent\UserModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -230,14 +231,79 @@ class ProposalController extends Controller
             return response()->json(['message' => 'Proposal must be APPROVED before execution'], 422);
         }
 
-        DB::table('proposals')
-            ->where('id', $id)
-            ->update([
-                'status' => 'EXECUTED',
-                'tx_hash' => $txHash,
-                'effective_date' => now(),
-                'updated_at' => now()
-            ]);
+        DB::transaction(function () use ($id, $companyId, $txHash, $proposal) {
+            DB::table('proposals')
+                ->where('id', $id)
+                ->update([
+                    'status' => 'EXECUTED',
+                    'tx_hash' => $txHash,
+                    'effective_date' => now(),
+                    'updated_at' => now()
+                ]);
+
+            // Đồng bộ thành viên HĐQT nếu là ADD_MEMBER / REMOVE_MEMBER
+            $params = json_decode($proposal->params);
+            $walletAddress = isset($params->member_address) ? strtolower($params->member_address) : null;
+
+            if ($walletAddress) {
+                if ($proposal->type === 'ADD_MEMBER') {
+                    $user = UserModel::firstOrCreate(
+                        ['wallet_address' => $walletAddress],
+                        [
+                            'name' => 'Staff_' . substr($walletAddress, 2, 6),
+                            'kyc_status' => 'PENDING',
+                            'is_whitelisted' => false
+                        ]
+                    );
+
+                    $role = DB::table('roles')
+                        ->where('company_id', $companyId)
+                        ->where(function($q) {
+                            $q->where('name', 'Board Member')
+                              ->orWhere('name', 'Owner')
+                              ->orWhere('name', 'Quản lý');
+                        })
+                        ->first();
+                    
+                    if ($role) {
+                        $existingStaff = DB::table('staffs')
+                            ->where('user_id', $user->id)
+                            ->where('company_id', $companyId)
+                            ->first();
+
+                        if ($existingStaff) {
+                            DB::table('staffs')
+                                ->where('id', $existingStaff->id)
+                                ->update([
+                                    'role_id' => $role->id,
+                                    'status' => 'ACTIVE',
+                                    'updated_at' => now()
+                                ]);
+                        } else {
+                            DB::table('staffs')->insert([
+                                'user_id' => $user->id,
+                                'company_id' => $companyId,
+                                'role_id' => $role->id,
+                                'status' => 'ACTIVE',
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ]);
+                        }
+                    }
+                } elseif ($proposal->type === 'REMOVE_MEMBER') {
+                    $user = DB::table('users')->where('wallet_address', $walletAddress)->first();
+                    if ($user) {
+                        DB::table('staffs')
+                            ->where('user_id', $user->id)
+                            ->where('company_id', $companyId)
+                            ->update([
+                                'status' => 'INACTIVE',
+                                'updated_at' => now()
+                            ]);
+                    }
+                }
+            }
+        });
 
         return response()->json([
             'message' => 'Proposal marked as EXECUTED',
