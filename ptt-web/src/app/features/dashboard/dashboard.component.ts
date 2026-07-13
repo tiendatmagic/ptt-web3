@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { StateService } from '@core/services/state.service';
 import { ApiService } from '@core/services/api.service';
 import { firstValueFrom } from 'rxjs';
@@ -17,7 +18,7 @@ import { ShortAddressPipe } from '@shared/pipes/short-address.pipe';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, TabGroupComponent, IconComponent, ShortAddressPipe],
+  imports: [CommonModule, FormsModule, RouterModule, ButtonComponent, TabGroupComponent, IconComponent, ShortAddressPipe],
   templateUrl: './dashboard.component.html'
 })
 export class DashboardComponent implements OnInit {

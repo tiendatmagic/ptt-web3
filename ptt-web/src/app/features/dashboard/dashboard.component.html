@@ -80,9 +80,20 @@
               </svg>
             </div>
             <div class="min-w-0">
-              <h2 class="text-base font-extrabold text-slate-800 dark:text-white truncate leading-tight">
-                {{ stateService.currentCompany().name }}
-              </h2>
+              <div class="flex items-center gap-1.5">
+                <h2 class="text-base font-extrabold text-slate-800 dark:text-white truncate leading-tight">
+                  {{ stateService.currentCompany().name }}
+                </h2>
+                @if (stateService.hasPermission('staffs.edit')) {
+                  <a
+                    routerLink="/settings"
+                    class="text-slate-400 hover:text-violet-500 dark:hover:text-violet-400 transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800/60 inline-flex items-center justify-center"
+                    title="Chỉnh sửa cấu hình doanh nghiệp"
+                  >
+                    <app-icon name="edit" class="w-3.5 h-3.5" />
+                  </a>
+                }
+              </div>
               <span class="text-sm font-bold text-violet-500 uppercase tracking-widest block mt-0.5">
                 {{ stateService.currentCompany().code }}
               </span>
