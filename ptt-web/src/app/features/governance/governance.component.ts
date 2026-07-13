@@ -254,7 +254,12 @@ export class GovernanceComponent implements OnInit {
 
       // Load lại để phản ánh status mới nhất (PENDING → APPROVED nếu đủ threshold)
       await this.loadProposals();
-      await this.selectProposal(proposal);
+      const updatedProposal = this.proposalsList().find(p => Number(p.id) === Number(proposal.id));
+      if (updatedProposal) {
+        await this.fetchProposalDetail(updatedProposal);
+      } else {
+        await this.selectProposal(proposal);
+      }
     } catch (e: any) {
       console.error(e);
       const msg = e?.reason || e?.message || e?.error?.message || 'Từ chối ký hoặc lỗi xác thực!';
@@ -358,7 +363,12 @@ export class GovernanceComponent implements OnInit {
 
       // Load lại dữ liệu
       await this.loadProposals();
-      await this.selectProposal(proposal);
+      const updatedProposal = this.proposalsList().find(p => Number(p.id) === Number(proposal.id));
+      if (updatedProposal) {
+        await this.fetchProposalDetail(updatedProposal);
+      } else {
+        await this.selectProposal(proposal);
+      }
     } catch (e: any) {
       console.error(e);
       const msg = e?.reason || e?.message || e?.error?.message || 'Lỗi thực thi đề xuất!';
