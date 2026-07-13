@@ -203,7 +203,8 @@ export class FundingComponent implements OnInit {
       await this.loadFundingData();
     } catch (e: any) {
       console.error(e);
-      this.stateService.showToast(e.message || 'Lỗi giao dịch hoặc từ chối thanh toán!', 'error');
+      const friendlyMsg = this.parseContractError(e);
+      this.stateService.showToast(friendlyMsg, 'error');
     } finally {
       this.stateService.isLoading.set(false);
     }
@@ -268,7 +269,8 @@ export class FundingComponent implements OnInit {
       await this.loadFundingData();
     } catch (e: any) {
       console.error(e);
-      this.stateService.showToast(e.message || 'Lỗi giao dịch hoàn tất sớm!', 'error');
+      const friendlyMsg = this.parseContractError(e);
+      this.stateService.showToast(friendlyMsg, 'error');
     } finally {
       this.stateService.isLoading.set(false);
     }
@@ -317,7 +319,8 @@ export class FundingComponent implements OnInit {
       await this.loadFundingData();
     } catch (e: any) {
       console.error(e);
-      this.stateService.showToast(e.message || 'Lỗi giao dịch hủy vòng gọi vốn!', 'error');
+      const friendlyMsg = this.parseContractError(e);
+      this.stateService.showToast(friendlyMsg, 'error');
     } finally {
       this.stateService.isLoading.set(false);
     }
@@ -369,7 +372,8 @@ export class FundingComponent implements OnInit {
       await this.loadFundingData();
     } catch (e: any) {
       console.error(e);
-      this.stateService.showToast(e.message || 'Lỗi thực thi giao dịch nhận lại tiền hoàn trả!', 'error');
+      const friendlyMsg = this.parseContractError(e);
+      this.stateService.showToast(friendlyMsg, 'error');
     } finally {
       this.stateService.isLoading.set(false);
     }
@@ -413,9 +417,99 @@ export class FundingComponent implements OnInit {
       await this.loadFundingData();
     } catch (e: any) {
       console.error(e);
-      this.stateService.showToast(e.message || 'Lỗi claim hoặc bạn không có quyền nhận cổ tức (không có số dư tại block snapshot)!', 'error');
+      const friendlyMsg = this.parseContractError(e);
+      this.stateService.showToast(friendlyMsg, 'error');
     } finally {
       this.stateService.isLoading.set(false);
     }
+  }
+
+  // Giải mã lỗi Smart Contract thân thiện với người dùng
+  private parseContractError(e: any): string {
+    console.log('Parsing contract error:', e);
+    let data = '';
+
+    // Trích xuất revert data hex từ các thuộc tính lỗi phổ biến của ethers / metamask
+    if (e.data && typeof e.data === 'string') {
+      data = e.data;
+    } else if (e.error?.data && typeof e.error.data === 'string') {
+      data = e.error.data;
+    } else if (e.error?.data?.data && typeof e.error.data.data === 'string') {
+      data = e.error.data.data;
+    } else if (typeof e.message === 'string') {
+      const match = e.message.match(/0x[a-fA-F0-9]{8,}/);
+      if (match) {
+        data = match[0];
+      }
+    }
+
+    if (data && data.startsWith('0x')) {
+      const selector = data.slice(0, 10).toLowerCase();
+
+      // Trường hợp require(string) -> selector 0x08c379a0
+      if (selector === '0x08c379a0') {
+        try {
+          const decoded = ethers.AbiCoder.defaultAbiCoder().decode(['string'], '0x' + data.slice(10));
+          const reason = decoded[0];
+          if (reason === 'Sender is not whitelisted') {
+            return 'Lỗi: Smart Contract Gọi vốn chưa được Whitelist trên EquityToken!';
+          }
+          if (reason === 'Receiver is not whitelisted') {
+            return 'Lỗi: Ví của bạn chưa được Whitelist trên Smart Contract Cổ phần (EquityToken)!';
+          }
+          if (reason === 'Sender is blacklisted') {
+            return 'Lỗi: Ví gửi đang nằm trong danh sách hạn chế (Blacklist)!';
+          }
+          if (reason === 'Receiver is blacklisted') {
+            return 'Lỗi: Ví nhận đang nằm trong danh sách hạn chế (Blacklist)!';
+          }
+          return `Yêu cầu bị từ chối từ Contract: ${reason}`;
+        } catch (err) {
+          // ignore
+        }
+      }
+
+      // Danh sách mã lỗi custom từ FinanceManager & EquityToken & OpenZeppelin
+      const ERROR_MAP: { [key: string]: string } = {
+        '0x98f76d0e': 'Bạn không có quyền thực hiện hành động này (Yêu cầu thành viên HĐQT).',
+        '0x266f3685': 'Vòng gọi vốn không tồn tại trên Smart Contract.',
+        '0x00bfc921': 'Giá cổ phần không hợp lệ.',
+        '0xca07b5fb': 'Địa chỉ Smart Contract cấu hình không hợp lệ.',
+        '0x6f7eac26': 'Thời gian bắt đầu/kết thúc vòng gọi vốn không hợp lệ.',
+        '0x175aca88': 'Cấu hình giá hoặc tổng cung không hợp lệ.',
+        '0x3df07da5': 'Vòng gọi vốn chưa được kích hoạt hoặc đã đóng.',
+        '0xc84f87a0': 'Vòng gọi vốn đã kết thúc hoặc bị hủy.',
+        '0x8e9c6e1c': 'Vòng gọi vốn chưa đến thời gian bắt đầu.',
+        '0x6b5fd31b': 'Vòng gọi vốn đã quá thời gian kết thúc.',
+        '0xc30436e9': 'Số lượng mua vượt quá số lượng cổ phần còn lại trong vòng này.',
+        '0x72e7012e': 'Smart Contract không đủ số lượng token cổ phần để phân phối. Vui lòng liên hệ doanh nghiệp nạp thêm token vào contract.',
+        '0x3392b3a0': 'Địa chỉ ví của bạn không nằm trong Whitelist riêng của vòng này.',
+        '0x1854e357': 'Địa chỉ ví của bạn hoặc ví Smart Contract Gọi vốn chưa được Whitelist trên Smart Contract Cổ phần (EquityToken). Vui lòng thông báo HĐQT Whitelist.',
+        '0x1ee09783': 'Số lượng mua tối thiểu chưa đạt giới hạn cho phép.',
+        '0x3882ab80': 'Số lượng mua vượt quá giới hạn tối đa cho phép của mỗi ví.',
+        '0xbf64110f': 'Tài khoản của bạn không đủ số dư BNB để thanh toán.',
+        '0x90b8ec18': 'Giao dịch chuyển tiền thất bại.',
+        '0xaf7aec56': 'Vòng gọi vốn thanh toán bằng ERC20, không nhận BNB.',
+        '0xfe382aa7': 'Số dư token thanh toán (USDT/USDC...) của bạn không đủ để thực hiện giao dịch.',
+        '0xfb8f41b2': 'Quyền chi tiêu token (Allowance) không đủ. Vui lòng Approve lại.',
+        '0xe450d38c': 'Số dư tài khoản không đủ để thực hiện giao dịch.',
+        '0xd93c0665': 'Hợp đồng hiện đang tạm dừng giao dịch.',
+        '0x118cdaa7': 'Tài khoản không được ủy quyền thực hiện hành động này.',
+        '0x60ffcb5e': 'Bạn không sở hữu cổ phần tại thời điểm snapshot đợt chia cổ tức này.',
+        '0x6fa6d0a5': 'Doanh nghiệp chưa hoàn thành mục tiêu gọi vốn hoặc chưa quá hạn, không thể rút tiền.',
+        '0x646cf558': 'Bạn đã nhận cổ tức đợt này rồi.',
+      };
+
+      if (ERROR_MAP[selector]) {
+        return `Lỗi Smart Contract: ${ERROR_MAP[selector]}`;
+      }
+    }
+
+    // Lỗi từ chối từ Metamask
+    if (e.message && (e.message.includes('user rejected action') || e.message.includes('user rejected transaction'))) {
+      return 'Giao dịch đã bị từ chối từ ví MetaMask/AppKit.';
+    }
+
+    return e.reason || e.message || 'Lỗi thực thi giao dịch trên Blockchain!';
   }
 }
