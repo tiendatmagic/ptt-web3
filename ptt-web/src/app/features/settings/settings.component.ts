@@ -303,9 +303,16 @@ export class SettingsComponent implements OnInit {
       const payload = {
         ...this.editingContracts
       };
-      await firstValueFrom(this.apiService.put<any>(`companies/${comp.id}/contracts`, payload));
+      const res = await firstValueFrom(this.apiService.put<any>(`companies/${comp.id}/contracts`, payload));
       this.stateService.showToast('Cập nhật địa chỉ Smart Contracts thành công!', 'success');
-      await this.stateService.loadCompanies();
+      if (res && res.company) {
+        const updated = { ...comp, ...res.company };
+        this.stateService.currentCompany.set(updated);
+        
+        const currentList = this.stateService.companiesList();
+        const updatedList = currentList.map(c => c.id === comp.id ? updated : c);
+        this.stateService.companiesList.set(updatedList);
+      }
     } catch (e: any) {
       this.stateService.showToast(e.error?.message || 'Cập nhật địa chỉ thất bại!', 'error');
     } finally {
@@ -386,9 +393,16 @@ Hãy lưu trữ cẩn thận và không chia sẻ khóa bảo mật (Private Key
         token_name: this.tokenName(),
         token_symbol: this.tokenSymbol(),
       };
-      await firstValueFrom(this.apiService.put<any>(`companies/${comp.id}`, payload));
+      const res = await firstValueFrom(this.apiService.put<any>(`companies/${comp.id}`, payload));
       this.stateService.showToast('Cập nhật thông tin doanh nghiệp thành công!', 'success');
-      await this.stateService.loadCompanies();
+      if (res && res.company) {
+        const updated = { ...comp, ...res.company };
+        this.stateService.currentCompany.set(updated);
+        
+        const currentList = this.stateService.companiesList();
+        const updatedList = currentList.map(c => c.id === comp.id ? updated : c);
+        this.stateService.companiesList.set(updatedList);
+      }
     } catch (e: any) {
       this.stateService.showToast(e.error?.message || 'Cập nhật thông tin thất bại!', 'error');
     } finally {

@@ -212,8 +212,11 @@ export class StateService {
 
   // Chọn doanh nghiệp hiện hành
   public async selectCompany(company: any) {
+    const isDifferentCompany = this.currentCompany()?.id !== company?.id;
     this.currentCompany.set(company);
-    this.userPermissions.set([]);
+    if (isDifferentCompany) {
+      this.userPermissions.set([]);
+    }
     
     if (company && company.id) {
       localStorage.setItem('ptt_selected_company_id', String(company.id));

@@ -208,10 +208,15 @@ class CompanyController extends Controller
                 'uuid' => $companyModel->uuid,
                 'code' => $companyModel->code,
                 'name' => $companyModel->name,
+                'logo' => $companyModel->logo,
+                'valuation' => (float) $companyModel->valuation,
                 'governance_address' => $companyModel->governance_address,
                 'token_address' => $companyModel->token_address,
                 'funding_address' => $companyModel->funding_address,
                 'marketplace_address' => $companyModel->marketplace_address,
+                'token_name' => $companyModel->token_name,
+                'token_symbol' => $companyModel->token_symbol,
+                'status' => $companyModel->status,
             ]
         ]);
     }
@@ -270,10 +275,15 @@ class CompanyController extends Controller
             'message' => 'Company updated successfully',
             'company' => [
                 'id' => $companyModel->id,
+                'uuid' => $companyModel->uuid,
                 'code' => $companyModel->code,
                 'name' => $companyModel->name,
                 'logo' => $companyModel->logo,
-                'valuation' => $companyModel->valuation,
+                'valuation' => (float) $companyModel->valuation,
+                'governance_address' => $companyModel->governance_address,
+                'token_address' => $companyModel->token_address,
+                'funding_address' => $companyModel->funding_address,
+                'marketplace_address' => $companyModel->marketplace_address,
                 'token_name' => $companyModel->token_name,
                 'token_symbol' => $companyModel->token_symbol,
                 'status' => $companyModel->status,
