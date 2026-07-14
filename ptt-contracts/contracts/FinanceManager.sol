@@ -3,6 +3,15 @@ pragma solidity ^0.8.34;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+
+interface IBoardGovernance {
+    function isMember(address member) external view returns (bool);
+}
 
 interface IEquityToken {
     function getPastBalanceOf(
@@ -23,7 +32,7 @@ interface IEquityToken {
     function burnFrom(address from, uint256 amount) external;
 }
 
-contract FinanceManager is Ownable {
+contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
     error NotOwnerOrOperator();
     error RoundDoesNotExist();
     error InvalidPrice();
@@ -529,4 +538,70 @@ contract FinanceManager is Ownable {
     }
 
     receive() external payable {}
+
+    // Rút Native Token (BNB)
+    function rescueNative(address payable recipient, uint256 amount) external onlyOwner {
+        require(recipient != address(0), "Invalid recipient");
+        require(amount <= address(this).balance, "Insufficient balance");
+        (bool success, ) = recipient.call{value: amount}("");
+        require(success, "Transfer failed");
+    }
+
+    // Rút ERC20
+    function rescueERC20(address token, address recipient, uint256 amount) external onlyOwner {
+        require(token != address(0), "Invalid token");
+        require(recipient != address(0), "Invalid recipient");
+        require(IERC20(token).transfer(recipient, amount), "Transfer failed");
+    }
+
+    // Rút ERC721
+    function rescueERC721(address token, address recipient, uint256 tokenId) external onlyOwner {
+        require(token != address(0), "Invalid token");
+        require(recipient != address(0), "Invalid recipient");
+        IERC721(token).safeTransferFrom(address(this), recipient, tokenId);
+    }
+
+    // Rút ERC1155
+    function rescueERC1155(address token, address recipient, uint256 tokenId, uint256 amount, bytes calldata data) external onlyOwner {
+        require(token != address(0), "Invalid token");
+        require(recipient != address(0), "Invalid recipient");
+        IERC1155(token).safeTransferFrom(address(this), recipient, tokenId, amount, data);
+    }
+
+    // Callbacks nhận NFT
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) external pure override returns (bytes4) {
+        return this.onERC721Received.selector;
+    }
+
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external pure override returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
+    ) external pure override returns (bytes4) {
+        return this.onERC1155BatchReceived.selector;
+    }
+
+    function supportsInterface(bytes4 interfaceId) external view override returns (bool) {
+        return
+            interfaceId == type(IERC721Receiver).interfaceId ||
+            interfaceId == type(IERC1155Receiver).interfaceId ||
+            interfaceId == type(IERC165).interfaceId;
+    }
 }

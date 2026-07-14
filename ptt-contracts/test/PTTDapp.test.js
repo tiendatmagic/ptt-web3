@@ -48,7 +48,7 @@ describe("PTT Dapp Suite", function () {
 
     // 4. Deploy EquityToken with Owner set to BoardGovernance and initial whitelist addresses
     const EquityToken = await ethers.getContractFactory("EquityToken");
-    token = await EquityToken.deploy(tokenName, tokenSymbol, govAddr, [financeAddr, marketAddr, deployer.address]);
+    token = await EquityToken.deploy(tokenName, tokenSymbol, govAddr, [financeAddr, marketAddr, deployer.address], [financeAddr]);
     await token.waitForDeployment();
     const tokenAddr = await token.getAddress();
 
@@ -246,7 +246,7 @@ describe("PTT Dapp Suite", function () {
     const gasPaid = receipt.gasUsed * receipt.gasPrice;
 
     const afterBalance = await ethers.provider.getBalance(investorA.address);
-    const expectedClaim = (totalDividendAmount * 100n) / 500n; // 20% of 2 BNB = 0.4 BNB
+    const expectedClaim = (totalDividendAmount * 100n) / 600n; // 100 / 600 = 16.67% of 2 BNB = 0.3333 BNB
     expect(afterBalance + gasPaid - beforeBalance).to.equal(expectedClaim);
   });
 
@@ -347,5 +347,104 @@ describe("PTT Dapp Suite", function () {
     await expect(
       token.connect(investorA).setWhitelistedBatch([investorB.address], true)
     ).to.be.revertedWith("Not authorized: must be owner, operator or board member");
+  });
+
+  it("Should allow HĐQT to rescue native BNB and ERC20 tokens via multisig proposal, but revert for direct calls", async function () {
+    const govAddr = await governance.getAddress();
+    const financeAddr = await financeManager.getAddress();
+    const marketAddr = await marketplace.getAddress();
+    const tokenAddr = await token.getAddress();
+
+    const executeRescueProposal = async (targetContract, value, calldata) => {
+      let propTx = await governance.connect(memberA).createProposal(
+        await targetContract.getAddress(),
+        value,
+        calldata,
+        "Rescue tokens",
+        0,
+        3600
+      );
+      await propTx.wait();
+      let propId = await governance.proposalCount();
+      await governance.connect(memberB).signProposal(propId);
+      await governance.executeProposal(propId);
+    };
+
+    // --- TEST FINANCEMANAGER RESCUE ---
+    // 1. Send native BNB to FinanceManager
+    const bnbAmount = ethers.parseEther("0.1");
+    const balBeforeSend = await ethers.provider.getBalance(financeAddr);
+    await deployer.sendTransaction({
+      to: financeAddr,
+      value: bnbAmount
+    });
+    
+    // Check balance
+    const balAfterSend = await ethers.provider.getBalance(financeAddr);
+    expect(balAfterSend - balBeforeSend).to.equal(bnbAmount);
+
+    // Direct call by memberA tries to rescue (should fail because only owner can call)
+    await expect(
+      financeManager.connect(memberA).rescueNative(investorB.address, balAfterSend)
+    ).to.be.revertedWithCustomError(financeManager, "OwnableUnauthorizedAccount").withArgs(memberA.address);
+
+    // Board member rescues BNB via proposal
+    const investorBBalBefore = await ethers.provider.getBalance(investorB.address);
+    const rescueBnbData = financeManager.interface.encodeFunctionData("rescueNative", [investorB.address, balAfterSend]);
+    await executeRescueProposal(financeManager, 0, rescueBnbData);
+    const investorBBalAfter = await ethers.provider.getBalance(investorB.address);
+    expect(investorBBalAfter - investorBBalBefore).to.equal(balAfterSend);
+    expect(await ethers.provider.getBalance(financeAddr)).to.equal(0n);
+
+    // 2. Send ERC20 token to FinanceManager
+    const erc20Amount = ethers.parseEther("50");
+    const tokenBalBefore = await token.balanceOf(financeAddr);
+    await token.connect(investorA).transfer(financeAddr, erc20Amount);
+    const tokenBalAfter = await token.balanceOf(financeAddr);
+    expect(tokenBalAfter - tokenBalBefore).to.equal(erc20Amount);
+
+    // Direct call by memberA tries to rescue (should fail)
+    await expect(
+      financeManager.connect(memberA).rescueERC20(tokenAddr, investorB.address, erc20Amount)
+    ).to.be.revertedWithCustomError(financeManager, "OwnableUnauthorizedAccount").withArgs(memberA.address);
+
+    // Board rescues ERC20 via proposal
+    const rescueErc20Data = financeManager.interface.encodeFunctionData("rescueERC20", [tokenAddr, investorB.address, erc20Amount]);
+    await executeRescueProposal(financeManager, 0, rescueErc20Data);
+    expect(await token.balanceOf(investorB.address)).to.equal(erc20Amount);
+    expect(await token.balanceOf(financeAddr)).to.equal(tokenBalBefore);
+
+    // --- TEST MARKETPLACE RESCUE ---
+    // 3. Send ERC20 token to Marketplace from investorB
+    await token.connect(investorB).transfer(marketAddr, erc20Amount);
+    expect(await token.balanceOf(marketAddr)).to.equal(erc20Amount);
+
+    // Direct call by memberA tries to rescue (should fail)
+    await expect(
+      marketplace.connect(memberA).rescueERC20(tokenAddr, investorB.address, erc20Amount)
+    ).to.be.revertedWithCustomError(marketplace, "OwnableUnauthorizedAccount").withArgs(memberA.address);
+
+    // Board rescues ERC20 via proposal
+    const rescueMarketErc20Data = marketplace.interface.encodeFunctionData("rescueERC20", [tokenAddr, investorB.address, erc20Amount]);
+    await executeRescueProposal(marketplace, 0, rescueMarketErc20Data);
+    expect(await token.balanceOf(marketAddr)).to.equal(0n);
+
+    // --- TEST EQUITYTOKEN RESCUE ---
+    // 4. Send ERC20 token to EquityToken itself
+    await token.connect(investorB).transfer(tokenAddr, erc20Amount);
+    expect(await token.balanceOf(tokenAddr)).to.equal(erc20Amount);
+
+    // Direct call by memberA tries to rescue (should fail)
+    await expect(
+      token.connect(memberA).rescueERC20(tokenAddr, investorB.address, erc20Amount)
+    ).to.be.revertedWithCustomError(token, "OwnableUnauthorizedAccount").withArgs(memberA.address);
+
+    // Board rescues EquityToken from itself via proposal
+    const balBeforeRescue = await token.balanceOf(investorB.address);
+    const rescueTokenSelfData = token.interface.encodeFunctionData("rescueERC20", [tokenAddr, investorB.address, erc20Amount]);
+    await executeRescueProposal(token, 0, rescueTokenSelfData);
+    const balAfterRescue = await token.balanceOf(investorB.address);
+    expect(balAfterRescue - balBeforeRescue).to.equal(erc20Amount);
+    expect(await token.balanceOf(tokenAddr)).to.equal(0n);
   });
 });
