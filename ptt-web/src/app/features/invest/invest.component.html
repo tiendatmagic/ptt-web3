@@ -243,7 +243,7 @@
           <p class="text-2xl font-black text-slate-800 dark:text-white">
             {{ formatNumber(myBalance()) }}
           </p>
-          <p class="text-xs text-slate-400">trên tổng {{ formatNumber(totalSupply()) }} cổ phần</p>
+          <p class="text-xs text-slate-400">trên tổng {{ formatNumber(totalSupply()) }} {{ selectedCompany()?.token_symbol || 'cổ phần' }}</p>
         </div>
 
         <!-- Cổ tức có thể nhận -->
@@ -446,14 +446,14 @@
 
             <!-- Form mua cổ phần -->
             <div class="space-y-4">
-              <h3 class="text-base font-black text-slate-700 dark:text-slate-200">Mua cổ phần</h3>
+              <h3 class="text-base font-black text-slate-700 dark:text-slate-200">Mua {{ selectedCompany()?.token_symbol || 'cổ phần' }}</h3>
               @if (activeFundingRound()?.isActive) {
                 <div class="space-y-3">
                   <div class="space-y-1.5">
                     <div class="flex justify-between items-center select-none">
                       <label
                         class="text-xs font-black text-slate-400 uppercase tracking-wider block"
-                        >Số lượng cổ phần</label
+                        >Số lượng {{ selectedCompany()?.token_symbol || 'cổ phần' }}</label
                       >
                       @if (isConnected()) {
                         <span class="text-[10px] font-black text-slate-400">
@@ -498,7 +498,7 @@
                       Kết nối ví để mua
                     } @else {
                       <app-icon name="plus" class="w-4 h-4" />
-                      Mua {{ buyAmount() }} cổ phần bằng {{ purchaseCostText() }}
+                      Mua {{ buyAmount() }} {{ selectedCompany()?.token_symbol || 'cổ phần' }} bằng {{ purchaseCostText() }}
                     }
                   </button>
                 </div>
@@ -809,7 +809,7 @@
                     }}%
                   </p>
                   <p class="text-xs text-slate-400">
-                    trên tổng {{ formatNumber(totalSupply()) }} cổ phần
+                    trên tổng {{ formatNumber(totalSupply()) }} {{ selectedCompany()?.token_symbol || 'cổ phần' }}
                   </p>
                 </div>
 

@@ -525,7 +525,7 @@ export class InvestComponent implements OnInit {
           await appTx.wait();
         }
 
-        this.stateService.showToast(`Đang gửi giao dịch mua cổ phần (${formattedCost} ${round.paymentTokenSymbol})...`, 'warning');
+        this.stateService.showToast(`Đang gửi giao dịch mua ${company.token_symbol || 'cổ phần'} (${formattedCost} ${round.paymentTokenSymbol})...`, 'warning');
         const tx = await funding['buyShares'](round.id, tokenAmount, gasOverrides);
         await tx.wait();
       } else {
@@ -535,7 +535,7 @@ export class InvestComponent implements OnInit {
         await tx.wait();
       }
 
-      this.stateService.showToast(`Mua thành công ${this.buyAmount()} cổ phần!`, 'success');
+      this.stateService.showToast(`Mua thành công ${this.buyAmount()} ${company.token_symbol || 'cổ phần'}!`, 'success');
       await this.loadOnChainData(company);
     } catch (e: any) {
       this.stateService.showToast(e.reason || e.message || 'Giao dịch thất bại!', 'error');
