@@ -11,6 +11,7 @@ import { Contract, parseEther, ethers } from 'ethers';
 
 import { ModalService } from '@core/services/modal.service';
 import { CreateRoundProposalModalComponent } from './modals/create-round-proposal-modal.component';
+import { CreateDividendProposalModalComponent } from './modals/create-dividend-proposal-modal.component';
 
 // ABI rút gọn của FinanceManager để quản lý Gọi vốn & Cổ tức
 const FINANCE_MANAGER_ABI = [
@@ -439,6 +440,19 @@ export class FundingComponent implements OnInit {
   public openCreateRoundModal() {
     const ref = this.modalService.open(CreateRoundProposalModalComponent, {
       title: 'Tạo đề xuất vòng gọi vốn mới',
+      size: 'md'
+    });
+    ref.afterClosed$.subscribe(success => {
+      if (success) {
+        this.loadFundingData();
+      }
+    });
+  }
+
+  // Đăng ký đợt chia cổ tức mới qua Modal đề xuất HĐQT
+  public openCreateDividendModal() {
+    const ref = this.modalService.open(CreateDividendProposalModalComponent, {
+      title: 'Tạo đề xuất chia cổ tức mới',
       size: 'md'
     });
     ref.afterClosed$.subscribe(success => {

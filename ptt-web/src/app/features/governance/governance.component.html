@@ -16,17 +16,28 @@
         nghiệp.
       </p>
     </div>
-    @if (stateService.hasPermission('proposals.create')) {
+    <div class="flex items-center gap-3">
       <button
         app-button
-        variant="primary"
-        (click)="openCreateProposal()"
-        class="h-11 px-5 rounded-xl font-bold flex items-center gap-2 shadow-sm whitespace-nowrap"
+        variant="cancel"
+        (click)="openDepositModal()"
+        class="h-11 px-5 rounded-xl font-bold flex items-center gap-2 border border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 shadow-sm whitespace-nowrap active:scale-95 transition-all duration-150"
       >
-        <app-icon name="plus" class="w-4 h-4" />
-        TẠO ĐỀ XUẤT MỚI
+        <app-icon name="bank" class="w-4 h-4 text-violet-500" />
+        NẠP QUỸ
       </button>
-    }
+      @if (stateService.hasPermission('proposals.create')) {
+        <button
+          app-button
+          variant="primary"
+          (click)="openCreateProposal()"
+          class="h-11 px-5 rounded-xl font-bold flex items-center gap-2 shadow-sm whitespace-nowrap active:scale-95 transition-all duration-150"
+        >
+          <app-icon name="plus" class="w-4 h-4" />
+          TẠO ĐỀ XUẤT MỚI
+        </button>
+      }
+    </div>
   </div>
 
   <!-- MAIN GOVERNANCE PANEL -->

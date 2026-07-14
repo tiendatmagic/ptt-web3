@@ -13,6 +13,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { ModalService } from '@core/services/modal.service';
 import { CreateProposalModalComponent } from './modals/create-proposal-modal.component';
 import { ShareProposalModalComponent } from './modals/share-proposal-modal.component';
+import { DepositModalComponent } from '../dashboard/modals/deposit-modal.component';
 import { POPULAR_CHAINS } from '@core/utils/blockchain.utils';
 
 import { EquityToken } from '@core/constants/contracts/equity-token';
@@ -553,6 +554,22 @@ export class GovernanceComponent implements OnInit {
         }
       }
 
+      if (proposal.type === 'DIVIDEND_ROUND') {
+        try {
+          const p = proposal.params || {};
+          const dividendDbId = p.dividend_db_id;
+          if (dividendDbId) {
+            await firstValueFrom(
+              this.apiService.post<any>(`dividends/${dividendDbId}/sync`, {
+                status: 'ACTIVE'
+              }, comp.id)
+            );
+          }
+        } catch (divErr) {
+          console.warn('Không thể tự động đồng bộ trạng thái đợt cổ tức:', divErr);
+        }
+      }
+
       const msg = alreadyExecutedOnChain
         ? 'Đồng bộ trạng thái thành công! Đề xuất đã EXECUTED.'
         : 'Đề xuất đã được thực thi thành công on-chain!';
@@ -573,5 +590,13 @@ export class GovernanceComponent implements OnInit {
     } finally {
       this.stateService.isLoading.set(false);
     }
+  }
+
+  // Mở modal Nạp Quỹ
+  public openDepositModal() {
+    this.modalService.open(DepositModalComponent, {
+      title: 'Nạp quỹ doanh nghiệp (Treasury)',
+      size: 'md'
+    });
   }
 }

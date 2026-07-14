@@ -11,17 +11,28 @@
         Tham gia mua cổ phần trực tiếp từ doanh nghiệp và nhận chia sẻ lợi nhuận cổ tức on-chain.
       </p>
     </div>
-    @if (stateService.hasPermission('funding.view')) {
-      <button
-        app-button
-        variant="primary"
-        (click)="openCreateRoundModal()"
-        class="h-11 px-5 rounded-xl font-bold flex items-center gap-2 shadow-sm whitespace-nowrap"
-      >
-        <app-icon name="plus" class="w-4 h-4" />
-        TẠO VÒNG GỌI VỐN
-      </button>
-    }
+    <div class="flex items-center gap-3">
+      @if (stateService.hasPermission('funding.view')) {
+        <button
+          app-button
+          variant="cancel"
+          (click)="openCreateDividendModal()"
+          class="h-11 px-5 rounded-xl font-bold flex items-center gap-2 border border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 shadow-sm whitespace-nowrap active:scale-95 transition-all duration-150"
+        >
+          <app-icon name="financials" class="w-4 h-4 text-violet-500" />
+          CHIA CỔ TỨC MỚI
+        </button>
+        <button
+          app-button
+          variant="primary"
+          (click)="openCreateRoundModal()"
+          class="h-11 px-5 rounded-xl font-bold flex items-center gap-2 shadow-sm whitespace-nowrap active:scale-95 transition-all duration-150"
+        >
+          <app-icon name="plus" class="w-4 h-4" />
+          TẠO VÒNG GỌI VỐN
+        </button>
+      }
+    </div>
   </div>
 
   @if (isPageLoading()) {

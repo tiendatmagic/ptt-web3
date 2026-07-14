@@ -10,6 +10,7 @@ import { ethers } from 'ethers';
 import { ModalService } from '@core/services/modal.service';
 import { AddStaffModalComponent } from './modals/add-staff-modal.component';
 import { RegisterCompanyModalComponent } from './modals/register-company-modal.component';
+import { DepositModalComponent } from './modals/deposit-modal.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { TabGroupComponent } from '@shared/components/tab-group/tab-group.component';
 import { IconComponent } from '@shared/components/icon/icon.component';
@@ -308,12 +309,20 @@ export class DashboardComponent implements OnInit {
     try {
       this.stateService.isLoading.set(true);
       await firstValueFrom(this.apiService.post<any>('companies/register', this.newCompany));
-      this.stateService.showToast('Đăng ký doanh nghiệp thành công!', 'success');
+      this.stateService.showToast('Đã đăng ký doanh nghiệp thành công!', 'success');
       await this.stateService.loadCompanies();
     } catch (e: any) {
       this.stateService.showToast(e.error?.message || 'Có lỗi xảy ra!', 'error');
     } finally {
       this.stateService.isLoading.set(false);
     }
+  }
+
+  // Mở modal Nạp Quỹ
+  public openDepositModal() {
+    this.modalService.open(DepositModalComponent, {
+      title: 'Nạp quỹ doanh nghiệp (Treasury)',
+      size: 'md'
+    });
   }
 }
