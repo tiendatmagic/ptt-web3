@@ -345,31 +345,7 @@
 
         <!-- ==================== TAB: MUA CỔ PHẦN ==================== -->
         @if (activeTab() === 'funding') {
-          <div class="p-6 space-y-5">
-            <!-- Bộ chọn vòng gọi vốn nếu doanh nghiệp có nhiều vòng đang mở -->
-            @if (activeFundingRoundsList().length > 1) {
-              <div
-                class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200/50 dark:border-slate-800/50"
-              >
-                <div class="space-y-0.5">
-                  <span class="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider block"
-                    >Nhiều vòng gọi vốn đang mở</span
-                  >
-                  <span class="text-xs text-slate-400"
-                    >Doanh nghiệp này đang mở nhiều vòng gọi vốn. Chọn vòng bạn muốn đầu tư.</span
-                  >
-                </div>
-                <app-custom-select
-                  [options]="activeFundingRoundsList()"
-                  valueKey="id"
-                  labelKey="name"
-                  [value]="activeFundingRound()?.id"
-                  (valueChange)="onSelectFundingRound($event)"
-                  containerClass="min-w-[240px]"
-                />
-              </div>
-            }
-
+          <div id="buy-shares-form" class="p-6 space-y-5">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <!-- Thông tin vòng gọi vốn -->
               <div class="space-y-4">
@@ -535,6 +511,117 @@
                 >
                   Hiện không có vòng gọi vốn đang mở.
                 </p>
+              }
+            </div>
+
+            <!-- BẢNG LỊCH SỬ CÁC VÒNG GỌI VỐN -->
+            <div class="border-t border-slate-100 dark:border-slate-800/60 pt-6 space-y-4">
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-black text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                  <app-icon name="pos" class="w-4 h-4 text-[var(--color-primary)]" />
+                  Lịch sử các vòng gọi vốn
+                </h3>
+                <span class="text-xs text-slate-400 font-semibold text-right">{{ fundingTotalItems() }} vòng gọi vốn</span>
+              </div>
+
+              <div class="overflow-x-auto border border-slate-100 dark:border-slate-900 rounded-xl">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 font-bold uppercase text-xs tracking-wider select-none">
+                      <th class="p-3 pl-4 whitespace-nowrap">Vòng Gọi Vốn</th>
+                      <th class="p-3 whitespace-nowrap">Tỷ Giá</th>
+                      <th class="p-3 whitespace-nowrap">Số Lượng Đã Bán</th>
+                      <th class="p-3 whitespace-nowrap">Thời Gian</th>
+                      <th class="p-3 whitespace-nowrap">Trạng Thái</th>
+                      <th class="p-3 pr-4 text-right whitespace-nowrap">Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (round of paginatedFundingRounds(); track round.id) {
+                      <tr class="border-t border-slate-100 dark:border-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                        <td class="p-3 pl-4 whitespace-nowrap">
+                          <div class="font-extrabold text-slate-800 dark:text-white">{{ round.name }}</div>
+                          <div class="text-[10px] text-slate-400 font-semibold">ID: #{{ round.id }}</div>
+                        </td>
+                        <td class="p-3 font-bold text-slate-650 dark:text-slate-300 whitespace-nowrap">
+                          {{ formatNumber(round.price) }} {{ round.paymentTokenSymbol }} / {{ stateService.currentCompanyTokenSymbol() }}
+                        </td>
+                        <td class="p-3">
+                          <div class="font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                            {{ formatNumber(round.soldAmount) }} / {{ formatNumber(round.maxSupply) }} {{ stateService.currentCompanyTokenSymbol() }}
+                          </div>
+                          <div class="flex items-center gap-1.5 mt-0.5 select-none">
+                            <div class="w-20 bg-slate-100 dark:bg-slate-800 h-1 rounded-full overflow-hidden shrink-0">
+                              <div class="bg-[var(--color-primary)] h-full transition-all" [style.width]="(+round.maxSupply > 0 ? (+round.soldAmount / +round.maxSupply * 100) : 0) + '%'"></div>
+                            </div>
+                            <span class="text-[9px] text-slate-400 font-bold shrink-0">
+                              {{ (+round.maxSupply > 0 ? (+round.soldAmount / +round.maxSupply * 100) : 0).toFixed(1) }}%
+                            </span>
+                          </div>
+                        </td>
+                        <td class="p-3 text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
+                          {{ round.startTime * 1000 | date: 'dd/MM/yy' }} - {{ round.endTime * 1000 | date: 'dd/MM/yy' }}
+                        </td>
+                        <td class="p-3 whitespace-nowrap">
+                          @if (round.status === 'finalized') {
+                            <span class="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 px-2 py-0.5 rounded-full text-[10px] font-black uppercase">
+                              Hoàn thành
+                            </span>
+                          } @else if (round.status === 'cancelled') {
+                            <span class="bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400 px-2 py-0.5 rounded-full text-[10px] font-black uppercase">
+                              Đã hủy
+                            </span>
+                          } @else if (round.status === 'not_started') {
+                            <span class="bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 px-2 py-0.5 rounded-full text-[10px] font-black uppercase">
+                              Chưa bắt đầu
+                            </span>
+                          } @else if (round.status === 'ended') {
+                            <span class="bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400 px-2 py-0.5 rounded-full text-[10px] font-black uppercase">
+                              Hết hạn
+                            </span>
+                          } @else if (round.status === 'paused') {
+                            <span class="bg-slate-150 text-slate-600 dark:bg-slate-800 dark:text-slate-350 px-2 py-0.5 rounded-full text-[10px] font-black uppercase">
+                              Tạm dừng
+                            </span>
+                          } @else {
+                            <span class="bg-purple-50 text-[var(--color-primary)] dark:bg-purple-950/20 dark:text-purple-300 px-2 py-0.5 rounded-full text-[10px] font-black uppercase">
+                              Đang mở
+                            </span>
+                          }
+                        </td>
+                        <td class="p-3 pr-4 text-right whitespace-nowrap">
+                          <button
+                            app-button
+                            variant="primary"
+                            size="sm"
+                            (click)="selectFundingRoundFromHistory(round)"
+                            [disabled]="!round.isActive"
+                          >
+                            Chọn mua
+                          </button>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="6" class="p-8 text-center text-slate-400">
+                          Doanh nghiệp này chưa thực hiện vòng gọi vốn nào.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Phân trang -->
+              @if (fundingTotalPages() > 1) {
+                <app-pagination
+                  [currentPage]="fundingCurrentPage()"
+                  [totalPages]="fundingTotalPages()"
+                  [totalItems]="fundingTotalItems()"
+                  [itemsPerPage]="fundingItemsPerPage"
+                  itemName="vòng gọi vốn"
+                  (pageChange)="onFundingPageChange($event)"
+                ></app-pagination>
               }
             </div>
           </div>

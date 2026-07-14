@@ -28,7 +28,7 @@ const EQUITY_TOKEN_ABI = [
 // ABI khớp chính xác với FinanceManager contract
 const FUNDING_MANAGER_ABI = [
   'function roundCount() view returns (uint256)',
-  'function rounds(uint256 roundId) view returns (tuple(uint256 id, string name, address shareToken, address paymentToken, address treasury, uint256 price, uint256 maxSupply, uint256 soldAmount, uint256 startTime, uint256 endTime, uint256 minPurchase, uint256 maxPurchase, bool isWhitelistOnly, bool active))',
+  'function rounds(uint256 roundId) view returns (tuple(uint256 id, string name, address shareToken, address paymentToken, address treasury, uint256 price, uint256 maxSupply, uint256 soldAmount, uint256 startTime, uint256 endTime, uint256 minPurchase, uint256 maxPurchase, bool isWhitelistOnly, bool active, bool finalized, bool cancelled))',
   'function buyShares(uint256 roundId, uint256 tokenAmount) external payable',
 
   // Hàm cổ tức bổ sung
@@ -56,7 +56,7 @@ const MARKETPLACE_ABI = [
 @Component({
   selector: 'app-invest',
   standalone: true,
-  imports: [CommonModule, FormsModule, TabGroupComponent, ButtonComponent, IconComponent, CustomSelectComponent, PaginationComponent],
+  imports: [CommonModule, FormsModule, TabGroupComponent, ButtonComponent, IconComponent, PaginationComponent],
   templateUrl: './invest.component.html'
 })
 export class InvestComponent implements OnInit {
@@ -188,6 +188,26 @@ export class InvestComponent implements OnInit {
   // Funding round
   public activeFundingRound = signal<any | null>(null);
   public activeFundingRoundsList = signal<any[]>([]);
+  public allFundingRoundsList = signal<any[]>([]);
+  public fundingCurrentPage = signal<number>(1);
+  public fundingItemsPerPage = 5;
+
+  public paginatedFundingRounds = computed(() => {
+    const list = this.allFundingRoundsList();
+    const page = this.fundingCurrentPage();
+    const limit = this.fundingItemsPerPage;
+    const startIndex = (page - 1) * limit;
+    return list.slice(startIndex, startIndex + limit);
+  });
+
+  public fundingTotalPages = computed(() => {
+    return Math.ceil(this.allFundingRoundsList().length / this.fundingItemsPerPage) || 1;
+  });
+
+  public fundingTotalItems = computed(() => {
+    return this.allFundingRoundsList().length;
+  });
+
   public buyAmount = signal<number>(1);
   public buyLoading = signal(false);
 
@@ -517,7 +537,7 @@ export class InvestComponent implements OnInit {
         promises.push(loadDividendPromise);
       }
 
-      // 3. Tải Active funding rounds
+      // 3. Tải Lịch sử các vòng gọi vốn (Quét toàn bộ đợt)
       let loadFundingRoundPromise = Promise.resolve();
       if (company.funding_address) {
         const funding = new ethers.Contract(company.funding_address, FUNDING_MANAGER_ABI, provider);
@@ -525,6 +545,8 @@ export class InvestComponent implements OnInit {
           const count = Number(countVal);
           if (count === 0) {
             this.activeFundingRound.set(null);
+            this.activeFundingRoundsList.set([]);
+            this.allFundingRoundsList.set([]);
             this.myPaymentTokenSymbol.set('BNB');
             this.myPaymentTokenBalance.set('0');
             return;
@@ -539,25 +561,46 @@ export class InvestComponent implements OnInit {
           const lastRoundIsERC20 = lastRound.paymentToken !== ethers.ZeroAddress;
           const defaultTokenMeta = lastRoundIsERC20 
             ? await this.getTokenMetadata(lastRound.paymentToken, provider)
-            : { symbol: 'BNB', decimals: 18 };
+            : { symbol: this.stateService.currentCompanyNativeSymbol() || 'BNB', decimals: 18 };
 
-          const roundsList: any[] = [];
-          const activeRounds = rawRounds.filter(r => r.active);
-
-          // Load payment token metadata cho tất cả active rounds song song
+          // Load payment token metadata cho tất cả rounds song song
           const paymentTokenMetadatas = await Promise.all(
-            activeRounds.map(r => {
+            rawRounds.map(r => {
               if (r.paymentToken !== ethers.ZeroAddress) {
                 return this.getTokenMetadata(r.paymentToken, provider);
               }
-              return Promise.resolve({ symbol: 'BNB', decimals: 18 });
+              return Promise.resolve({ symbol: this.stateService.currentCompanyNativeSymbol() || 'BNB', decimals: 18 });
             })
           );
 
-          for (let i = 0; i < activeRounds.length; i++) {
-            const r = activeRounds[i];
+          const nowSec = Math.floor(Date.now() / 1000);
+          const allRounds: any[] = [];
+
+          for (let i = 0; i < rawRounds.length; i++) {
+            const r = rawRounds[i];
             const meta = paymentTokenMetadatas[i];
-            roundsList.push({
+            
+            // Xác định trạng thái của vòng gọi vốn
+            const startTimeNum = Number(r.startTime);
+            const endTimeNum = Number(r.endTime);
+            const activeBool = r.active;
+            const finalizedBool = r.finalized;
+            const cancelledBool = r.cancelled;
+
+            let status = 'active'; // đang mở
+            if (finalizedBool) {
+              status = 'finalized'; // đã hoàn thành
+            } else if (cancelledBool) {
+              status = 'cancelled'; // đã hủy
+            } else if (!activeBool) {
+              status = 'paused'; // tạm dừng
+            } else if (nowSec < startTimeNum) {
+              status = 'not_started'; // chưa bắt đầu
+            } else if (nowSec > endTimeNum) {
+              status = 'ended'; // đã kết thúc
+            }
+
+            allRounds.push({
               id: Number(r.id),
               name: r.name,
               paymentToken: r.paymentToken,
@@ -568,21 +611,28 @@ export class InvestComponent implements OnInit {
               maxSupply: ethers.formatEther(r.maxSupply),
               soldAmount: ethers.formatEther(r.soldAmount),
               isWhitelistOnly: r.isWhitelistOnly,
-              active: r.active,
-              isActive: r.active,
-              startTime: Number(r.startTime),
-              endTime: Number(r.endTime)
+              active: activeBool,
+              finalized: finalizedBool,
+              cancelled: cancelledBool,
+              isActive: activeBool && !finalizedBool && !cancelledBool && nowSec >= startTimeNum && nowSec <= endTimeNum,
+              status,
+              startTime: startTimeNum,
+              endTime: endTimeNum
             });
           }
 
-          // Sắp xếp ID từ lớn đến bé
-          roundsList.sort((a, b) => b.id - a.id);
-          this.activeFundingRoundsList.set(roundsList);
+          // Sắp xếp ID từ lớn đến bé cho lịch sử
+          allRounds.sort((a, b) => b.id - a.id);
+          this.allFundingRoundsList.set(allRounds);
 
-          if (roundsList.length > 0) {
+          // Lọc ra các active rounds thực tế để chọn mua
+          const activeRoundsList = allRounds.filter(r => r.isActive);
+          this.activeFundingRoundsList.set(activeRoundsList);
+
+          if (activeRoundsList.length > 0) {
             const currentSelected = this.activeFundingRound();
-            const stillActive = currentSelected ? roundsList.find(r => r.id === currentSelected.id) : null;
-            const targetRound = stillActive || roundsList[0];
+            const stillActive = currentSelected ? activeRoundsList.find(r => r.id === currentSelected.id) : null;
+            const targetRound = stillActive || activeRoundsList[0];
             
             this.activeFundingRound.set(targetRound);
             await this.updatePaymentTokenBalanceForSelectedRound(targetRound);
@@ -606,6 +656,8 @@ export class InvestComponent implements OnInit {
         }).catch(err => {
           console.warn('Lỗi đọc funding round:', err);
           this.activeFundingRound.set(null);
+          this.activeFundingRoundsList.set([]);
+          this.allFundingRoundsList.set([]);
           this.myPaymentTokenBalance.set('0');
         });
         promises.push(loadFundingRoundPromise);
@@ -853,6 +905,27 @@ export class InvestComponent implements OnInit {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }, 100);
+  }
+
+  // Xử lý chuyển trang cho danh sách gọi vốn
+  public onFundingPageChange(page: number) {
+    this.fundingCurrentPage.set(page);
+  }
+
+  // Chọn nhanh vòng gọi vốn từ lịch sử và cuộn lên form mua
+  public selectFundingRoundFromHistory(round: any) {
+    if (round && round.isActive) {
+      this.activeFundingRound.set(round);
+      this.updatePaymentTokenBalanceForSelectedRound(round);
+      
+      // Cuộn lên form mua cổ phần
+      setTimeout(() => {
+        const element = document.getElementById('buy-shares-form');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
   }
 
   // Progress bar phần trăm đã gọi vốn
