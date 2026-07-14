@@ -13,6 +13,7 @@ import { TabGroupComponent, TabOption } from '@shared/components/tab-group/tab-g
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { IconComponent } from '@shared/components/icon/icon.component';
 import { CustomSelectComponent } from '@shared/components/custom-select/custom-select.component';
+import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 
 // Minimal ABIs — chỉ những function cần thiết cho investor
 const EQUITY_TOKEN_ABI = [
@@ -55,7 +56,7 @@ const MARKETPLACE_ABI = [
 @Component({
   selector: 'app-invest',
   standalone: true,
-  imports: [CommonModule, FormsModule, TabGroupComponent, ButtonComponent, IconComponent, CustomSelectComponent],
+  imports: [CommonModule, FormsModule, TabGroupComponent, ButtonComponent, IconComponent, CustomSelectComponent, PaginationComponent],
   templateUrl: './invest.component.html'
 })
 export class InvestComponent implements OnInit {
@@ -89,11 +90,82 @@ export class InvestComponent implements OnInit {
   // On-chain data
   public myBalance = signal<string>('0');         // EquityToken balance
   public totalSupply = signal<string>('0');        // Tổng cung
-  public claimableDiv = signal<string>('0');       // Cổ tức có thể claim
-  public dividendTokenSymbol = signal<string>('USDT'); // Symbol token cổ tức
   public myPaymentTokenBalance = signal<string>('0'); // Số dư ví dùng thanh toán (USDT/BNB)
   public myPaymentTokenSymbol = signal<string>('BNB');
-  public contractDivBalance = signal<string>('0');  // Số dư token cổ tức hiện tại của hợp đồng FinanceManager
+
+  // Cổ tức (Dividends)
+  public allDividendsList = signal<any[]>([]);
+  public divCurrentPage = signal<number>(1);
+  public divItemsPerPage = 5;
+
+  public paginatedDividends = computed(() => {
+    const list = this.allDividendsList();
+    const page = this.divCurrentPage();
+    const limit = this.divItemsPerPage;
+    const startIndex = (page - 1) * limit;
+    return list.slice(startIndex, startIndex + limit);
+  });
+
+  public divTotalPages = computed(() => {
+    return Math.ceil(this.allDividendsList().length / this.divItemsPerPage) || 1;
+  });
+
+  public divTotalItems = computed(() => {
+    return this.allDividendsList().length;
+  });
+
+  // Nhóm cổ tức chưa nhận theo token để làm summary ở overview card
+  public claimableDividendsSummary = computed(() => {
+    const list = this.allDividendsList();
+    const summaryMap = new Map<string, number>();
+
+    for (const d of list) {
+      if (!d.isClaimed && Number(d.claimableAmount) > 0) {
+        const currentVal = summaryMap.get(d.dividendTokenSymbol) || 0;
+        summaryMap.set(d.dividendTokenSymbol, currentVal + Number(d.claimableAmount));
+      }
+    }
+
+    const result: { symbol: string; amount: number }[] = [];
+    summaryMap.forEach((amount, symbol) => {
+      result.push({ symbol, amount });
+    });
+    return result;
+  });
+
+  // Chuỗi text hiển thị cổ tức chưa nhận tổng hợp
+  public claimableDivText = computed(() => {
+    const summary = this.claimableDividendsSummary();
+    if (summary.length === 0) {
+      return '0 USDT';
+    }
+    return summary
+      .map(item => `${this.formatNumber(item.amount)} ${item.symbol}`)
+      .join(' + ');
+  });
+
+  public hasClaimableDividends = computed(() => {
+    return this.claimableDividendsSummary().length > 0;
+  });
+
+  // Giữ lại các signal cũ dưới dạng computed để tránh compile error ở các file khác nếu có tham chiếu
+  public claimableDiv = computed(() => {
+    const summary = this.claimableDividendsSummary();
+    if (summary.length === 0) return '0.0000';
+    return String(summary[0].amount);
+  });
+
+  public dividendTokenSymbol = computed(() => {
+    const summary = this.claimableDividendsSummary();
+    if (summary.length === 0) return 'USDT';
+    return summary[0].symbol;
+  });
+
+  public contractDivBalance = computed(() => {
+    const list = this.allDividendsList();
+    const pending = list.find(d => !d.isClaimed && Number(d.claimableAmount) > 0);
+    return pending ? pending.contractBalance : '0';
+  });
 
   // Cấu hình các payment tokens được hỗ trợ cho P2P
   public supportedPaymentTokens = [
@@ -337,7 +409,7 @@ export class InvestComponent implements OnInit {
         promises.push(loadEquityTokenPromise);
       }
 
-      // 2. Tải Dividend & Claimable information
+      // 2. Tải Dividend & Claimable thông tin chi tiết (Quét toàn bộ đợt)
       let loadDividendPromise = Promise.resolve();
       if (company.funding_address && company.token_address) {
         const funding = new ethers.Contract(company.funding_address, FUNDING_MANAGER_ABI, provider);
@@ -345,108 +417,102 @@ export class InvestComponent implements OnInit {
         loadDividendPromise = funding['dividendCount']().then(async (divCountVal: any) => {
           const divCount = Number(divCountVal);
           if (divCount === 0) {
-            this.claimableDiv.set('0.0000');
-            this.dividendTokenSymbol.set('USDT');
-            this.contractDivBalance.set('0');
+            this.allDividendsList.set([]);
             return;
           }
 
-          // Fetch hasClaimed cho toàn bộ dividend rounds song song
-          const claimChecks = userAddress 
-            ? await Promise.all(Array.from({ length: divCount }, (_, i) => funding['hasClaimed'](i + 1, userAddress)))
-            : Array(divCount).fill(true);
+          const roundIds = Array.from({ length: divCount }, (_, i) => i + 1);
+          
+          // Tải dữ liệu thô của các đợt và trạng thái đã claim song song
+          const [rawDividends, claimStatuses] = await Promise.all([
+            Promise.all(roundIds.map(id => funding['dividends'](id))),
+            userAddress 
+              ? Promise.all(roundIds.map(id => funding['hasClaimed'](id, userAddress)))
+              : Promise.resolve(Array(divCount).fill(false))
+          ]);
 
-          // Tìm các round chưa claim
-          const pendingRoundIndexes: number[] = [];
-          for (let i = 0; i < divCount; i++) {
-            if (!claimChecks[i]) {
-              pendingRoundIndexes.push(i + 1);
+          // Tải thông tin metadata token của từng đợt
+          const tokenMetaPromises = rawDividends.map(d => {
+            if (d.dividendToken !== ethers.ZeroAddress) {
+              return this.getTokenMetadata(d.dividendToken, provider);
             }
-          }
-
-          if (pendingRoundIndexes.length === 0) {
-            this.claimableDiv.set('0.0000');
-            this.dividendTokenSymbol.set('USDT');
-            this.contractDivBalance.set('0');
-            return;
-          }
-
-          // Fetch chi tiết tất cả các rounds chưa claim song song
-          const divRounds = await Promise.all(pendingRoundIndexes.map(id => funding['dividends'](id)));
-
-          const nowSec = Math.floor(Date.now() / 1000);
-          const activeRoundsWithDetails: { id: number; data: any }[] = [];
-
-          for (let i = 0; i < divRounds.length; i++) {
-            const r = divRounds[i];
-            if (r.active && nowSec >= Number(r.startTime) && nowSec <= Number(r.endTime)) {
-              activeRoundsWithDetails.push({ id: pendingRoundIndexes[i], data: r });
-            }
-          }
-
-          if (activeRoundsWithDetails.length === 0) {
-            this.claimableDiv.set('0.0000');
-            this.dividendTokenSymbol.set('USDT');
-            this.contractDivBalance.set('0');
-            return;
-          }
-
-          // Lấy token metadata cho các dividend tokens
-          const tokenMetadataPromises = activeRoundsWithDetails.map(item => {
-            if (item.data.dividendToken !== ethers.ZeroAddress) {
-              return this.getTokenMetadata(item.data.dividendToken, provider);
-            }
-            return Promise.resolve({ symbol: 'BNB', decimals: 18 });
+            return Promise.resolve({ symbol: this.stateService.currentCompanyNativeSymbol() || 'BNB', decimals: 18 });
           });
-          const tokenMetadatas = await Promise.all(tokenMetadataPromises);
+          const tokenMetadatas = await Promise.all(tokenMetaPromises);
 
-          // Lấy past balances và supplies
+          // Tải checkpoint balance & supply cho từng đợt
           const shareToken = new ethers.Contract(company.token_address, EQUITY_TOKEN_ABI, provider);
-          const balanceAndSupplyPromises = activeRoundsWithDetails.map(item => {
-            const blockNumber = Number(item.data.checkpointBlock);
-            const userBalPromise = userAddress ? shareToken['getPastBalanceOf'](userAddress, blockNumber) : Promise.resolve(0n);
-            const supplyPromise = shareToken['getPastTotalSupply'](blockNumber);
+          const checkpointPromises = rawDividends.map(d => {
+            const blockNum = Number(d.checkpointBlock);
+            const userBalPromise = userAddress ? shareToken['getPastBalanceOf'](userAddress, blockNum) : Promise.resolve(0n);
+            const supplyPromise = shareToken['getPastTotalSupply'](blockNum);
             return Promise.all([userBalPromise, supplyPromise]);
           });
-          const balanceAndSupplies = await Promise.all(balanceAndSupplyPromises);
+          const checkpointData = await Promise.all(checkpointPromises);
 
-          let totalClaimable = 0n;
-          let currentDivTokenSymbol = this.myPaymentTokenSymbol();
-          let currentDivTokenAddress = ethers.ZeroAddress;
+          // Tải số dư contract tương ứng cho từng loại token để check xem contract đủ tiền chi trả không
+          const uniqueTokens = Array.from(new Set(rawDividends.map(d => d.dividendToken.toLowerCase())));
+          const contractBalancesMap = new Map<string, bigint>();
 
-          for (let i = 0; i < activeRoundsWithDetails.length; i++) {
-            const item = activeRoundsWithDetails[i];
+          await Promise.all(uniqueTokens.map(async (tokAddr) => {
+            let bal = 0n;
+            try {
+              if (tokAddr !== ethers.ZeroAddress.toLowerCase()) {
+                const tokenContract = new ethers.Contract(tokAddr, ERC20_ABI, provider);
+                bal = await tokenContract['balanceOf'](company.funding_address);
+              } else {
+                bal = await provider.getBalance(company.funding_address);
+              }
+            } catch (err) {
+              console.warn(`Lỗi lấy số dư contract cho token ${tokAddr}:`, err);
+            }
+            contractBalancesMap.set(tokAddr, bal);
+          }));
+
+          // Xử lý và format dữ liệu chi tiết cho từng đợt
+          const dividendsList: any[] = [];
+          for (let i = 0; i < divCount; i++) {
+            const d = rawDividends[i];
+            const isClaimed = claimStatuses[i];
             const meta = tokenMetadatas[i];
-            const [userBalance, totalShares] = balanceAndSupplies[i];
+            const [userBal, totalSupplyVal] = checkpointData[i];
+            const contractBal = contractBalancesMap.get(d.dividendToken.toLowerCase()) || 0n;
 
-            currentDivTokenSymbol = meta.symbol;
-            currentDivTokenAddress = item.data.dividendToken;
-
-            if (userBalance > 0n && totalShares > 0n) {
-              const claimAmt = (userBalance * BigInt(item.data.totalAmount)) / totalShares;
-              totalClaimable += claimAmt;
+            let claimableAmt = 0n;
+            if (!isClaimed && userBal > 0n && totalSupplyVal > 0n) {
+              claimableAmt = (userBal * BigInt(d.totalAmount)) / totalSupplyVal;
             }
+
+            const claimableAmountFormatted = ethers.formatUnits(claimableAmt, meta.decimals);
+            const contractBalanceFormatted = ethers.formatUnits(contractBal, meta.decimals);
+            
+            dividendsList.push({
+              id: Number(d.id),
+              name: d.name,
+              dividendToken: d.dividendToken,
+              dividendTokenSymbol: meta.symbol,
+              dividendTokenDecimals: meta.decimals,
+              totalAmount: ethers.formatUnits(d.totalAmount, meta.decimals),
+              claimedAmount: ethers.formatUnits(d.claimedAmount, meta.decimals),
+              checkpointBlock: Number(d.checkpointBlock),
+              startTime: Number(d.startTime),
+              endTime: Number(d.endTime),
+              active: d.active,
+              isClaimed,
+              userBalanceAtCheckpoint: ethers.formatEther(userBal),
+              totalSupplyAtCheckpoint: ethers.formatEther(totalSupplyVal),
+              claimableAmount: claimableAmountFormatted,
+              contractBalance: contractBalanceFormatted,
+              hasInsufficientBalance: !isClaimed && Number(claimableAmountFormatted) > Number(contractBalanceFormatted)
+            });
           }
 
-          this.claimableDiv.set(ethers.formatEther(totalClaimable));
-          this.dividendTokenSymbol.set(currentDivTokenSymbol);
-
-          // Đọc số dư contract cho dividend token
-          let contractBalance = 0n;
-          if (totalClaimable > 0n) {
-            if (currentDivTokenAddress !== ethers.ZeroAddress) {
-              const tokenContract = new ethers.Contract(currentDivTokenAddress, ERC20_ABI, provider);
-              contractBalance = await tokenContract['balanceOf'](company.funding_address);
-            } else {
-              contractBalance = await provider.getBalance(company.funding_address);
-            }
-          }
-          this.contractDivBalance.set(ethers.formatEther(contractBalance));
+          // Sắp xếp ID lớn nhất (mới nhất) lên đầu
+          dividendsList.sort((a, b) => b.id - a.id);
+          this.allDividendsList.set(dividendsList);
         }).catch(divErr => {
-          console.warn('Lỗi khi tính toán tổng cổ tức claimable:', divErr);
-          this.claimableDiv.set('0.0000');
-          this.dividendTokenSymbol.set('USDT');
-          this.contractDivBalance.set('0');
+          console.warn('Lỗi khi tải thông tin danh sách cổ tức:', divErr);
+          this.allDividendsList.set([]);
         });
         promises.push(loadDividendPromise);
       }
@@ -736,15 +802,15 @@ export class InvestComponent implements OnInit {
     });
   }
 
-  // Nhận cổ tức (tự động nhận toàn bộ các đợt cổ tức chưa nhận)
-  async handleClaimDividend() {
+  // Nhận cổ tức cho riêng lẻ một đợt cụ thể
+  async handleClaimSingleDividend(round: any) {
     if (this.dividendLoading()) return;
 
     const company = this.selectedCompany();
-    if (!company || !this.isConnected()) return;
+    if (!company || !this.isConnected() || !round) return;
 
-    if (+this.claimableDiv() > +this.contractDivBalance()) {
-      this.stateService.showToast(`Lỗi: Smart Contract không đủ số dư tài sản chi trả cổ tức (Số dư hợp đồng: ${this.formatNumber(this.contractDivBalance())} ${this.dividendTokenSymbol()}). Vui lòng liên hệ ban quản trị!`, 'error');
+    if (Number(round.claimableAmount) > Number(round.contractBalance)) {
+      this.stateService.showToast(`Lỗi: Smart Contract không đủ số dư tài sản chi trả cho đợt cổ tức này (Số dư hợp đồng: ${this.formatNumber(round.contractBalance)} ${round.dividendTokenSymbol}). Vui lòng liên hệ ban quản trị để nạp thêm tài sản chi trả!`, 'error');
       return;
     }
 
@@ -754,34 +820,39 @@ export class InvestComponent implements OnInit {
       const funding = new ethers.Contract(company.funding_address, FUNDING_MANAGER_ABI, signer);
       const gasOverrides = await this.stateService.web3Service.getGasOverrides();
 
-      const divCount = Number(await funding['dividendCount']());
-      let claimCount = 0;
+      this.stateService.showToast(`Đang thực hiện nhận cổ tức đợt #${round.id} (${round.name})...`, 'warning');
+      const tx = await funding['claimDividend'](round.id, gasOverrides);
+      await tx.wait();
 
-      for (let i = 1; i <= divCount; i++) {
-        const claimed = await funding['hasClaimed'](i, this.walletAddress());
-        if (!claimed) {
-          const divRound = await funding['dividends'](i);
-          if (divRound.active) {
-            this.stateService.showToast(`Đang rút cổ tức đợt #${i} (${divRound.name})...`, 'warning');
-            const tx = await funding['claimDividend'](i, gasOverrides);
-            await tx.wait();
-            claimCount++;
-          }
-        }
-      }
-
-      if (claimCount > 0) {
-        this.stateService.showToast(`Đã nhận thành công cổ tức từ ${claimCount} đợt!`, 'success');
-      } else {
-        this.stateService.showToast('Không có cổ tức khả dụng để nhận hoặc đã nhận hết!', 'warning');
-      }
-      this.claimableDiv.set('0.0000');
+      this.stateService.showToast(`Đã nhận thành công ${this.formatNumber(round.claimableAmount)} ${round.dividendTokenSymbol} từ đợt #${round.id}!`, 'success');
       await this.loadOnChainData(company);
     } catch (e: any) {
+      console.error(e);
       this.stateService.showToast(e.reason || e.message || 'Nhận cổ tức thất bại!', 'error');
     } finally {
       this.dividendLoading.set(false);
     }
+  }
+
+  // Nhận cổ tức từ Card Overview (Tự động chuyển tab và scroll xuống)
+  async handleClaimDividend() {
+    this.scrollToDividendsTab();
+  }
+
+  // Xử lý chuyển trang cho danh sách cổ tức
+  public onDivPageChange(page: number) {
+    this.divCurrentPage.set(page);
+  }
+
+  // Cuộn màn hình tới tab cổ tức
+  public scrollToDividendsTab() {
+    this.setActiveTab('dividends');
+    setTimeout(() => {
+      const element = document.getElementById('dividend-section');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   }
 
   // Progress bar phần trăm đã gọi vốn

@@ -272,29 +272,21 @@
               >Cổ tức chưa nhận</span
             >
           </div>
-          <p class="text-2xl font-black text-amber-600 dark:text-amber-400">
-            {{ formatNumber(claimableDiv()) }}
-            <span class="text-sm font-bold text-slate-400">{{ dividendTokenSymbol() }}</span>
+          <p class="text-xl font-black text-amber-600 dark:text-amber-400 break-words leading-snug">
+            {{ claimableDivText() }}
           </p>
-          @if (+claimableDiv() > 0) {
-            @if (+claimableDiv() > +contractDivBalance()) {
-              <div class="text-[10px] text-red-500 font-extrabold text-center py-1 select-none">
-                ⚠️ Hợp đồng thiếu số dư
-              </div>
-            }
+          @if (hasClaimableDividends()) {
             <button
               app-button
               variant="primary"
               size="sm"
-              class="w-full"
-              (click)="handleClaimDividend()"
-              [disabled]="!isConnected() || +claimableDiv() > +contractDivBalance()"
-              [loading]="dividendLoading()"
+              class="w-full mt-2"
+              (click)="scrollToDividendsTab()"
             >
-              Nhận cổ tức
+              Chi tiết cổ tức
             </button>
           } @else {
-            <p class="text-xs text-slate-400">Chưa có cổ tức</p>
+            <p class="text-xs text-slate-400 mt-2">Chưa có cổ tức</p>
           }
         </div>
 
@@ -733,65 +725,115 @@
 
         <!-- ==================== TAB: CỔ TỨC ==================== -->
         @if (activeTab() === 'dividends') {
-          <div class="p-6 space-y-4">
-            <h3 class="text-base font-black text-slate-700 dark:text-slate-200">Cổ tức của tôi</h3>
-            <div
-              class="max-w-md mx-auto bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200/60 dark:border-amber-900/30 rounded-[15px] p-8 text-center space-y-5"
-            >
-              <div
-                class="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center mx-auto"
-              >
-                <svg
-                  class="w-8 h-8 text-amber-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p class="text-xs font-black text-amber-600 uppercase tracking-wider mb-2">
-                  Số dư cổ tức chờ nhận
-                </p>
-                <p class="text-4xl font-black text-amber-700 dark:text-amber-400">
-                  {{ formatNumber(claimableDiv()) }}
-                </p>
-                <p class="text-sm text-amber-600 font-bold mt-1">{{ dividendTokenSymbol() }}</p>
-              </div>
-              @if (+claimableDiv() > 0 && +claimableDiv() > +contractDivBalance()) {
-                <div class="text-xs text-red-600 dark:text-red-400 font-bold bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/30 rounded-xl p-3 text-left space-y-1 select-none">
-                  <p class="flex items-center gap-1.5 font-extrabold text-red-700 dark:text-red-400">
-                    <span>⚠️</span> Doanh nghiệp chưa nạp đủ tài sản chi trả
-                  </p>
-                  <p class="text-slate-500 dark:text-slate-400 font-normal leading-relaxed">
-                    Số dư hiện có trên Smart Contract là <strong>{{ formatNumber(contractDivBalance()) }} {{ dividendTokenSymbol() }}</strong>, nhỏ hơn lượng cổ tức bạn được nhận. Vui lòng liên hệ ban quản trị để nạp thêm tài sản chi trả.
-                  </p>
-                </div>
-              }
-
-              <button
-                app-button
-                variant="primary"
-                size="lg"
-                class="w-full"
-                (click)="handleClaimDividend()"
-                [disabled]="!isConnected() || +claimableDiv() === 0 || +claimableDiv() > +contractDivBalance()"
-                [loading]="dividendLoading()"
-              >
-                @if (!isConnected()) {
-                  Kết nối ví để nhận
-                } @else {
-                  <app-icon name="send" class="w-4 h-4" />
-                  Nhận {{ formatNumber(claimableDiv()) }} {{ dividendTokenSymbol() }}
-                }
-              </button>
+          <div id="dividend-section" class="p-6 space-y-5">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-black text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                <app-icon name="financials" class="w-4 h-4 text-amber-500" />
+                Danh sách đợt chia cổ tức
+              </h3>
+              <span class="text-xs text-slate-400 font-semibold">{{ divTotalItems() }} đợt cổ tức</span>
             </div>
+
+            <div class="overflow-x-auto border border-slate-100 dark:border-slate-900 rounded-xl">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 font-bold uppercase text-xs tracking-wider select-none">
+                    <th class="p-3 pl-4">Đợt Cổ Tức</th>
+                    <th class="p-3">Token Chi Trả</th>
+                    <th class="p-3">Số Dư Checkpoint</th>
+                    <th class="p-3">Cổ Tức Của Tôi</th>
+                    <th class="p-3">Trạng Thái</th>
+                    <th class="p-3 pr-4 text-right">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (round of paginatedDividends(); track round.id) {
+                    <tr class="border-t border-slate-100 dark:border-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                      <td class="p-3 pl-4">
+                        <div class="font-extrabold text-slate-800 dark:text-white">{{ round.name }}</div>
+                        <div class="text-[10px] text-slate-400 font-semibold">ID: #{{ round.id }} · Block Checkpoint: {{ round.checkpointBlock }}</div>
+                      </td>
+                      <td class="p-3">
+                        <span class="font-bold text-slate-600 dark:text-slate-350">{{ round.dividendTokenSymbol }}</span>
+                        @if (round.dividendToken !== '0x0000000000000000000000000000000000000000') {
+                          <div class="text-[9px] font-mono text-slate-400" [title]="round.dividendToken">
+                            {{ round.dividendToken.slice(0,6) }}...{{ round.dividendToken.slice(-4) }}
+                          </div>
+                        } @else {
+                          <div class="text-[9px] text-slate-400 font-semibold">Native Token</div>
+                        }
+                      </td>
+                      <td class="p-3 text-slate-600 dark:text-slate-300 font-medium">
+                        {{ formatNumber(round.userBalanceAtCheckpoint) }} / {{ formatNumber(round.totalSupplyAtCheckpoint) }} {{ stateService.currentCompanyTokenSymbol() }}
+                      </td>
+                      <td class="p-3 font-extrabold text-amber-600 dark:text-amber-400">
+                        {{ formatNumber(round.claimableAmount) }} {{ round.dividendTokenSymbol }}
+                      </td>
+                      <td class="p-3">
+                        @if (round.isClaimed) {
+                          <span class="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 px-2 py-0.5 rounded-full text-[10px] font-black uppercase">
+                            Đã nhận
+                          </span>
+                        } @else if (!round.active) {
+                          <span class="bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400 px-2 py-0.5 rounded-full text-[10px] font-black uppercase">
+                            Đã đóng
+                          </span>
+                        } @else if (+round.claimableAmount === 0) {
+                          <span class="bg-slate-100 text-slate-400 dark:bg-slate-900 dark:text-slate-500 px-2 py-0.5 rounded-full text-[10px] font-black uppercase">
+                            Không có cổ phần
+                          </span>
+                        } @else if (round.hasInsufficientBalance) {
+                          <span class="bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400 px-2 py-0.5 rounded-full text-[10px] font-black uppercase" [title]="'Smart Contract thiếu số dư: hiện có ' + formatNumber(round.contractBalance) + ' ' + round.dividendTokenSymbol">
+                            HĐ thiếu số dư ⚠️
+                          </span>
+                        } @else {
+                          <span class="bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 px-2 py-0.5 rounded-full text-[10px] font-black uppercase">
+                            Sẵn sàng nhận
+                          </span>
+                        }
+                      </td>
+                      <td class="p-3 pr-4 text-right">
+                        <button
+                          app-button
+                          variant="primary"
+                          size="sm"
+                          (click)="handleClaimSingleDividend(round)"
+                          [disabled]="!isConnected() || round.isClaimed || +round.claimableAmount === 0 || round.hasInsufficientBalance || !round.active"
+                          [loading]="dividendLoading()"
+                        >
+                          Nhận cổ tức
+                        </button>
+                      </td>
+                    </tr>
+                    @if (!round.isClaimed && round.hasInsufficientBalance && +round.claimableAmount > 0) {
+                      <tr class="bg-red-50/20 dark:bg-red-950/10">
+                        <td colspan="6" class="p-3 pl-4 border-t border-red-100 dark:border-red-900/50 text-[10px] text-red-600 dark:text-red-400 font-medium">
+                          ⚠️ Đợt cổ tức này chưa thể nhận do quỹ chi trả trên hợp đồng thông minh không đủ (Cần: <strong>{{ formatNumber(round.claimableAmount) }} {{ round.dividendTokenSymbol }}</strong>, Thực tế: <strong>{{ formatNumber(round.contractBalance) }} {{ round.dividendTokenSymbol }}</strong>). Vui lòng liên hệ ban quản trị nạp thêm tài sản.
+                        </td>
+                      </tr>
+                    }
+                  } @empty {
+                    <tr>
+                      <td colspan="6" class="p-8 text-center text-slate-400">
+                        Doanh nghiệp này chưa có đợt chia cổ tức nào.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Phân trang -->
+            @if (divTotalPages() > 1) {
+              <app-pagination
+                [currentPage]="divCurrentPage()"
+                [totalPages]="divTotalPages()"
+                [totalItems]="divTotalItems()"
+                [itemsPerPage]="divItemsPerPage"
+                itemName="đợt cổ tức"
+                (pageChange)="onDivPageChange($event)"
+              ></app-pagination>
+            }
           </div>
         }
 
@@ -861,15 +903,22 @@
                 </div>
 
                 <div
-                  class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/30 rounded-[15px] p-5 space-y-2"
+                  class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/30 rounded-[15px] p-5 space-y-2 flex flex-col justify-between"
                 >
-                  <p class="text-xs font-black text-amber-600 uppercase tracking-wider">
-                    Cổ tức chờ nhận
-                  </p>
-                  <p class="text-3xl font-black text-amber-700 dark:text-amber-400">
-                    {{ formatNumber(claimableDiv()) }}
-                  </p>
-                  <p class="text-xs text-slate-400">{{ dividendTokenSymbol() }}</p>
+                  <div>
+                    <p class="text-xs font-black text-amber-600 uppercase tracking-wider">
+                      Cổ tức chờ nhận
+                    </p>
+                    <p class="text-xl font-black text-amber-700 dark:text-amber-400 break-words leading-tight mt-1">
+                      {{ claimableDivText() }}
+                    </p>
+                  </div>
+                  <button 
+                    (click)="scrollToDividendsTab()" 
+                    class="text-[10px] text-amber-600 font-extrabold hover:underline block text-left mt-2 select-none"
+                  >
+                    Xem chi tiết đợt →
+                  </button>
                 </div>
               </div>
 
