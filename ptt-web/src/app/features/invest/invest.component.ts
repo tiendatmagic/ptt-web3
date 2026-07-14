@@ -581,20 +581,32 @@ export class InvestComponent implements OnInit {
         }
       }
 
-      // 1. Tạo thông điệp EIP-712 / personal_sign đặt lệnh
-      const message = `Place ${this.orderSide()} Order for ${company.name}\nPrice: ${price} ${token.symbol}\nAmount: ${amount} Shares\nPayment Token: ${token.address}`;
+      // 1. Tạo thông điệp hash đóng gói tham số đặt lệnh (để khớp xác thực Smart Contract)
+      const userAddress = this.walletAddress();
+      const nonce = BigInt(Date.now());
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 86400 * 365); // 1 năm
 
-      // 2. Ký ví
+      const tokenDecimals = token.decimals || 18;
+      const priceWei = ethers.parseUnits(String(price), tokenDecimals);
+      const amountWei = ethers.parseEther(String(amount));
+
+      const messageHash = ethers.solidityPackedKeccak256(
+        ['address', 'address', 'uint256', 'uint256', 'uint256', 'uint256'],
+        [userAddress, company.token_address, amountWei, priceWei, nonce, deadline]
+      );
+
+      // 2. Ký ví thông điệp hash này
       const signer = await this.stateService.web3Service.getSigner();
-      const signature = await signer.signMessage(message);
+      const signature = await signer.signMessage(ethers.getBytes(messageHash));
+      const signatureFull = `${signature}_${nonce.toString()}_${deadline.toString()}`;
 
       // 3. Gửi lên Backend để xếp hàng và chạy Matcher Engine
       await firstValueFrom(this.apiService.post<any>('marketplace/orders', {
         side: this.orderSide(),
         price: price,
         amount: amount,
-        signature: signature,
-        message: message,
+        signature: signatureFull,
+        message: messageHash,
         payment_token_address: token.address,
         payment_token_symbol: token.symbol
       }, company.id));

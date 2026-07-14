@@ -80,11 +80,15 @@ class MarketplaceController extends Controller
         $side = $request->input('side');
         $price = $request->input('price');
         $amount = $request->input('amount');
-        $signature = $request->input('signature');
+        $signatureFull = $request->input('signature');
         $message = $request->input('message');
         $paymentTokenAddress = $request->input('payment_token_address');
         $paymentTokenSymbol = $request->input('payment_token_symbol') ?: 'USDT';
         $walletAddress = strtolower($user->wallet_address);
+
+        // Phân tách signature gốc để verify
+        $sigParts = explode('_', $signatureFull);
+        $signature = $sigParts[0];
 
         // 1. Xác thực chữ ký ví Web3
         $isValid = Web3SignatureVerifier::verify($walletAddress, $message, $signature);
@@ -93,7 +97,7 @@ class MarketplaceController extends Controller
         }
 
         // 2. Lưu order mới vào Database
-        $orderId = DB::transaction(function () use ($companyId, $walletAddress, $side, $price, $amount, $signature, $paymentTokenAddress, $paymentTokenSymbol) {
+        $orderId = DB::transaction(function () use ($companyId, $walletAddress, $side, $price, $amount, $signatureFull, $paymentTokenAddress, $paymentTokenSymbol) {
             return DB::table('orders')->insertGetId([
                 'company_id' => $companyId,
                 'user_address' => $walletAddress,
@@ -101,7 +105,7 @@ class MarketplaceController extends Controller
                 'price' => $price,
                 'amount' => $amount,
                 'filled_amount' => 0,
-                'signature' => $signature,
+                'signature' => $signatureFull, // Lưu đầy đủ signature kèm nonce, deadline
                 'payment_token_address' => $paymentTokenAddress,
                 'payment_token_symbol' => $paymentTokenSymbol,
                 'status' => 'PENDING',

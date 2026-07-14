@@ -334,11 +334,11 @@
                 >
                   <td class="p-3.5 pl-4">
                     <div class="flex flex-col">
-                      <span class="text-sm font-mono text-slate-500"
-                        >B: {{ trade.buyer_address }}</span
+                      <span class="text-sm font-mono text-slate-500" [title]="trade.buyer_address"
+                        >B: {{ shortAddress(trade.buyer_address) }}</span
                       >
-                      <span class="text-sm font-mono text-slate-500"
-                        >S: {{ trade.seller_address }}</span
+                      <span class="text-sm font-mono text-slate-500" [title]="trade.seller_address"
+                        >S: {{ shortAddress(trade.seller_address) }}</span
                       >
                     </div>
                   </td>

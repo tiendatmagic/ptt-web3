@@ -130,9 +130,8 @@ contract Marketplace is Ownable, IERC721Receiver, IERC1155Receiver {
         );
 
         {
-            bytes32 buyerStructHash = keccak256(
-                abi.encode(
-                    BUY_ORDER_TYPEHASH,
+            bytes32 buyerMessageHash = keccak256(
+                abi.encodePacked(
                     p.buyer,
                     p.token,
                     p.amount,
@@ -141,10 +140,7 @@ contract Marketplace is Ownable, IERC721Receiver, IERC1155Receiver {
                     p.buyerDeadline
                 )
             );
-            bytes32 buyerDigest = MessageHashUtils.toTypedDataHash(
-                DOMAIN_SEPARATOR,
-                buyerStructHash
-            );
+            bytes32 buyerDigest = MessageHashUtils.toEthSignedMessageHash(buyerMessageHash);
             require(
                 buyerDigest.recover(p.buyerSig) == p.buyer,
                 "Invalid buyer signature"
@@ -152,9 +148,8 @@ contract Marketplace is Ownable, IERC721Receiver, IERC1155Receiver {
         }
 
         {
-            bytes32 sellerStructHash = keccak256(
-                abi.encode(
-                    SELL_ORDER_TYPEHASH,
+            bytes32 sellerMessageHash = keccak256(
+                abi.encodePacked(
                     p.seller,
                     p.token,
                     p.amount,
@@ -163,10 +158,7 @@ contract Marketplace is Ownable, IERC721Receiver, IERC1155Receiver {
                     p.sellerDeadline
                 )
             );
-            bytes32 sellerDigest = MessageHashUtils.toTypedDataHash(
-                DOMAIN_SEPARATOR,
-                sellerStructHash
-            );
+            bytes32 sellerDigest = MessageHashUtils.toEthSignedMessageHash(sellerMessageHash);
             require(
                 sellerDigest.recover(p.sellerSig) == p.seller,
                 "Invalid seller signature"

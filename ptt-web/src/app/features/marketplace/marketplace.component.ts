@@ -291,23 +291,36 @@ export class MarketplaceComponent implements OnInit {
         }
       }
 
+      // 1. Tạo thông điệp hash đóng gói tham số đặt lệnh (để khớp xác thực Smart Contract)
+      const walletAddress = this.stateService.address();
+      if (!walletAddress) return;
+
+      const nonce = BigInt(Date.now());
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 86400 * 365); // 1 năm
+
+      const tokenDecimals = token.decimals || 18;
+      const priceWei = ethers.parseUnits(String(price), tokenDecimals);
+      const amountWei = ethers.parseEther(String(amount));
+
+      const messageHash = ethers.solidityPackedKeccak256(
+        ['address', 'address', 'uint256', 'uint256', 'uint256', 'uint256'],
+        [walletAddress, comp.token_address, amountWei, priceWei, nonce, deadline]
+      );
+
       this.stateService.isLoading.set(true);
 
-      // 1. Tạo thông điệp EIP-712 / personal_sign đặt lệnh
-      const walletAddress = this.stateService.address();
-      const message = `Place ${this.orderForm.side} Order for ${comp.name}\nPrice: ${price} ${token.symbol}\nAmount: ${amount} Shares\nPayment Token: ${token.address}`;
-
-      // 2. Ký ví
+      // 2. Ký ví thông điệp hash này
       const signer = await this.stateService.getSigner();
-      const signature = await signer.signMessage(message);
+      const signature = await signer.signMessage(ethers.getBytes(messageHash));
+      const signatureFull = `${signature}_${nonce.toString()}_${deadline.toString()}`;
 
       // 3. Gửi lên Backend để xếp hàng và chạy Matcher Engine
       await firstValueFrom(this.apiService.post<any>('marketplace/orders', {
         side: this.orderForm.side,
         price: price,
         amount: amount,
-        signature: signature,
-        message: message,
+        signature: signatureFull,
+        message: messageHash,
         payment_token_address: token.address,
         payment_token_symbol: token.symbol
       }, comp.id));
@@ -371,9 +384,20 @@ export class MarketplaceComponent implements OnInit {
       const signer = await this.stateService.getSigner();
       const marketContract = new Contract(comp.marketplace_address, Marketplace.abi, signer);
 
-      // 2. Lấy chữ ký thực tế của buyer & seller đã được lưu ở Backend
-      const buyerSig = trade.buyer_signature || "0x";
-      const sellerSig = trade.seller_signature || "0x";
+      // 2. Lấy chữ ký thực tế, nonce và deadline của buyer & seller đã được lưu ở Backend
+      const buyerSigFull = trade.buyer_signature || "";
+      const sellerSigFull = trade.seller_signature || "";
+
+      const buyerParts = buyerSigFull.split('_');
+      const sellerParts = sellerSigFull.split('_');
+
+      const buyerSig = buyerParts[0] || "0x";
+      const buyerNonce = buyerParts[1] ? BigInt(buyerParts[1]) : 0n;
+      const buyerDeadline = buyerParts[2] ? BigInt(buyerParts[2]) : 0n;
+
+      const sellerSig = sellerParts[0] || "0x";
+      const sellerNonce = sellerParts[1] ? BigInt(sellerParts[1]) : 0n;
+      const sellerDeadline = sellerParts[2] ? BigInt(sellerParts[2]) : 0n;
 
       const token = this.selectedPaymentToken();
       const priceWei = ethers.parseUnits(String(trade.price), token.decimals); // Decimals của USDT/USDC (thường là 18 hoặc 6)
@@ -389,10 +413,10 @@ export class MarketplaceComponent implements OnInit {
         seller: trade.seller_address,
         amount: amountWei,
         price: priceWei,
-        buyerNonce: BigInt(trade.buy_order_id),
-        sellerNonce: BigInt(trade.sell_order_id),
-        buyerDeadline: BigInt(Math.floor(Date.now() / 1000) + 86400 * 365), // 1 năm
-        sellerDeadline: BigInt(Math.floor(Date.now() / 1000) + 86400 * 365),
+        buyerNonce: buyerNonce,
+        sellerNonce: sellerNonce,
+        buyerDeadline: buyerDeadline,
+        sellerDeadline: sellerDeadline,
         buyerSig: buyerSig,
         sellerSig: sellerSig
       };
@@ -426,5 +450,11 @@ export class MarketplaceComponent implements OnInit {
   // Format số lớn
   public formatNumber(n: string | number): string {
     return Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 4 });
+  }
+
+  // Rút gọn địa chỉ ví
+  public shortAddress(addr: string): string {
+    if (!addr) return '';
+    return addr.substring(0, 6) + '...' + addr.substring(addr.length - 4);
   }
 }
