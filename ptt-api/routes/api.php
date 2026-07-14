@@ -66,6 +66,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
     // Marketplace Protected Routes
     Route::middleware('auth:sanctum')->prefix('marketplace')->group(function () {
+        Route::get('my-orders', [MarketplaceController::class, 'myOrders']);
         Route::post('orders', [MarketplaceController::class, 'placeOrder']);
         Route::post('orders/{id}/cancel', [MarketplaceController::class, 'cancelOrder']);
         Route::post('trades/settle', [MarketplaceController::class, 'settleTrade']);

@@ -586,6 +586,7 @@ export class InvestComponent implements OnInit {
       this.orderAmount.set(1);
       await this.loadOrderBook(company);
       await this.loadPaymentTokenBalance();
+      await this.loadOnChainData(company);
     } catch (e: any) {
       this.stateService.showToast(e.reason || 'Đặt lệnh thất bại!', 'error');
     } finally {
@@ -616,6 +617,7 @@ export class InvestComponent implements OnInit {
           this.stateService.showToast('Đã hủy lệnh thành công!', 'success');
           await this.loadOrderBook(company);
           await this.loadPaymentTokenBalance();
+          await this.loadOnChainData(company);
         } catch (e: any) {
           this.stateService.showToast(e.error?.message || 'Có lỗi xảy ra khi hủy lệnh!', 'error');
         } finally {

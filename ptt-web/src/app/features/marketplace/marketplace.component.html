@@ -44,10 +44,24 @@
           buttonClass="font-black text-xs uppercase tracking-wider"
         ></app-tab-group>
 
+        <!-- Số dư tương ứng theo loại lệnh -->
+        <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-900/60 px-4 py-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-xs select-none">
+          <span class="text-slate-400 font-bold uppercase tracking-wider">Số dư khả dụng:</span>
+          @if (orderForm.side === 'BUY') {
+            <span class="font-extrabold text-slate-700 dark:text-slate-200">
+              {{ +myPaymentTokenBalance() | number: '1.0-4' }} {{ selectedPaymentToken().symbol }}
+            </span>
+          } @else {
+            <span class="font-extrabold text-slate-700 dark:text-slate-200">
+              {{ +myBalance() | number: '1.0-4' }} {{ stateService.currentCompany()?.token_symbol || 'Cổ phần' }}
+            </span>
+          }
+        </div>
+
         <!-- Price -->
         <div class="space-y-1">
           <label class="text-[12px] font-black text-slate-400 uppercase tracking-wider"
-            >Giá cổ phần ({{ selectedPaymentToken().symbol }} / Share)</label
+            >Giá cổ phần ({{ selectedPaymentToken().symbol }} / {{ stateService.currentCompany()?.token_symbol || 'SHARE' }})</label
           >
           <input
             type="number"
@@ -60,7 +74,7 @@
         <!-- Amount -->
         <div class="space-y-1">
           <label class="text-[12px] font-black text-slate-400 uppercase tracking-wider"
-            >Số lượng cổ phần (Shares)</label
+            >Số lượng cổ phần ({{ stateService.currentCompany()?.token_symbol || 'SHARES' }})</label
           >
           <input
             type="number"
@@ -83,7 +97,7 @@
           class="w-full h-12 rounded-xl font-extrabold flex items-center justify-center gap-2 border-0 text-white shadow-md"
         >
           <app-icon name="send" class="w-4 h-4" />
-          {{ orderForm.side === 'BUY' ? 'ĐẶT LỆNH MUA' : 'ĐẶT LỆNH BÁN' }}
+          {{ orderForm.side === 'BUY' ? 'ĐẶT LỆNH MUA ' + (stateService.currentCompany()?.token_symbol || '') : 'ĐẶT LỆNH BÁN ' + (stateService.currentCompany()?.token_symbol || '') }}
         </button>
       </div>
     </div>
@@ -200,11 +214,29 @@
         class="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm space-y-4"
       >
         <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/60 pb-3">
-          <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-            <app-icon name="portfolio" class="w-4 h-4 text-violet-500" />
-            Lệnh của tôi (My Orders)
-          </h2>
-          <span class="text-xs text-slate-400 font-semibold">{{ myOrders().length }} lệnh đang treo</span>
+          <div class="flex items-center gap-4 flex-wrap">
+            <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+              <app-icon name="portfolio" class="w-4 h-4 text-primary" />
+              Lệnh của tôi (My Orders)
+            </h2>
+            <div class="flex items-center bg-slate-150/50 dark:bg-slate-900 p-0.5 rounded-lg text-xs font-bold border border-slate-200/60 dark:border-slate-850">
+              <button
+                (click)="changeMyOrdersTab('ACTIVE')"
+                [class]="myOrdersTab() === 'ACTIVE' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'"
+                class="px-3 py-1 rounded-md transition-all font-bold"
+              >
+                Đang treo
+              </button>
+              <button
+                (click)="changeMyOrdersTab('HISTORY')"
+                [class]="myOrdersTab() === 'HISTORY' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'"
+                class="px-3 py-1 rounded-md transition-all font-bold"
+              >
+                Lịch sử đặt lệnh
+              </button>
+            </div>
+          </div>
+          <span class="text-xs text-slate-400 font-semibold">{{ totalItemsMyOrders() }} lệnh</span>
         </div>
 
         <div class="overflow-x-auto border border-slate-100 dark:border-slate-900 rounded-xl">
@@ -216,11 +248,11 @@
                 <th class="p-3">Giá</th>
                 <th class="p-3">Số lượng</th>
                 <th class="p-3">Đã khớp</th>
-                <th class="p-3 pr-4 text-right">Thao tác</th>
+                <th class="p-3 pr-4 text-right">Trạng thái / Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              @for (order of myOrders(); track order.id) {
+              @for (order of myOrdersList(); track order.id) {
                 <tr class="border-t border-slate-100 dark:border-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
                   <td class="p-3 pl-4 text-slate-500 font-mono">{{ order.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
                   <td class="p-3">
@@ -234,27 +266,46 @@
                   <td class="p-3 font-semibold text-slate-700 dark:text-slate-300">{{ order.amount }}</td>
                   <td class="p-3 font-mono text-slate-400">{{ order.filled_amount }}/{{ order.amount }}</td>
                   <td class="p-3 pr-4 text-right">
-                    <button
-                      app-button
-                      variant="danger"
-                      size="sm"
-                      (click)="handleCancelOrder(order.id)"
-                      [disabled]="stateService.isLoading()"
-                    >
-                      Hủy lệnh
-                    </button>
+                    @if (order.status === 'PENDING' || order.status === 'PARTIALLY_FILLED') {
+                      <button
+                        app-button
+                        variant="danger"
+                        size="sm"
+                        (click)="handleCancelOrder(order.id)"
+                        [disabled]="stateService.isLoading()"
+                      >
+                        Hủy lệnh
+                      </button>
+                    } @else if (order.status === 'FILLED') {
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400 uppercase">
+                        Khớp hết
+                      </span>
+                    } @else if (order.status === 'CANCELLED') {
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-500 dark:bg-slate-900/60 dark:text-slate-400 uppercase">
+                        Đã hủy
+                      </span>
+                    }
                   </td>
                 </tr>
               } @empty {
                 <tr>
                   <td colspan="6" class="p-8 text-center text-slate-400">
-                    Bạn chưa có lệnh giao dịch nào đang treo.
+                    {{ myOrdersTab() === 'ACTIVE' ? 'Bạn chưa có lệnh giao dịch nào đang treo.' : 'Không có lịch sử đặt lệnh.' }}
                   </td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
+
+        <app-pagination
+          [currentPage]="currentPageMyOrders()"
+          [totalPages]="totalPagesMyOrders()"
+          [totalItems]="totalItemsMyOrders()"
+          [itemsPerPage]="myOrdersPerPage"
+          itemName="lệnh"
+          (pageChange)="onMyOrdersPageChange($event)"
+        />
       </div>
 
       <!-- BLOCK 2: TRADE HISTORY -->
@@ -277,7 +328,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (trade of paginatedTrades(); track trade.id) {
+              @for (trade of tradesList(); track trade.id) {
                 <tr
                   class="border-t border-slate-100 dark:border-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
                 >
@@ -300,13 +351,13 @@
                   <td class="p-3.5">
                     @if (trade.tx_hash === 'MATCHED_PENDING_SETTLEMENT') {
                       <span
-                        class="px-2 py-0.5 rounded-full text-xs font-black bg-yellow-100 text-yellow-600 uppercase"
+                        class="px-2 py-0.5 rounded-full text-xs font-black bg-yellow-100 text-yellow-600 dark:bg-yellow-950/20 dark:text-yellow-400 uppercase"
                       >
                         Chờ Settle
                       </span>
                     } @else {
                       <span
-                        class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-600 uppercase"
+                        class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 uppercase"
                       >
                         Hoàn tất
                       </span>
@@ -349,7 +400,7 @@
         <app-pagination
           [currentPage]="currentPageTrades()"
           [totalPages]="totalPagesTrades()"
-          [totalItems]="tradesList().length"
+          [totalItems]="totalItemsTrades()"
           [itemsPerPage]="tradesPerPage"
           itemName="giao dịch"
           (pageChange)="onTradesPageChange($event)"

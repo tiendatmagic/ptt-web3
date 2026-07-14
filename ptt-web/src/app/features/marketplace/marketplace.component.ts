@@ -27,6 +27,7 @@ export class MarketplaceComponent implements OnInit {
   public buyOrders = signal<any[]>([]);
   public sellOrders = signal<any[]>([]);
   public tradesList = signal<any[]>([]);
+  public myOrdersList = signal<any[]>([]);
 
   // Cấu hình các payment tokens được hỗ trợ
   public supportedPaymentTokens = [
@@ -35,30 +36,22 @@ export class MarketplaceComponent implements OnInit {
     // { symbol: 'LINK', address: '0x84b9B910527Ad5C03A9Ca831909EE2157D0b7b72', decimals: 18 }
   ];
   public selectedPaymentToken = signal<any>(this.supportedPaymentTokens[0]);
-  
-  public myOrders = computed(() => {
-    const address = this.stateService.address()?.toLowerCase();
-    if (!address) return [];
-    
-    const buy = this.buyOrders().filter((o: any) => o.user_address?.toLowerCase() === address);
-    const sell = this.sellOrders().filter((o: any) => o.user_address?.toLowerCase() === address);
-    
-    return [...buy, ...sell].sort((a: any, b: any) => b.id - a.id);
-  });
 
-  // Phân trang Lịch sử giao dịch (Trades History)
+  // Phân trang Lịch sử giao dịch (Trades History) - Server-side
   public currentPageTrades = signal(1);
+  public totalPagesTrades = signal(1);
+  public totalItemsTrades = signal(0);
   public tradesPerPage = 5; // Hiển thị 5 giao dịch mỗi trang cho gọn
 
-  public paginatedTrades = computed(() => {
-    const start = (this.currentPageTrades() - 1) * this.tradesPerPage;
-    const end = start + this.tradesPerPage;
-    return this.tradesList().slice(start, end);
-  });
+  // Phân trang & Lọc Lệnh của tôi (My Orders) - Server-side
+  public currentPageMyOrders = signal(1);
+  public totalPagesMyOrders = signal(1);
+  public totalItemsMyOrders = signal(0);
+  public myOrdersPerPage = 5;
+  public myOrdersTab = signal<'ACTIVE' | 'HISTORY'>('ACTIVE');
 
-  public totalPagesTrades = computed(() => {
-    return Math.ceil(this.tradesList().length / this.tradesPerPage) || 1;
-  });
+  public myBalance = signal<string>('0');          // Số dư EquityToken
+  public myPaymentTokenBalance = signal<string>('0'); // Số dư PaymentToken (USDT)
 
   // Form đặt lệnh
   public orderForm = {
@@ -85,6 +78,37 @@ export class MarketplaceComponent implements OnInit {
         this.buyOrders.set([]);
         this.sellOrders.set([]);
         this.tradesList.set([]);
+        this.myOrdersList.set([]);
+      }
+    }, { allowSignalWrites: true });
+
+    effect(() => {
+      const comp = this.stateService.currentCompany();
+      const address = this.stateService.address();
+      const tab = this.myOrdersTab();
+      const page = this.currentPageMyOrders();
+      if (comp && address) {
+        this.loadMyOrders();
+      }
+    }, { allowSignalWrites: true });
+
+    effect(() => {
+      const comp = this.stateService.currentCompany();
+      const page = this.currentPageTrades();
+      if (comp) {
+        this.loadTrades();
+      }
+    }, { allowSignalWrites: true });
+
+    effect(() => {
+      const comp = this.stateService.currentCompany();
+      const address = this.stateService.address();
+      const token = this.selectedPaymentToken();
+      if (comp && address) {
+        this.loadBalances();
+      } else {
+        this.myBalance.set('0');
+        this.myPaymentTokenBalance.set('0');
       }
     }, { allowSignalWrites: true });
   }
@@ -95,14 +119,30 @@ export class MarketplaceComponent implements OnInit {
   public changePaymentToken(token: any) {
     this.selectedPaymentToken.set(token);
     this.loadMarketplaceData();
+    this.loadBalances();
   }
 
   public async loadMarketplaceData() {
+    this.loadOrderBook();
+    
+    if (this.currentPageTrades() === 1) {
+      this.loadTrades();
+    } else {
+      this.currentPageTrades.set(1);
+    }
+
+    if (this.currentPageMyOrders() === 1) {
+      this.loadMyOrders();
+    } else {
+      this.currentPageMyOrders.set(1);
+    }
+  }
+
+  public async loadOrderBook() {
     const comp = this.stateService.currentCompany();
     if (!comp) return;
 
     try {
-      // 1. Tải sổ lệnh
       const book = await firstValueFrom(
         this.apiService.get<any>('marketplace/orderbook', comp.id, {
           payment_token_address: this.selectedPaymentToken().address
@@ -110,22 +150,112 @@ export class MarketplaceComponent implements OnInit {
       );
       this.buyOrders.set(book.buy || []);
       this.sellOrders.set(book.sell || []);
+    } catch (e) {
+      console.error('Lỗi khi tải sổ lệnh:', e);
+    }
+  }
 
-      // 2. Tải lịch sử giao dịch
-      const trades = await firstValueFrom(
-        this.apiService.get<any[]>('marketplace/trades', comp.id, {
-          payment_token_address: this.selectedPaymentToken().address
+  public async loadTrades() {
+    const comp = this.stateService.currentCompany();
+    if (!comp) return;
+
+    try {
+      const res = await firstValueFrom(
+        this.apiService.get<any>('marketplace/trades', comp.id, {
+          payment_token_address: this.selectedPaymentToken().address,
+          page: this.currentPageTrades(),
+          per_page: this.tradesPerPage
         })
       );
-      this.tradesList.set(trades || []);
-      this.currentPageTrades.set(1); // Reset về trang 1
+      this.tradesList.set(res.data || []);
+      this.totalPagesTrades.set(res.last_page || 1);
+      this.totalItemsTrades.set(res.total || 0);
     } catch (e) {
-      console.error('Lỗi khi tải dữ liệu thị trường:', e);
+      console.error('Lỗi khi tải lịch sử giao dịch:', e);
+    }
+  }
+
+  public async loadMyOrders() {
+    const comp = this.stateService.currentCompany();
+    const address = this.stateService.address();
+    if (!comp || !address) {
+      this.myOrdersList.set([]);
+      return;
+    }
+
+    try {
+      const res = await firstValueFrom(
+        this.apiService.get<any>('marketplace/my-orders', comp.id, {
+          payment_token_address: this.selectedPaymentToken().address,
+          status: this.myOrdersTab(),
+          page: this.currentPageMyOrders(),
+          per_page: this.myOrdersPerPage
+        })
+      );
+      this.myOrdersList.set(res.data || []);
+      this.totalPagesMyOrders.set(res.last_page || 1);
+      this.totalItemsMyOrders.set(res.total || 0);
+    } catch (e) {
+      console.error('Lỗi khi tải lệnh cá nhân:', e);
     }
   }
 
   public onTradesPageChange(page: number) {
     this.currentPageTrades.set(page);
+  }
+
+  public onMyOrdersPageChange(page: number) {
+    this.currentPageMyOrders.set(page);
+  }
+
+  public changeMyOrdersTab(tab: 'ACTIVE' | 'HISTORY') {
+    this.myOrdersTab.set(tab);
+    this.currentPageMyOrders.set(1);
+  }
+
+  public async loadBalances() {
+    const address = this.stateService.address();
+    const comp = this.stateService.currentCompany();
+    const token = this.selectedPaymentToken();
+    if (!address || !comp) {
+      this.myBalance.set('0');
+      this.myPaymentTokenBalance.set('0');
+      return;
+    }
+
+    try {
+      const chain = this.stateService.POPULAR_CHAINS.find(c => Number(c.chainId) === Number(comp.chain_id));
+      const rpcUrl = chain ? chain.rpcUrl : 'https://bsc-testnet-rpc.publicnode.com';
+      const provider = new ethers.JsonRpcProvider(rpcUrl);
+
+      // 1. Tải số dư Payment Token (USDT...)
+      if (token && token.address) {
+        const ERC20_ABI = ["function balanceOf(address owner) external view returns (uint256)"];
+        const tokenContract = new ethers.Contract(token.address, ERC20_ABI, provider);
+        const bal = await tokenContract['balanceOf'](address);
+        this.myPaymentTokenBalance.set(ethers.formatUnits(bal, token.decimals));
+      } else {
+        this.myPaymentTokenBalance.set('0');
+      }
+
+      // 2. Tải số dư Share Token (Cổ phần)
+      if (comp.token_address && comp.token_address !== '—') {
+        const EQUITY_TOKEN_ABI = [
+          "function balanceOf(address owner) external view returns (uint256)",
+          "function decimals() external view returns (uint8)"
+        ];
+        const shareTokenContract = new ethers.Contract(comp.token_address, EQUITY_TOKEN_ABI, provider);
+        const [bal, dec] = await Promise.all([
+          shareTokenContract['balanceOf'](address),
+          shareTokenContract['decimals']()
+        ]);
+        this.myBalance.set(ethers.formatUnits(bal, dec));
+      } else {
+        this.myBalance.set('0');
+      }
+    } catch (e) {
+      console.warn('Lỗi load số dư marketplace:', e);
+    }
   }
 
   // Đặt lệnh giao dịch mới
@@ -171,6 +301,7 @@ export class MarketplaceComponent implements OnInit {
       this.orderForm.amount = '';
 
       await this.loadMarketplaceData();
+      await this.loadBalances();
     } catch (e: any) {
       console.error(e);
       this.stateService.showToast(e.error?.message || 'Lỗi đặt lệnh hoặc từ chối ký!', 'error');
@@ -200,6 +331,7 @@ export class MarketplaceComponent implements OnInit {
           await firstValueFrom(this.apiService.post<any>(`marketplace/orders/${orderId}/cancel`, {}, comp.id));
           this.stateService.showToast('Đã hủy lệnh thành công!', 'success');
           await this.loadMarketplaceData();
+          await this.loadBalances();
         } catch (e: any) {
           this.stateService.showToast(e.error?.message || 'Có lỗi xảy ra!', 'error');
         } finally {
@@ -266,6 +398,7 @@ export class MarketplaceComponent implements OnInit {
 
       this.stateService.showToast('Settle giao dịch on-chain thành công!', 'success');
       await this.loadMarketplaceData();
+      await this.loadBalances();
     } catch (e: any) {
       console.error(e);
       this.stateService.showToast(e.message || 'Lỗi giao dịch blockchain khi Settle!', 'error');

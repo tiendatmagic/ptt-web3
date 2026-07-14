@@ -35,6 +35,7 @@ class MarketplaceController extends Controller
         $buyOrders = $buyOrdersQuery->select('id', 'user_address', 'price', 'amount', 'filled_amount', 'payment_token_address', 'payment_token_symbol', 'created_at')
             ->orderBy('price', 'desc')
             ->orderBy('created_at', 'asc')
+            ->limit(50)
             ->get();
 
         // Lấy danh sách lệnh bán
@@ -50,6 +51,7 @@ class MarketplaceController extends Controller
         $sellOrders = $sellOrdersQuery->select('id', 'user_address', 'price', 'amount', 'filled_amount', 'payment_token_address', 'payment_token_symbol', 'created_at')
             ->orderBy('price', 'asc')
             ->orderBy('created_at', 'asc')
+            ->limit(50)
             ->get();
 
         return response()->json([
@@ -168,6 +170,7 @@ class MarketplaceController extends Controller
         }
 
         $paymentToken = $request->query('payment_token_address');
+        $perPage = $request->query('per_page', 5);
 
         $tradesQuery = DB::table('trades')
             ->join('orders as buy_order', 'trades.buy_order_id', '=', 'buy_order.id')
@@ -194,9 +197,47 @@ class MarketplaceController extends Controller
                 'trades.created_at'
             )
             ->orderBy('trades.created_at', 'desc')
-            ->get();
+            ->paginate($perPage);
 
         return response()->json($trades);
+    }
+
+    /**
+     * Lấy danh sách lệnh của chính người dùng (bao gồm cả đang treo và lịch sử).
+     */
+    public function myOrders(Request $request)
+    {
+        $companyId = $request->header('X-Company-Id') ?? $request->query('company_id');
+
+        if (!$companyId) {
+            return response()->json(['message' => 'Missing company_id'], 400);
+        }
+
+        $user = $request->user();
+        $walletAddress = strtolower($user->wallet_address);
+        
+        $paymentToken = $request->query('payment_token_address');
+        $status = $request->query('status'); // ACTIVE (PENDING/PARTIALLY_FILLED), HISTORY (FILLED/CANCELLED), ALL
+        $perPage = $request->query('per_page', 5);
+
+        $query = DB::table('orders')
+            ->where('company_id', $companyId)
+            ->where('user_address', $walletAddress);
+
+        if ($paymentToken) {
+            $query->where('payment_token_address', $paymentToken);
+        }
+
+        if ($status === 'ACTIVE') {
+            $query->whereIn('status', ['PENDING', 'PARTIALLY_FILLED']);
+        } elseif ($status === 'HISTORY') {
+            $query->whereIn('status', ['FILLED', 'CANCELLED']);
+        }
+
+        $orders = $query->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        return response()->json($orders);
     }
 
     /**

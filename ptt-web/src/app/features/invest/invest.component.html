@@ -542,6 +542,20 @@
                 buttonClass="font-black text-xs uppercase tracking-wider"
               ></app-tab-group>
 
+              <!-- Số dư tương ứng theo loại lệnh -->
+              <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-900/60 px-4 py-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-xs select-none">
+                <span class="text-slate-400 font-bold uppercase tracking-wider">Số dư khả dụng:</span>
+                @if (orderSide() === 'BUY') {
+                  <span class="font-extrabold text-slate-700 dark:text-slate-200">
+                    {{ +myPaymentTokenBalance() | number: '1.0-4' }} {{ selectedPaymentToken().symbol }}
+                  </span>
+                } @else {
+                  <span class="font-extrabold text-slate-700 dark:text-slate-200">
+                    {{ +myBalance() | number: '1.0-4' }} {{ selectedCompany()?.token_symbol || 'Cổ phần' }}
+                  </span>
+                }
+              </div>
+
               <div class="grid grid-cols-2 gap-3">
                 <div class="space-y-1.5">
                   <label class="text-xs font-black text-slate-400 uppercase tracking-wider block"
