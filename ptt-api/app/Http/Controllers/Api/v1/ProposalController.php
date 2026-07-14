@@ -92,7 +92,7 @@ class ProposalController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'type' => 'required|string|in:MINT,BURN,WITHDRAW,DIVIDEND,FUNDING_ROUND,CONFIG,ADD_MEMBER,REMOVE_MEMBER,CHANGE_THRESHOLD,PAUSE_TOKEN,UNPAUSE_TOKEN,WITHDRAW_ERC20,WITHDRAW_NFT',
+            'type' => 'required|string|in:MINT,BURN,WITHDRAW,DIVIDEND,DIVIDEND_ROUND,FUNDING_ROUND,CONFIG,ADD_MEMBER,REMOVE_MEMBER,CHANGE_THRESHOLD,PAUSE_TOKEN,UNPAUSE_TOKEN,WITHDRAW_ERC20,WITHDRAW_NFT',
             'params' => 'nullable|array',
             'expiration_date' => 'nullable|date|after:now',
         ]);

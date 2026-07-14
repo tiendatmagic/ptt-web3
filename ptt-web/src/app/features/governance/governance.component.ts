@@ -116,6 +116,8 @@ export class GovernanceComponent implements OnInit {
       'CHANGE_THRESHOLD': 'Đổi số chữ ký duyệt đề xuất',
       'PAUSE_TOKEN': 'Khóa giao dịch cổ phần',
       'UNPAUSE_TOKEN': 'Mở khóa giao dịch cổ phần',
+      'DIVIDEND_ROUND': 'Chia cổ tức mới',
+      'FUNDING_ROUND': 'Mở vòng gọi vốn'
     };
     return map[type] || type;
   }
