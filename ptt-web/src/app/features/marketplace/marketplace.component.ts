@@ -8,6 +8,7 @@ import { ButtonComponent } from '@shared/components/button/button.component';
 import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 import { firstValueFrom } from 'rxjs';
 import { Contract, ethers } from 'ethers';
+import { environment } from '@environments/environment';
 import { ModalService } from '@core/services/modal.service';
 import { TabGroupComponent, TabOption } from '@shared/components/tab-group/tab-group.component';
 import { Marketplace } from '../../core/constants/contracts';
@@ -225,7 +226,7 @@ export class MarketplaceComponent implements OnInit {
 
     try {
       const chain = this.stateService.POPULAR_CHAINS.find(c => Number(c.chainId) === Number(comp.chain_id));
-      const rpcUrl = chain ? chain.rpcUrl : 'https://bsc-testnet-rpc.publicnode.com';
+      const rpcUrl = chain ? chain.rpcUrl : environment.defaultRpcUrl;
       const provider = new ethers.JsonRpcProvider(rpcUrl, undefined, { batchMaxCount: 100 });
       const userAddress = address;
 

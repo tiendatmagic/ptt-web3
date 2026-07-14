@@ -8,6 +8,7 @@ import { IconComponent } from '@shared/components/icon/icon.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { firstValueFrom, filter } from 'rxjs';
 import { Contract, parseEther, ethers } from 'ethers';
+import { environment } from '@environments/environment';
 
 import { ModalService } from '@core/services/modal.service';
 import { CreateRoundProposalModalComponent } from './modals/create-round-proposal-modal.component';
@@ -114,7 +115,9 @@ export class FundingComponent implements OnInit {
       const activeRound = this.roundsList().find(r => r.status === 'ACTIVE');
       if (!activeRound) return;
 
-      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com', undefined, { batchMaxCount: 100 });
+      const chain = this.stateService.POPULAR_CHAINS.find(c => Number(c.chainId) === Number(comp.chain_id));
+      const rpcUrl = chain ? chain.rpcUrl : environment.defaultRpcUrl;
+      const provider = new ethers.JsonRpcProvider(rpcUrl, undefined, { batchMaxCount: 100 });
       const userAddress = this.stateService.address();
       if (!userAddress) return;
 

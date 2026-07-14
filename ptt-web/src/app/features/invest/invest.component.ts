@@ -7,6 +7,7 @@ import { ApiService } from '@core/services/api.service';
 import { ModalService } from '@core/services/modal.service';
 import { firstValueFrom } from 'rxjs';
 import { ethers } from 'ethers';
+import { environment } from '@environments/environment';
 
 import { TabGroupComponent, TabOption } from '@shared/components/tab-group/tab-group.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
@@ -191,6 +192,14 @@ export class InvestComponent implements OnInit {
     this.loadPaymentTokenBalance();
   }
 
+  private getRpcUrl(company: any): string {
+    if (!company || !company.chain_id) {
+      return environment.defaultRpcUrl;
+    }
+    const chain = this.stateService.POPULAR_CHAINS.find(c => Number(c.chainId) === Number(company.chain_id));
+    return chain ? chain.rpcUrl : environment.defaultRpcUrl;
+  }
+
   private async getTokenMetadata(tokenAddress: string, provider: ethers.Provider): Promise<{ symbol: string; decimals: number }> {
     const addressKey = tokenAddress.toLowerCase();
     if (this.tokenMetadataCache.has(addressKey)) {
@@ -224,7 +233,8 @@ export class InvestComponent implements OnInit {
     if (this.activeTab() !== 'trade') return;
 
     try {
-      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com', undefined, { batchMaxCount: 100 });
+      const rpcUrl = this.getRpcUrl(this.selectedCompany());
+      const provider = new ethers.JsonRpcProvider(rpcUrl, undefined, { batchMaxCount: 100 });
       const tokenContract = new ethers.Contract(token.address, ERC20_ABI, provider);
       const bal = await tokenContract['balanceOf'](userAddress);
       this.myPaymentTokenBalance.set(ethers.formatUnits(bal, token.decimals));
@@ -305,7 +315,8 @@ export class InvestComponent implements OnInit {
   // Đọc data trực tiếp từ Smart Contracts (không phụ thuộc vào mạng lưới ví đang chọn)
   async loadOnChainData(company: any) {
     try {
-      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com', undefined, { batchMaxCount: 100 });
+      const rpcUrl = this.getRpcUrl(company);
+      const provider = new ethers.JsonRpcProvider(rpcUrl, undefined, { batchMaxCount: 100 });
       const userAddress = this.walletAddress();
       const promises: Promise<any>[] = [];
 
@@ -793,7 +804,8 @@ export class InvestComponent implements OnInit {
       return;
     }
     try {
-      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com', undefined, { batchMaxCount: 100 });
+      const rpcUrl = this.getRpcUrl(this.selectedCompany());
+      const provider = new ethers.JsonRpcProvider(rpcUrl, undefined, { batchMaxCount: 100 });
       const isERC20 = round.paymentToken !== ethers.ZeroAddress;
       if (isERC20) {
         const tokenContract = new ethers.Contract(round.paymentToken, ERC20_ABI, provider);

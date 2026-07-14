@@ -9,6 +9,7 @@ import { TabGroupComponent } from '@shared/components/tab-group/tab-group.compon
 import { CustomSelectComponent } from '@shared/components/custom-select/custom-select.component';
 import { firstValueFrom } from 'rxjs';
 import { Contract, ethers } from 'ethers';
+import { environment } from '@environments/environment';
 import { EquityToken } from '../../core/constants/contracts';
 
 @Component({
@@ -99,7 +100,9 @@ export class KycComponent implements OnInit {
     if (!comp || !comp.token_address || comp.token_address === '—') return;
 
     try {
-      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com', undefined, { batchMaxCount: 100 });
+      const chain = this.stateService.POPULAR_CHAINS.find(c => Number(c.chainId) === Number(comp.chain_id));
+      const rpcUrl = chain ? chain.rpcUrl : environment.defaultRpcUrl;
+      const provider = new ethers.JsonRpcProvider(rpcUrl, undefined, { batchMaxCount: 100 });
       const tokenContract = new Contract(comp.token_address, EquityToken.abi, provider);
 
       // Load Whitelist & Blacklist song song để gom vào batch requests
