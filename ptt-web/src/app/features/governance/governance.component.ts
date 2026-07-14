@@ -642,7 +642,7 @@ export class GovernanceComponent implements OnInit {
   // Mở modal Nạp Quỹ
   public openDepositModal() {
     this.modalService.open(DepositModalComponent, {
-      title: 'Nạp quỹ doanh nghiệp (Treasury)',
+      title: 'Nạp quỹ',
       size: 'md'
     });
   }

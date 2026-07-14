@@ -43,9 +43,11 @@ export class DashboardComponent implements OnInit {
   public staffsList = signal<any[]>([]);
   public rolesList = signal<any[]>([]);
 
-  // Dữ liệu số dư quỹ HĐQT
+  // Dữ liệu số dư quỹ HĐQT và quỹ Finance
   public treasuryBnbBalance = signal<string>('0');
   public treasuryErc20Balances = signal<any[]>([]);
+  public financeBnbBalance = signal<string>('0');
+  public financeErc20Balances = signal<any[]>([]);
   
   // Dữ liệu đăng ký công ty mới
   public newCompany = {
@@ -86,6 +88,8 @@ export class DashboardComponent implements OnInit {
         this.staffsList.set([]);
         this.treasuryBnbBalance.set('0');
         this.treasuryErc20Balances.set([]);
+        this.financeBnbBalance.set('0');
+        this.financeErc20Balances.set([]);
       }
     }, { allowSignalWrites: true });
   }
@@ -328,54 +332,93 @@ export class DashboardComponent implements OnInit {
   // Mở modal Nạp Quỹ
   public openDepositModal() {
     this.modalService.open(DepositModalComponent, {
-      title: 'Nạp quỹ doanh nghiệp (Treasury)',
+      title: 'Nạp quỹ',
       size: 'md'
     });
   }
 
   public async loadTreasuryBalances() {
     const comp = this.stateService.currentCompany();
-    if (!comp || !comp.governance_address || comp.governance_address === ethers.ZeroAddress) {
+    if (!comp) {
       this.treasuryBnbBalance.set('0');
       this.treasuryErc20Balances.set([]);
+      this.financeBnbBalance.set('0');
+      this.financeErc20Balances.set([]);
       return;
     }
 
-    try {
-      const provider = this.stateService.getProvider();
-      if (!provider) return;
+    const provider = this.stateService.getProvider();
+    if (!provider) return;
 
-      // 1. Fetch BNB balance of governance_address
-      const bnbBal = await provider.getBalance(comp.governance_address);
-      this.treasuryBnbBalance.set(parseFloat(ethers.formatEther(bnbBal)).toFixed(4));
+    const savedTokens = comp.saved_tokens || [];
+    const minErc20Abi = [
+      'function balanceOf(address) view returns (uint256)'
+    ];
 
-      // 2. Fetch saved tokens balances
-      const savedTokens = comp.saved_tokens || [];
-      const erc20Balances = [];
+    // 1. Tải số dư Quỹ HĐQT (Treasury)
+    if (comp.governance_address && comp.governance_address !== ethers.ZeroAddress) {
+      try {
+        const bnbBal = await provider.getBalance(comp.governance_address);
+        this.treasuryBnbBalance.set(parseFloat(ethers.formatEther(bnbBal)).toFixed(4));
 
-      for (const token of savedTokens) {
-        if (token.address && ethers.isAddress(token.address)) {
-          try {
-            const minErc20Abi = [
-              'function balanceOf(address) view returns (uint256)'
-            ];
-            const tokenContract = new ethers.Contract(token.address, minErc20Abi, provider);
-            const balance = await tokenContract['balanceOf'](comp.governance_address);
-            const formatted = parseFloat(ethers.formatUnits(balance, token.decimals)).toFixed(2);
-            if (Number(formatted) > 0 || savedTokens.length === 1 || token.symbol === 'USDT') {
-              erc20Balances.push({
-                symbol: token.symbol,
-                balance: formatted
-              });
+        const erc20Balances = [];
+        for (const token of savedTokens) {
+          if (token.address && ethers.isAddress(token.address)) {
+            try {
+              const tokenContract = new ethers.Contract(token.address, minErc20Abi, provider);
+              const balance = await tokenContract['balanceOf'](comp.governance_address);
+              const formatted = parseFloat(ethers.formatUnits(balance, token.decimals)).toFixed(2);
+              if (Number(formatted) > 0 || savedTokens.length === 1 || token.symbol === 'USDT') {
+                erc20Balances.push({
+                  symbol: token.symbol,
+                  balance: formatted
+                });
+              }
+            } catch (tokenErr) {
+              console.warn('Lỗi khi tải số dư token của quỹ HĐQT:', token.symbol, tokenErr);
             }
-          } catch (tokenErr) {
-            console.warn('Lỗi khi tải số dư token của quỹ:', token.symbol, tokenErr);
           }
         }
+        this.treasuryErc20Balances.set(erc20Balances);
+      } catch (err) {
+        console.warn('Không thể tải số dư quỹ HĐQT:', err);
       }
-      this.treasuryErc20Balances.set(erc20Balances);
-    } catch (err) {
-      console.warn('Không thể tải số dư quỹ HĐQT:', err);
+    } else {
+      this.treasuryBnbBalance.set('0');
+      this.treasuryErc20Balances.set([]);
+    }
+
+    // 2. Tải số dư Quỹ Cổ tức (Finance Manager)
+    if (comp.funding_address && comp.funding_address !== ethers.ZeroAddress) {
+      try {
+        const bnbBal = await provider.getBalance(comp.funding_address);
+        this.financeBnbBalance.set(parseFloat(ethers.formatEther(bnbBal)).toFixed(4));
+
+        const erc20Balances = [];
+        for (const token of savedTokens) {
+          if (token.address && ethers.isAddress(token.address)) {
+            try {
+              const tokenContract = new ethers.Contract(token.address, minErc20Abi, provider);
+              const balance = await tokenContract['balanceOf'](comp.funding_address);
+              const formatted = parseFloat(ethers.formatUnits(balance, token.decimals)).toFixed(2);
+              if (Number(formatted) > 0 || savedTokens.length === 1 || token.symbol === 'USDT') {
+                erc20Balances.push({
+                  symbol: token.symbol,
+                  balance: formatted
+                });
+              }
+            } catch (tokenErr) {
+              console.warn('Lỗi khi tải số dư token của quỹ Finance:', token.symbol, tokenErr);
+            }
+          }
+        }
+        this.financeErc20Balances.set(erc20Balances);
+      } catch (err) {
+        console.warn('Không thể tải số dư quỹ Finance:', err);
+      }
+    } else {
+      this.financeBnbBalance.set('0');
+      this.financeErc20Balances.set([]);
     }
   }
 }

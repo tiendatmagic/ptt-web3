@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '@core/services/state.service';
 import { ModalRef } from '@core/services/modal-ref';
@@ -15,12 +15,32 @@ import { IconComponent } from '@shared/components/icon/icon.component';
         <app-icon name="bank" class="w-6 h-6" />
       </div>
 
+      <!-- Tab selector -->
+      <div class="flex rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-1 w-full select-none">
+        <button
+          (click)="selectedFund.set('treasury')"
+          [class]="selectedFund() === 'treasury' ? 'bg-[var(--color-primary)] text-white shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-bold'"
+          class="flex-1 py-2 text-xs rounded-lg transition-all uppercase tracking-wider"
+        >
+          Quỹ HĐQT (Treasury)
+        </button>
+        <button
+          (click)="selectedFund.set('finance')"
+          [class]="selectedFund() === 'finance' ? 'bg-[var(--color-primary)] text-white shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-bold'"
+          class="flex-1 py-2 text-xs rounded-lg transition-all uppercase tracking-wider"
+        >
+          Quỹ Cổ tức (Finance)
+        </button>
+      </div>
+
       <div class="space-y-1">
         <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">
-          Nạp Quỹ Doanh Nghiệp (Treasury)
+          {{ selectedFund() === 'treasury' ? 'Nạp Quỹ Doanh Nghiệp (Treasury)' : 'Nạp Quỹ Cổ Tức (Finance)' }}
         </h3>
-        <p class="text-xs text-slate-400 max-w-[280px] mx-auto">
-          Quét mã QR hoặc sao chép địa chỉ ví HĐQT để nạp tài sản (BNB, USDT, USDC...) vào quỹ công ty.
+        <p class="text-xs text-slate-400 max-w-[320px] mx-auto leading-relaxed">
+          {{ selectedFund() === 'treasury' 
+             ? 'Quét mã QR hoặc sao chép địa chỉ ví HĐQT (Board Governance) để nạp tài sản vào quỹ công ty.' 
+             : 'Quét mã QR hoặc sao chép địa chỉ hợp đồng Finance Manager để nạp tài sản chi trả cổ tức.' }}
         </p>
       </div>
 
@@ -55,8 +75,12 @@ import { IconComponent } from '@shared/components/icon/icon.component';
         <div class="space-y-1 leading-normal">
           <p class="font-black">Lưu ý quan trọng:</p>
           <ul class="list-disc pl-4 space-y-0.5">
-            <li>Chỉ gửi các tài sản được hệ thống hỗ trợ (BNB, USDT, USDC) qua đúng mạng lưới blockchain của công ty.</li>
-            <li>Tài sản nạp vào sẽ thuộc quyền quản lý chung của HĐQT và chỉ có thể rút ra thông qua **Đề xuất biểu quyết đa chữ ký (Multisig)**.</li>
+            <li>Chỉ gửi các tài sản được hệ thống hỗ trợ (BNB, USDT...) qua đúng mạng lưới blockchain của công ty.</li>
+            @if (selectedFund() === 'treasury') {
+              <li>Tài sản nạp vào quỹ HĐQT sẽ thuộc quyền quản lý chung của HĐQT và chỉ có thể rút ra thông qua **Đề xuất biểu quyết đa chữ ký (Multisig)**.</li>
+            } @else {
+              <li>Tài sản nạp vào hợp đồng Finance Manager sẽ dùng trực tiếp để thanh toán cổ tức cho cổ đông. Cổ đông có thể trực tiếp claim rút về ví cá nhân.</li>
+            }
           </ul>
         </div>
       </div>
@@ -79,9 +103,13 @@ export class DepositModalComponent {
   public modalRef = inject(ModalRef);
   public stateService = inject(StateService);
 
+  public selectedFund = signal<'treasury' | 'finance'>('treasury');
+
   public address(): string {
     const comp = this.stateService.currentCompany();
-    return comp?.governance_address || '';
+    return this.selectedFund() === 'treasury' 
+      ? (comp?.governance_address || '') 
+      : (comp?.funding_address || '');
   }
 
   public qrCodeUrl(): string {
@@ -89,7 +117,8 @@ export class DepositModalComponent {
   }
 
   copyAddress() {
-    this.stateService.copyToClipboard(this.address(), 'Đã sao chép địa chỉ ví quỹ!');
+    const fundName = this.selectedFund() === 'treasury' ? 'quỹ HĐQT (Treasury)' : 'hợp đồng Quỹ Cổ tức (Finance)';
+    this.stateService.copyToClipboard(this.address(), `Đã sao chép địa chỉ ví ${fundName}!`);
   }
 
   onClose() {
