@@ -44,6 +44,7 @@ export class GovernanceComponent implements OnInit {
   private route = inject(ActivatedRoute);
 
   public proposalsList = signal<any[]>([]);
+  public currentQueryProposalId = signal<number | null>(null);
   public searchQuery = signal<string>('');
   public selectedProposal = signal<any | null>(null);
   public proposalSignatures = signal<any[]>([]);
@@ -88,6 +89,26 @@ export class GovernanceComponent implements OnInit {
         this.isPageLoading.set(false);
       }
     }, { allowSignalWrites: true });
+
+    effect(() => {
+      const proposalId = this.currentQueryProposalId();
+      const list = this.proposalsList();
+      if (proposalId && list.length > 0) {
+        const proposal = list.find(p => Number(p.id) === proposalId);
+        if (proposal) {
+          // Tự động chuyển trang về trang chứa đề xuất đó
+          const index = list.findIndex(p => Number(p.id) === proposalId);
+          if (index !== -1) {
+            const page = Math.floor(index / this.itemsPerPage) + 1;
+            this.currentPage.set(page);
+          }
+          this.fetchProposalDetail(proposal);
+        }
+      } else if (!proposalId) {
+        this.selectedProposal.set(null);
+        this.proposalSignatures.set([]);
+      }
+    }, { allowSignalWrites: true });
   }
 
   public onSearchQueryChange(query: string) {
@@ -130,22 +151,7 @@ export class GovernanceComponent implements OnInit {
     // Lắng nghe sự thay đổi của query parameters để tự động chọn đề xuất
     this.route.queryParams.subscribe(params => {
       const proposalId = params['proposalId'] ? Number(params['proposalId']) : null;
-      if (proposalId) {
-        // Tìm đề xuất trong danh sách đã tải
-        const proposal = this.proposalsList().find(p => Number(p.id) === proposalId);
-        if (proposal) {
-          // Tự động chuyển trang về trang chứa đề xuất đó
-          const index = this.proposalsList().findIndex(p => Number(p.id) === proposalId);
-          if (index !== -1) {
-            const page = Math.floor(index / this.itemsPerPage) + 1;
-            this.currentPage.set(page);
-          }
-          this.fetchProposalDetail(proposal);
-        }
-      } else {
-        this.selectedProposal.set(null);
-        this.proposalSignatures.set([]);
-      }
+      this.currentQueryProposalId.set(proposalId);
     });
   }
 

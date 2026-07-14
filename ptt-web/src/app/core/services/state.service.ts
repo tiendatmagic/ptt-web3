@@ -132,9 +132,15 @@ export class StateService {
       // Tránh race condition: ví kết nối lại nhanh hơn session restore
       if (!sessionRestored) return;
 
-      if (connected && walletAddr && !user) {
-        // Thực hiện login ví Web3
-        await this.loginWithWeb3(walletAddr);
+      if (connected && walletAddr) {
+        if (!user) {
+          // Thực hiện login ví Web3
+          await this.loginWithWeb3(walletAddr);
+        } else if (user.wallet_address?.toLowerCase() !== walletAddr.toLowerCase()) {
+          // Nếu đổi ví trên MetaMask, thực hiện logout ví cũ và tự động login ví mới
+          await this.logoutBackend();
+          await this.loginWithWeb3(walletAddr);
+        }
       } else if (!connected && user) {
         // Thực hiện logout backend
         await this.logoutBackend();
