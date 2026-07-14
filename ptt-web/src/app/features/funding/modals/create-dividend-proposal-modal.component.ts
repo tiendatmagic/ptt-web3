@@ -15,7 +15,7 @@ import { IconComponent } from '@shared/components/icon/icon.component';
 @Component({
   selector: 'app-create-dividend-proposal-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, CustomSelectComponent, IconComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, CustomSelectComponent],
   template: `
     <div class="space-y-4 max-h-[80vh] overflow-y-auto pr-1">
       <div class="form-field">
