@@ -497,12 +497,13 @@ export class GovernanceComponent implements OnInit {
       // Nếu đã execute rồi thì bỏ qua và chỉ đồng bộ backend
       let txHash: string | null = null;
       let alreadyExecutedOnChain = false;
+      let receipt: any = null;
       try {
         this.stateService.showToast('Đang gửi giao dịch execute on-chain...', 'warning');
         const gasOverrides = await this.stateService.getGasOverrides(signer);
         const tx = await govContract['executeProposal'](onchainId, gasOverrides);
         this.stateService.showToast('Giao dịch thực thi đang chờ xác nhận...', 'warning');
-        await tx.wait();
+        receipt = await tx.wait();
         txHash = tx.hash;
       } catch (onChainErr: any) {
         const errMsg = onChainErr?.reason || onChainErr?.message || '';
@@ -543,6 +544,44 @@ export class GovernanceComponent implements OnInit {
           const paymentTokenSymbol = p.payment_token_symbol || 'BNB';
           const paymentTokenDecimals = p.payment_token_decimals || 18;
 
+          // Xác định onchainRoundId chính xác từ event log hoặc contract roundCount
+          let onchainRoundId: number | null = null;
+
+          if (receipt && receipt.logs) {
+            try {
+              const financeInterface = new ethers.Interface(FinanceManager.abi);
+              for (const log of receipt.logs) {
+                try {
+                  const parsed = financeInterface.parseLog(log);
+                  if (parsed && parsed.name === 'RoundCreated') {
+                    onchainRoundId = Number(parsed.args[0]);
+                    break;
+                  }
+                } catch (e) {
+                  // bỏ qua logs của contract khác
+                }
+              }
+            } catch (err) {
+              console.warn('Lỗi phân tích logs để tìm event RoundCreated:', err);
+            }
+          }
+
+          // Fallback: nếu không tìm thấy (ví dụ đã execute trước đó), lấy roundCount từ contract FinanceManager
+          if (!onchainRoundId && comp.funding_address) {
+            try {
+              const financeContract = new Contract(comp.funding_address, FinanceManager.abi, signer);
+              const count = await financeContract['roundCount']();
+              onchainRoundId = Number(count);
+            } catch (countErr) {
+              console.warn('Lỗi lấy roundCount từ contract FinanceManager:', countErr);
+            }
+          }
+
+          // Fallback cuối cùng: dùng onchainId của proposal
+          if (!onchainRoundId) {
+            onchainRoundId = onchainId;
+          }
+
           await firstValueFrom(
             this.apiService.post<any>('funding', {
               name: p.name || proposal.title,
@@ -550,7 +589,7 @@ export class GovernanceComponent implements OnInit {
               target_amount: targetAmount,
               start_date: fmt(startDate),
               end_date: fmt(endDate),
-              onchain_round_id: onchainId,
+              onchain_round_id: onchainRoundId,
               payment_token_address: paymentTokenAddress,
               payment_token_symbol: paymentTokenSymbol,
               payment_token_decimals: paymentTokenDecimals,
