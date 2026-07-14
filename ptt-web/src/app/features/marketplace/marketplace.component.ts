@@ -226,29 +226,43 @@ export class MarketplaceComponent implements OnInit {
     try {
       const chain = this.stateService.POPULAR_CHAINS.find(c => Number(c.chainId) === Number(comp.chain_id));
       const rpcUrl = chain ? chain.rpcUrl : 'https://bsc-testnet-rpc.publicnode.com';
-      const provider = new ethers.JsonRpcProvider(rpcUrl);
+      const provider = new ethers.JsonRpcProvider(rpcUrl, undefined, { batchMaxCount: 100 });
+      const userAddress = address;
+
+      const promises: Promise<any>[] = [];
 
       // 1. Tải số dư Payment Token (USDT...)
+      let paymentBalPromise = Promise.resolve(0n);
       if (token && token.address) {
         const ERC20_ABI = ["function balanceOf(address owner) external view returns (uint256)"];
         const tokenContract = new ethers.Contract(token.address, ERC20_ABI, provider);
-        const bal = await tokenContract['balanceOf'](address);
-        this.myPaymentTokenBalance.set(ethers.formatUnits(bal, token.decimals));
-      } else {
-        this.myPaymentTokenBalance.set('0');
+        paymentBalPromise = tokenContract['balanceOf'](userAddress);
       }
-
+      
       // 2. Tải số dư Share Token (Cổ phần)
+      let shareBalPromise = Promise.resolve([0n, 18]);
       if (comp.token_address && comp.token_address !== '—') {
         const EQUITY_TOKEN_ABI = [
           "function balanceOf(address owner) external view returns (uint256)",
           "function decimals() external view returns (uint8)"
         ];
         const shareTokenContract = new ethers.Contract(comp.token_address, EQUITY_TOKEN_ABI, provider);
-        const [bal, dec] = await Promise.all([
-          shareTokenContract['balanceOf'](address),
+        shareBalPromise = Promise.all([
+          shareTokenContract['balanceOf'](userAddress),
           shareTokenContract['decimals']()
         ]);
+      }
+
+      const [payBal, shareInfo] = await Promise.all([paymentBalPromise, shareBalPromise]);
+      
+      if (token && token.address) {
+        this.myPaymentTokenBalance.set(ethers.formatUnits(payBal, token.decimals));
+      } else {
+        this.myPaymentTokenBalance.set('0');
+      }
+
+      if (comp.token_address && comp.token_address !== '—') {
+        const [bal, dec] = shareInfo as [bigint, number];
         this.myBalance.set(ethers.formatUnits(bal, dec));
       } else {
         this.myBalance.set('0');

@@ -114,7 +114,7 @@ export class FundingComponent implements OnInit {
       const activeRound = this.roundsList().find(r => r.status === 'ACTIVE');
       if (!activeRound) return;
 
-      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com');
+      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com', undefined, { batchMaxCount: 100 });
       const userAddress = this.stateService.address();
       if (!userAddress) return;
 

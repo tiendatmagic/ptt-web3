@@ -99,18 +99,24 @@ export class KycComponent implements OnInit {
     if (!comp || !comp.token_address || comp.token_address === '—') return;
 
     try {
-      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com');
+      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com', undefined, { batchMaxCount: 100 });
       const tokenContract = new Contract(comp.token_address, EquityToken.abi, provider);
 
-      // 1. Load Whitelist Page
+      // Load Whitelist & Blacklist song song để gom vào batch requests
       const wlOffset = (this.whitelistPage() - 1) * this.pageSize;
-      const [wlResult, wlTotal] = await tokenContract['getWhitelistedAddresses'](wlOffset, this.pageSize);
+      const blOffset = (this.blacklistPage() - 1) * this.pageSize;
+
+      const [wlData, blData] = await Promise.all([
+        tokenContract['getWhitelistedAddresses'](wlOffset, this.pageSize),
+        tokenContract['getBlacklistedAddresses'](blOffset, this.pageSize)
+      ]);
+
+      const [wlResult, wlTotal] = wlData || [[], 0n];
+      const [blResult, blTotal] = blData || [[], 0n];
+
       this.onchainWhitelist.set(wlResult || []);
       this.whitelistTotal.set(Number(wlTotal));
 
-      // 2. Load Blacklist Page
-      const blOffset = (this.blacklistPage() - 1) * this.pageSize;
-      const [blResult, blTotal] = await tokenContract['getBlacklistedAddresses'](blOffset, this.pageSize);
       this.onchainBlacklist.set(blResult || []);
       this.blacklistTotal.set(Number(blTotal));
     } catch (e) {

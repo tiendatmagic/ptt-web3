@@ -1,5 +1,5 @@
 import { ActivatedRoute, Router } from '@angular/router';
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '@core/services/state.service';
@@ -78,9 +78,12 @@ export class InvestComponent implements OnInit {
     { value: 'SELL', label: 'BÁN' }
   ];
 
-  // Dữ liệu công ty (từ Public API, không cần auth)
-  public companiesList = signal<any[]>([]);
-  public selectedCompany = signal<any | null>(null);
+  // Dữ liệu công ty (tái sử dụng từ StateService để tránh gọi API trùng lặp)
+  public companiesList = this.stateService.companiesList;
+  public selectedCompany = this.stateService.currentCompany;
+
+  // Cache metadata ERC20 token để tránh fetch RPC lặp lại
+  private tokenMetadataCache = new Map<string, { symbol: string; decimals: number }>();
 
   // On-chain data
   public myBalance = signal<string>('0');         // EquityToken balance
@@ -132,6 +135,26 @@ export class InvestComponent implements OnInit {
   public isConnected = computed(() => this.stateService.isConnected());
   public walletAddress = computed(() => this.stateService.address());
 
+  constructor() {
+    effect(async () => {
+      const company = this.selectedCompany();
+      const address = this.walletAddress(); // Lắng nghe sự thay đổi ví để tải lại data tương ứng
+      if (company) {
+        this.isPageLoading.set(true);
+        try {
+          await Promise.all([
+            this.loadOnChainData(company),
+            this.loadOrderBook(company)
+          ]);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          this.isPageLoading.set(false);
+        }
+      }
+    }, { allowSignalWrites: true });
+  }
+
   // Tìm kiếm công ty
   public searchTerm = signal<string>('');
   public filteredCompanies = computed(() => {
@@ -168,6 +191,26 @@ export class InvestComponent implements OnInit {
     this.loadPaymentTokenBalance();
   }
 
+  private async getTokenMetadata(tokenAddress: string, provider: ethers.Provider): Promise<{ symbol: string; decimals: number }> {
+    const addressKey = tokenAddress.toLowerCase();
+    if (this.tokenMetadataCache.has(addressKey)) {
+      return this.tokenMetadataCache.get(addressKey)!;
+    }
+    try {
+      const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+      const [sym, dec] = await Promise.all([
+        tokenContract['symbol'](),
+        tokenContract['decimals']()
+      ]);
+      const metadata = { symbol: String(sym), decimals: Number(dec) };
+      this.tokenMetadataCache.set(addressKey, metadata);
+      return metadata;
+    } catch (err) {
+      console.warn(`Lỗi fetch metadata token ${tokenAddress}:`, err);
+      return { symbol: 'USDT', decimals: 18 };
+    }
+  }
+
   async loadPaymentTokenBalance() {
     const userAddress = this.walletAddress();
     const token = this.selectedPaymentToken();
@@ -181,7 +224,7 @@ export class InvestComponent implements OnInit {
     if (this.activeTab() !== 'trade') return;
 
     try {
-      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com');
+      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com', undefined, { batchMaxCount: 100 });
       const tokenContract = new ethers.Contract(token.address, ERC20_ABI, provider);
       const bal = await tokenContract['balanceOf'](userAddress);
       this.myPaymentTokenBalance.set(ethers.formatUnits(bal, token.decimals));
@@ -193,24 +236,34 @@ export class InvestComponent implements OnInit {
 
   async ngOnInit() {
     try {
-      await this.loadCompanies();
-
       // Tự động kiểm tra query parameter để chọn công ty chia sẻ
       this.route.queryParams.subscribe(async (params) => {
         const coId = params['companyId'];
         const coCode = params['companyCode'];
-        const current = this.selectedCompany();
+        const current = this.stateService.currentCompany();
 
         if (coId) {
-          if (current && current.id === Number(coId)) return;
+          if (current && current.id === Number(coId)) {
+            this.isPageLoading.set(false);
+            return;
+          }
           const co = this.companiesList().find(c => c.id === Number(coId));
           if (co) await this.selectCompany(co);
         } else if (coCode) {
-          if (current && current.code?.toLowerCase() === coCode.toLowerCase()) return;
+          if (current && current.code?.toLowerCase() === coCode.toLowerCase()) {
+            this.isPageLoading.set(false);
+            return;
+          }
           const co = this.companiesList().find(c => c.code?.toLowerCase() === coCode.toLowerCase());
           if (co) await this.selectCompany(co);
+        } else if (current) {
+          // Nếu URL chưa có, nhưng đã có current từ StateService (lấy từ localStorage)
+          this.router.navigate([], {
+            queryParams: { companyId: current.id },
+            queryParamsHandling: 'merge'
+          });
+          this.isPageLoading.set(false);
         } else if (this.companiesList().length > 0) {
-          if (current && current.id === this.companiesList()[0].id) return;
           await this.selectCompany(this.companiesList()[0]);
         } else {
           this.isPageLoading.set(false);
@@ -220,12 +273,6 @@ export class InvestComponent implements OnInit {
       console.error(e);
       this.isPageLoading.set(false);
     }
-  }
-
-  // Load danh sách công ty (public API, không cần auth)
-  async loadCompanies() {
-    const res = await firstValueFrom(this.apiService.get<any[]>('companies'));
-    this.companiesList.set(res || []);
   }
 
   // Chia sẻ liên kết của công ty
@@ -240,206 +287,219 @@ export class InvestComponent implements OnInit {
   }
 
   async selectCompany(company: any) {
-    const current = this.selectedCompany();
+    const current = this.stateService.currentCompany();
     if (current && current.id === company.id) {
       return; // Tránh lặp vô hạn và gọi API trùng lặp
     }
 
-    this.selectedCompany.set(company);
     this.isPageLoading.set(true);
+    await this.stateService.selectCompany(company);
 
     // Cập nhật thanh địa chỉ URL trình duyệt tự động
     this.router.navigate([], {
       queryParams: { companyId: company.id },
       queryParamsHandling: 'merge'
     });
-
-    try {
-      await Promise.all([
-        this.loadOnChainData(company),
-        this.loadOrderBook(company)
-      ]);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      this.isPageLoading.set(false);
-    }
   }
 
   // Đọc data trực tiếp từ Smart Contracts (không phụ thuộc vào mạng lưới ví đang chọn)
   async loadOnChainData(company: any) {
     try {
+      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com', undefined, { batchMaxCount: 100 });
+      const userAddress = this.walletAddress();
+      const promises: Promise<any>[] = [];
 
-      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com');
-
-      // EquityToken balance + total supply
+      // 1. Tải EquityToken balance + total supply
+      let loadEquityTokenPromise = Promise.resolve();
       if (company.token_address && company.token_address !== '—') {
         const token = new ethers.Contract(company.token_address, EQUITY_TOKEN_ABI, provider);
-        const [supply, decimals] = await Promise.all([
-          token['totalSupply'](),
-          token['decimals']()
-        ]);
-        this.totalSupply.set(ethers.formatUnits(supply, decimals));
+        const supplyPromise = token['totalSupply']();
+        const decimalsPromise = token['decimals']();
+        const balancePromise = userAddress ? token['balanceOf'](userAddress) : Promise.resolve(0n);
 
-        if (this.walletAddress()) {
-          const balance = await token['balanceOf'](this.walletAddress());
-          this.myBalance.set(ethers.formatUnits(balance, decimals));
-        }
+        loadEquityTokenPromise = Promise.all([supplyPromise, decimalsPromise, balancePromise]).then(([supply, decimals, balance]) => {
+          this.totalSupply.set(ethers.formatUnits(supply, decimals));
+          if (userAddress) {
+            this.myBalance.set(ethers.formatUnits(balance, decimals));
+          }
+        });
+        promises.push(loadEquityTokenPromise);
       }
 
-      // Claimable dividend - tính toán động on-chain chính xác dựa trên snapshot checkpoints
-      if (company.funding_address && this.walletAddress() && company.token_address) {
-        try {
-          const funding = new ethers.Contract(company.funding_address, FUNDING_MANAGER_ABI, provider);
-          const shareToken = new ethers.Contract(company.token_address, EQUITY_TOKEN_ABI, provider);
+      // 2. Tải Dividend & Claimable information
+      let loadDividendPromise = Promise.resolve();
+      if (company.funding_address && company.token_address) {
+        const funding = new ethers.Contract(company.funding_address, FUNDING_MANAGER_ABI, provider);
+        
+        loadDividendPromise = funding['dividendCount']().then(async (divCountVal: any) => {
+          const divCount = Number(divCountVal);
+          if (divCount === 0) {
+            this.claimableDiv.set('0.0000');
+            this.dividendTokenSymbol.set('USDT');
+            this.contractDivBalance.set('0');
+            return;
+          }
 
-          const divCount = Number(await funding['dividendCount']());
-          let totalClaimable = 0n;
-          let currentDivTokenSymbol = this.myPaymentTokenSymbol(); // Mặc định theo symbol của payment token
-          let currentDivTokenAddress = ethers.ZeroAddress;
+          // Fetch hasClaimed cho toàn bộ dividend rounds song song
+          const claimChecks = userAddress 
+            ? await Promise.all(Array.from({ length: divCount }, (_, i) => funding['hasClaimed'](i + 1, userAddress)))
+            : Array(divCount).fill(true);
 
-          for (let i = 1; i <= divCount; i++) {
-            const hasClaimed = await funding['hasClaimed'](i, this.walletAddress());
-            if (!hasClaimed) {
-              const divRound = await funding['dividends'](i);
-              if (divRound.active) {
-                const nowSec = Math.floor(Date.now() / 1000);
-                if (nowSec >= Number(divRound.startTime) && nowSec <= Number(divRound.endTime)) {
-                  // Đọc symbol của token cổ tức nếu là ERC20
-                  if (divRound.dividendToken !== ethers.ZeroAddress) {
-                    currentDivTokenAddress = divRound.dividendToken;
-                    try {
-                      const tokenContract = new ethers.Contract(divRound.dividendToken, ERC20_ABI, provider);
-                      currentDivTokenSymbol = await tokenContract['symbol']();
-                    } catch (tokErr) {
-                      currentDivTokenSymbol = 'USDT';
-                    }
-                  } else {
-                    currentDivTokenAddress = ethers.ZeroAddress;
-                    currentDivTokenSymbol = 'BNB';
-                  }
-
-                  try {
-                    const blockNumber = Number(divRound.checkpointBlock);
-                    const userBalance = await shareToken['getPastBalanceOf'](this.walletAddress(), blockNumber);
-                    if (userBalance > 0n) {
-                      const totalShares = await shareToken['getPastTotalSupply'](blockNumber);
-                      if (totalShares > 0n) {
-                        const claimAmt = (userBalance * BigInt(divRound.totalAmount)) / totalShares;
-                        totalClaimable += claimAmt;
-                      }
-                    }
-                  } catch (blockErr) {
-                    console.warn(`Lỗi tính toán cho đợt cổ tức #${i}:`, blockErr);
-                  }
-                }
-              }
+          // Tìm các round chưa claim
+          const pendingRoundIndexes: number[] = [];
+          for (let i = 0; i < divCount; i++) {
+            if (!claimChecks[i]) {
+              pendingRoundIndexes.push(i + 1);
             }
           }
+
+          if (pendingRoundIndexes.length === 0) {
+            this.claimableDiv.set('0.0000');
+            this.dividendTokenSymbol.set('USDT');
+            this.contractDivBalance.set('0');
+            return;
+          }
+
+          // Fetch chi tiết tất cả các rounds chưa claim song song
+          const divRounds = await Promise.all(pendingRoundIndexes.map(id => funding['dividends'](id)));
+
+          const nowSec = Math.floor(Date.now() / 1000);
+          const activeRoundsWithDetails: { id: number; data: any }[] = [];
+
+          for (let i = 0; i < divRounds.length; i++) {
+            const r = divRounds[i];
+            if (r.active && nowSec >= Number(r.startTime) && nowSec <= Number(r.endTime)) {
+              activeRoundsWithDetails.push({ id: pendingRoundIndexes[i], data: r });
+            }
+          }
+
+          if (activeRoundsWithDetails.length === 0) {
+            this.claimableDiv.set('0.0000');
+            this.dividendTokenSymbol.set('USDT');
+            this.contractDivBalance.set('0');
+            return;
+          }
+
+          // Lấy token metadata cho các dividend tokens
+          const tokenMetadataPromises = activeRoundsWithDetails.map(item => {
+            if (item.data.dividendToken !== ethers.ZeroAddress) {
+              return this.getTokenMetadata(item.data.dividendToken, provider);
+            }
+            return Promise.resolve({ symbol: 'BNB', decimals: 18 });
+          });
+          const tokenMetadatas = await Promise.all(tokenMetadataPromises);
+
+          // Lấy past balances và supplies
+          const shareToken = new ethers.Contract(company.token_address, EQUITY_TOKEN_ABI, provider);
+          const balanceAndSupplyPromises = activeRoundsWithDetails.map(item => {
+            const blockNumber = Number(item.data.checkpointBlock);
+            const userBalPromise = userAddress ? shareToken['getPastBalanceOf'](userAddress, blockNumber) : Promise.resolve(0n);
+            const supplyPromise = shareToken['getPastTotalSupply'](blockNumber);
+            return Promise.all([userBalPromise, supplyPromise]);
+          });
+          const balanceAndSupplies = await Promise.all(balanceAndSupplyPromises);
+
+          let totalClaimable = 0n;
+          let currentDivTokenSymbol = this.myPaymentTokenSymbol();
+          let currentDivTokenAddress = ethers.ZeroAddress;
+
+          for (let i = 0; i < activeRoundsWithDetails.length; i++) {
+            const item = activeRoundsWithDetails[i];
+            const meta = tokenMetadatas[i];
+            const [userBalance, totalShares] = balanceAndSupplies[i];
+
+            currentDivTokenSymbol = meta.symbol;
+            currentDivTokenAddress = item.data.dividendToken;
+
+            if (userBalance > 0n && totalShares > 0n) {
+              const claimAmt = (userBalance * BigInt(item.data.totalAmount)) / totalShares;
+              totalClaimable += claimAmt;
+            }
+          }
+
           this.claimableDiv.set(ethers.formatEther(totalClaimable));
           this.dividendTokenSymbol.set(currentDivTokenSymbol);
 
-          // Đọc số dư token cổ tức trong hợp đồng FinanceManager
+          // Đọc số dư contract cho dividend token
           let contractBalance = 0n;
           if (totalClaimable > 0n) {
-            try {
-              if (currentDivTokenAddress !== ethers.ZeroAddress) {
-                const tokenContract = new ethers.Contract(currentDivTokenAddress, ERC20_ABI, provider);
-                contractBalance = await tokenContract['balanceOf'](company.funding_address);
-              } else {
-                contractBalance = await provider.getBalance(company.funding_address);
-              }
-            } catch (balErr) {
-              console.warn('Lỗi đọc số dư token cổ tức của contract:', balErr);
+            if (currentDivTokenAddress !== ethers.ZeroAddress) {
+              const tokenContract = new ethers.Contract(currentDivTokenAddress, ERC20_ABI, provider);
+              contractBalance = await tokenContract['balanceOf'](company.funding_address);
+            } else {
+              contractBalance = await provider.getBalance(company.funding_address);
             }
           }
           this.contractDivBalance.set(ethers.formatEther(contractBalance));
-        } catch (divErr) {
+        }).catch(divErr => {
           console.warn('Lỗi khi tính toán tổng cổ tức claimable:', divErr);
           this.claimableDiv.set('0.0000');
           this.dividendTokenSymbol.set('USDT');
           this.contractDivBalance.set('0');
-        }
+        });
+        promises.push(loadDividendPromise);
       }
 
-      // Active funding round — contract dùng roundCount() + rounds(id), không có activeRoundId()
+      // 3. Tải Active funding rounds
+      let loadFundingRoundPromise = Promise.resolve();
       if (company.funding_address) {
         const funding = new ethers.Contract(company.funding_address, FUNDING_MANAGER_ABI, provider);
-        try {
-          const count = Number(await funding['roundCount']());
-          let found = null;
-          let defaultTokenSymbol = 'BNB';
-          let defaultTokenDecimals = 18;
-          let defaultTokenAddress = ethers.ZeroAddress;
-
-          // 1. Quét tìm cấu hình của round gần nhất để lấy payment token mặc định của doanh nghiệp
-          if (count > 0) {
-            try {
-              const lastRound = await funding['rounds'](count);
-              const isERC20 = lastRound.paymentToken !== ethers.ZeroAddress;
-              if (isERC20) {
-                const tokenContract = new ethers.Contract(lastRound.paymentToken, ERC20_ABI, provider);
-                const [sym, dec] = await Promise.all([
-                  tokenContract['symbol'](),
-                  tokenContract['decimals']()
-                ]);
-                defaultTokenSymbol = sym;
-                defaultTokenDecimals = Number(dec);
-                defaultTokenAddress = lastRound.paymentToken;
-              } else {
-                defaultTokenSymbol = 'BNB';
-                defaultTokenDecimals = 18;
-                defaultTokenAddress = ethers.ZeroAddress;
-              }
-            } catch (lastRoundErr) {
-              console.warn('Lỗi đọc round gần nhất:', lastRoundErr);
-            }
+        loadFundingRoundPromise = funding['roundCount']().then(async (countVal: any) => {
+          const count = Number(countVal);
+          if (count === 0) {
+            this.activeFundingRound.set(null);
+            this.myPaymentTokenSymbol.set('BNB');
+            this.myPaymentTokenBalance.set('0');
+            return;
           }
 
-          // 2. Tìm tất cả các round có active = true
+          // Lấy tất cả các rounds song song
+          const roundIds = Array.from({ length: count }, (_, i) => i + 1);
+          const rawRounds = await Promise.all(roundIds.map(id => funding['rounds'](id)));
+
+          // Lấy last round metadata (để fallback payment token mặc định)
+          const lastRound = rawRounds[count - 1];
+          const lastRoundIsERC20 = lastRound.paymentToken !== ethers.ZeroAddress;
+          const defaultTokenMeta = lastRoundIsERC20 
+            ? await this.getTokenMetadata(lastRound.paymentToken, provider)
+            : { symbol: 'BNB', decimals: 18 };
+
           const roundsList: any[] = [];
-          for (let i = count; i >= 1; i--) {
-            const r = await funding['rounds'](i);
-            if (r.active) {
-              const isERC20 = r.paymentToken !== ethers.ZeroAddress;
-              let tokenSymbol = 'BNB';
-              let tokenDecimals = 18;
+          const activeRounds = rawRounds.filter(r => r.active);
 
-              if (isERC20) {
-                try {
-                  const tokenContract = new ethers.Contract(r.paymentToken, ERC20_ABI, provider);
-                  const [sym, dec] = await Promise.all([
-                    tokenContract['symbol'](),
-                    tokenContract['decimals']()
-                  ]);
-                  tokenSymbol = sym;
-                  tokenDecimals = Number(dec);
-                } catch (tokErr) {
-                  console.warn('Lỗi đọc metadata payment token:', tokErr);
-                  tokenSymbol = 'USDT';
-                  tokenDecimals = 18;
-                }
+          // Load payment token metadata cho tất cả active rounds song song
+          const paymentTokenMetadatas = await Promise.all(
+            activeRounds.map(r => {
+              if (r.paymentToken !== ethers.ZeroAddress) {
+                return this.getTokenMetadata(r.paymentToken, provider);
               }
+              return Promise.resolve({ symbol: 'BNB', decimals: 18 });
+            })
+          );
 
-              roundsList.push({
-                id: Number(r.id),
-                name: r.name,
-                paymentToken: r.paymentToken,
-                paymentTokenSymbol: tokenSymbol,
-                paymentTokenDecimals: tokenDecimals,
-                price: ethers.formatUnits(r.price, tokenDecimals),
-                pricePerShare: ethers.formatUnits(r.price, tokenDecimals),
-                maxSupply: ethers.formatEther(r.maxSupply),
-                soldAmount: ethers.formatEther(r.soldAmount),
-                isWhitelistOnly: r.isWhitelistOnly,
-                active: r.active,
-                isActive: r.active,
-                startTime: Number(r.startTime),
-                endTime: Number(r.endTime)
-              });
-            }
+          for (let i = 0; i < activeRounds.length; i++) {
+            const r = activeRounds[i];
+            const meta = paymentTokenMetadatas[i];
+            roundsList.push({
+              id: Number(r.id),
+              name: r.name,
+              paymentToken: r.paymentToken,
+              paymentTokenSymbol: meta.symbol,
+              paymentTokenDecimals: meta.decimals,
+              price: ethers.formatUnits(r.price, meta.decimals),
+              pricePerShare: ethers.formatUnits(r.price, meta.decimals),
+              maxSupply: ethers.formatEther(r.maxSupply),
+              soldAmount: ethers.formatEther(r.soldAmount),
+              isWhitelistOnly: r.isWhitelistOnly,
+              active: r.active,
+              isActive: r.active,
+              startTime: Number(r.startTime),
+              endTime: Number(r.endTime)
+            });
           }
 
+          // Sắp xếp ID từ lớn đến bé
+          roundsList.sort((a, b) => b.id - a.id);
           this.activeFundingRoundsList.set(roundsList);
 
           if (roundsList.length > 0) {
@@ -451,32 +511,30 @@ export class InvestComponent implements OnInit {
             await this.updatePaymentTokenBalanceForSelectedRound(targetRound);
           } else {
             this.activeFundingRound.set(null);
-            this.myPaymentTokenSymbol.set(defaultTokenSymbol);
+            this.myPaymentTokenSymbol.set(defaultTokenMeta.symbol);
 
-            const userAddress = this.walletAddress();
             if (userAddress) {
-              try {
-                if (defaultTokenAddress !== ethers.ZeroAddress) {
-                  const tokenContract = new ethers.Contract(defaultTokenAddress, ERC20_ABI, provider);
-                  const bal = await tokenContract['balanceOf'](userAddress);
-                  this.myPaymentTokenBalance.set(ethers.formatUnits(bal, defaultTokenDecimals));
-                } else {
-                  const bal = await provider.getBalance(userAddress);
-                  this.myPaymentTokenBalance.set(ethers.formatEther(bal));
-                }
-              } catch (balErr) {
-                this.myPaymentTokenBalance.set('0');
+              if (lastRound.paymentToken !== ethers.ZeroAddress) {
+                const tokenContract = new ethers.Contract(lastRound.paymentToken, ERC20_ABI, provider);
+                const bal = await tokenContract['balanceOf'](userAddress);
+                this.myPaymentTokenBalance.set(ethers.formatUnits(bal, defaultTokenMeta.decimals));
+              } else {
+                const bal = await provider.getBalance(userAddress);
+                this.myPaymentTokenBalance.set(ethers.formatEther(bal));
               }
             } else {
               this.myPaymentTokenBalance.set('0');
             }
           }
-        } catch (err) {
+        }).catch(err => {
           console.warn('Lỗi đọc funding round:', err);
           this.activeFundingRound.set(null);
           this.myPaymentTokenBalance.set('0');
-        }
+        });
+        promises.push(loadFundingRoundPromise);
       }
+
+      await Promise.all(promises);
     } catch (e) {
       console.error('On-chain read error:', e);
     }
@@ -735,7 +793,7 @@ export class InvestComponent implements OnInit {
       return;
     }
     try {
-      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com');
+      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com', undefined, { batchMaxCount: 100 });
       const isERC20 = round.paymentToken !== ethers.ZeroAddress;
       if (isERC20) {
         const tokenContract = new ethers.Contract(round.paymentToken, ERC20_ABI, provider);
