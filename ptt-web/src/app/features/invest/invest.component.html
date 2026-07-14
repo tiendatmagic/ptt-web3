@@ -559,7 +559,7 @@
               <div class="grid grid-cols-2 gap-3">
                 <div class="space-y-1.5">
                   <label class="text-xs font-black text-slate-400 uppercase tracking-wider block"
-                    >Giá ({{ selectedPaymentToken().symbol }})</label
+                    >Giá ({{ selectedPaymentToken().symbol }} / {{ selectedCompany()?.token_symbol || 'SHARE' }})</label
                   >
                   <input
                     type="text"
@@ -570,7 +570,7 @@
                 </div>
                 <div class="space-y-1.5">
                   <label class="text-xs font-black text-slate-400 uppercase tracking-wider block"
-                    >Số lượng</label
+                    >Số lượng ({{ selectedCompany()?.token_symbol || 'SHARES' }})</label
                   >
                   <input
                     type="number"
@@ -590,7 +590,7 @@
                 [disabled]="!isConnected() || !orderPrice()"
                 [loading]="orderLoading()"
               >
-                {{ orderSide() === 'BUY' ? '▲ Đặt lệnh MUA' : '▼ Đặt lệnh BÁN' }}
+                {{ orderSide() === 'BUY' ? '▲ Đặt lệnh MUA ' + (selectedCompany()?.token_symbol || '') : '▼ Đặt lệnh BÁN ' + (selectedCompany()?.token_symbol || '') }}
               </button>
             </div>
 
