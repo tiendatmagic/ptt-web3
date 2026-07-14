@@ -444,6 +444,8 @@
                       app-button
                       variant="primary"
                       (click)="handleSignProposal(selectedProposal())"
+                      [loading]="stateService.isLoading()"
+                      [disabled]="stateService.isLoading()"
                       class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2"
                     >
                       <app-icon name="shield" class="w-4 h-4" />
@@ -462,6 +464,8 @@
                     app-button
                     variant="primary"
                     (click)="handleExecuteProposal(selectedProposal())"
+                    [loading]="stateService.isLoading()"
+                    [disabled]="stateService.isLoading()"
                     class="h-11 px-6 rounded-xl font-extrabold flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 !text-white shadow-md border-0"
                   >
                     <app-icon name="send" class="w-4 h-4" />

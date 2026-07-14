@@ -380,6 +380,8 @@ export class GovernanceComponent implements OnInit {
 
   // Ký Biểu quyết (On-chain + Off-chain đồng bộ)
   public async handleSignProposal(proposal: any) {
+    if (this.stateService.isLoading()) return;
+
     const comp = this.stateService.currentCompany();
     if (!comp || !comp.governance_address) return;
 
@@ -464,6 +466,8 @@ export class GovernanceComponent implements OnInit {
 
   // Thực thi Proposal on-chain (Execute Proposal)
   public async handleExecuteProposal(proposal: any) {
+    if (this.stateService.isLoading()) return;
+
     const comp = this.stateService.currentCompany();
     if (!comp || !comp.governance_address) return;
 

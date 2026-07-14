@@ -120,6 +120,8 @@ export class MarketplaceComponent implements OnInit {
 
   // Đặt lệnh giao dịch mới
   public async handlePlaceOrder() {
+    if (this.stateService.isLoading()) return;
+
     if (!this.orderForm.price || !this.orderForm.amount) {
       this.stateService.showToast('Vui lòng nhập đầy đủ giá và số lượng', 'warning');
       return;
@@ -168,6 +170,8 @@ export class MarketplaceComponent implements OnInit {
   }
 
   public handleCancelOrder(orderId: number) {
+    if (this.stateService.isLoading()) return;
+
     const comp = this.stateService.currentCompany();
     if (!comp) return;
 
@@ -196,6 +200,8 @@ export class MarketplaceComponent implements OnInit {
   }
 
   public async handleSettleTrade(trade: any) {
+    if (this.stateService.isLoading()) return;
+
     const comp = this.stateService.currentCompany();
     if (!comp || !comp.marketplace_address) return;
 

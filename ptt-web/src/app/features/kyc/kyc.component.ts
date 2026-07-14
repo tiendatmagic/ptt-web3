@@ -135,6 +135,8 @@ export class KycComponent implements OnInit {
   }
 
   public async handleApproveKyc(userId: number) {
+    if (this.stateService.isLoading()) return;
+
     const comp = this.stateService.currentCompany();
     if (!comp) return;
 
@@ -182,6 +184,8 @@ export class KycComponent implements OnInit {
   }
 
   public async handleRejectKyc(userId: number) {
+    if (this.stateService.isLoading()) return;
+
     const comp = this.stateService.currentCompany();
     if (!comp) return;
 
@@ -231,6 +235,8 @@ export class KycComponent implements OnInit {
 
   // Thực thi Whitelist/Blacklist hàng loạt
   public async handleBatchAction() {
+    if (this.stateService.isLoading()) return;
+
     const comp = this.stateService.currentCompany();
     if (!comp || !comp.token_address) {
       this.stateService.showToast('Không tìm thấy thông tin Smart Contract Cổ phần (EquityToken) để whitelist!', 'error');

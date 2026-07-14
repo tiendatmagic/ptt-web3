@@ -137,6 +137,8 @@
                       app-button
                       variant="primary"
                       (click)="handlePurchaseShares(round)"
+                      [disabled]="stateService.isLoading()"
+                      [loading]="stateService.isLoading()"
                       class="h-10 px-4 rounded-xl text-xs font-extrabold shrink-0"
                     >
                       MUA CỔ PHẦN
@@ -151,7 +153,10 @@
                     <button
                       type="button"
                       (click)="handleFinalizeRound(round)"
+                      [disabled]="stateService.isLoading()"
                       class="h-9 px-2 rounded-xl text-[11px] font-black whitespace-nowrap flex items-center justify-center transition-all cursor-pointer border border-primary/20 hover:bg-primary/5"
+                      [class.opacity-50]="stateService.isLoading()"
+                      [class.pointer-events-none]="stateService.isLoading()"
                       style="
                         color: var(--color-primary);
                         background-color: color-mix(in srgb, var(--color-primary) 8%, transparent);
@@ -162,7 +167,10 @@
                     <button
                       type="button"
                       (click)="handleCancelRound(round)"
+                      [disabled]="stateService.isLoading()"
                       class="h-9 px-2 rounded-xl text-[11px] font-black whitespace-nowrap flex items-center justify-center transition-all cursor-pointer text-red-600 border border-red-200 hover:bg-red-50 dark:hover:bg-red-950/20"
+                      [class.opacity-50]="stateService.isLoading()"
+                      [class.pointer-events-none]="stateService.isLoading()"
                     >
                       HỦY VÒNG GỌI VỐN
                     </button>
@@ -181,6 +189,8 @@
                     app-button
                     variant="secondary"
                     (click)="handleClaimRefund(round)"
+                    [disabled]="stateService.isLoading()"
+                    [loading]="stateService.isLoading()"
                     class="h-9 px-4 rounded-xl text-xs font-black border border-primary/20 hover:bg-primary/5"
                   >
                     NHẬN LẠI TIỀN (REFUND)

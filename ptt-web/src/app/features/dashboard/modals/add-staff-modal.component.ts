@@ -97,6 +97,7 @@ export class AddStaffModalComponent {
   }
 
   async onSubmit() {
+    if (this.isLoading()) return;
     if (!this.newStaffWallet || !this.newStaffRoleId) return;
     const comp = this.stateService.currentCompany();
     if (!comp) return;

@@ -90,6 +90,7 @@ export class RegisterCompanyModalComponent {
   }
 
   async onSubmit() {
+    if (this.isLoading()) return;
     if (!this.newCompany.name || !this.newCompany.code) return;
 
     this.isLoading.set(true);

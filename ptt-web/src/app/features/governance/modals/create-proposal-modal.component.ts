@@ -88,6 +88,7 @@ export class CreateProposalModalComponent {
   }
 
   async onSubmit() {
+    if (this.isLoading()) return;
     if (!this.newProposal.title) return;
     if (!this.newProposal.type) {
       this.stateService.showToast('Vui lòng chọn loại đề xuất!', 'error');

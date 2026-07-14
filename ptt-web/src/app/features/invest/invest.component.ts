@@ -481,6 +481,8 @@ export class InvestComponent implements OnInit {
 
   // Mua cổ phần từ FundingManager
   async handleBuyShares() {
+    if (this.buyLoading()) return;
+
     const company = this.selectedCompany();
     const round = this.activeFundingRound();
     if (!company || !round || !this.isConnected()) return;
@@ -529,6 +531,8 @@ export class InvestComponent implements OnInit {
 
   // Đặt lệnh mua/bán trên Marketplace (ký off-chain và gửi backend)
   async handlePlaceOrder() {
+    if (this.orderLoading()) return;
+
     const company = this.selectedCompany();
     if (!company || !this.isConnected()) return;
 
@@ -540,6 +544,7 @@ export class InvestComponent implements OnInit {
 
       if (!price || !amount) {
         this.stateService.showToast('Vui lòng nhập đầy đủ giá và số lượng', 'warning');
+        this.orderLoading.set(false);
         return;
       }
 
@@ -575,6 +580,8 @@ export class InvestComponent implements OnInit {
 
   // Nhận cổ tức (tự động nhận toàn bộ các đợt cổ tức chưa nhận)
   async handleClaimDividend() {
+    if (this.dividendLoading()) return;
+
     const company = this.selectedCompany();
     if (!company || !this.isConnected()) return;
 

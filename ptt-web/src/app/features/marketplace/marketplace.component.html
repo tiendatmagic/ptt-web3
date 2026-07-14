@@ -74,6 +74,8 @@
           app-button
           variant="primary"
           (click)="handlePlaceOrder()"
+          [loading]="stateService.isLoading()"
+          [disabled]="stateService.isLoading()"
           [class.!bg-emerald-500]="orderForm.side === 'BUY'"
           [class.hover:!bg-emerald-600]="orderForm.side === 'BUY'"
           [class.!bg-red-500]="orderForm.side === 'SELL'"
@@ -255,6 +257,8 @@
                         variant="primary"
                         size="sm"
                         (click)="handleSettleTrade(trade)"
+                        [disabled]="stateService.isLoading()"
+                        [loading]="stateService.isLoading()"
                       >
                         SETTLE ON-CHAIN
                       </button>

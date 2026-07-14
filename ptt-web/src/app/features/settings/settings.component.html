@@ -103,7 +103,8 @@
             </div>
             <button
               (click)="handleDeployAll()"
-              class="flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-white text-violet-700 hover:bg-violet-50 font-black text-sm shrink-0 shadow-lg active:scale-95 transition-all duration-150 cursor-pointer"
+              [disabled]="stateService.isLoading() || deployAllLoading()"
+              class="flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-white text-violet-700 hover:bg-violet-50 font-black text-sm shrink-0 shadow-lg active:scale-95 transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
             >
               <svg
                 class="w-4 h-4 text-violet-700"

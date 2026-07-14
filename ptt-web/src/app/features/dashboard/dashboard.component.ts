@@ -265,6 +265,8 @@ export class DashboardComponent implements OnInit {
 
   // Vô hiệu hóa nhân viên
   public handleDeactivateStaff(staffId: number) {
+    if (this.stateService.isLoading()) return;
+
     const comp = this.stateService.currentCompany();
     if (!comp) return;
 
@@ -296,6 +298,8 @@ export class DashboardComponent implements OnInit {
 
   // Đăng ký công ty từ card chính
   public async handleRegisterCompany() {
+    if (this.stateService.isLoading()) return;
+
     if (!this.newCompany.code || !this.newCompany.name) {
       this.stateService.showToast('Vui lòng điền đầy đủ tên và mã công ty', 'warning');
       return;

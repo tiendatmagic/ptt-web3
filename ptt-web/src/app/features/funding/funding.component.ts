@@ -141,6 +141,8 @@ export class FundingComponent implements OnInit {
 
   // Mua cổ phần gọi vốn (Purchase Shares)
   public async handlePurchaseShares(round: any) {
+    if (this.stateService.isLoading()) return;
+
     if (!this.purchaseAmount || Number(this.purchaseAmount) <= 0) {
       this.stateService.showToast('Vui lòng nhập số lượng cổ phần muốn mua', 'warning');
       return;
@@ -149,17 +151,19 @@ export class FundingComponent implements OnInit {
     const comp = this.stateService.currentCompany();
     if (!comp || !comp.funding_address) return;
 
-    // Refresh thông tin user để lấy kyc_status mới nhất từ server
-    await this.stateService.refreshCurrentUser();
-
-    // Check KYC status
-    if (this.stateService.currentUser()?.kyc_status !== 'APPROVED') {
-      this.stateService.showToast('Tài khoản của bạn chưa vượt qua KYC của hệ thống!', 'error');
-      return;
-    }
-
     try {
       this.stateService.isLoading.set(true);
+
+      // Refresh thông tin user để lấy kyc_status mới nhất từ server
+      await this.stateService.refreshCurrentUser();
+
+      // Check KYC status
+      if (this.stateService.currentUser()?.kyc_status !== 'APPROVED') {
+        this.stateService.showToast('Tài khoản của bạn chưa vượt qua KYC của hệ thống!', 'error');
+        this.stateService.isLoading.set(false);
+        return;
+      }
+
       this.stateService.showToast('Đang kết nối ví và kiểm tra thông tin vòng gọi vốn...', 'warning');
 
       // 1. Lấy signer và khởi tạo contract FinanceManager
@@ -258,6 +262,8 @@ export class FundingComponent implements OnInit {
 
   // Đóng sớm và rút tiền về ví Quỹ của doanh nghiệp
   public async handleFinalizeRound(round: any) {
+    if (this.stateService.isLoading()) return;
+
     const confirmed = await firstValueFrom(
       this.modalService.confirm({
         title: 'Xác nhận đóng & rút tiền sớm',
@@ -324,6 +330,8 @@ export class FundingComponent implements OnInit {
 
   // Hủy vòng gọi vốn và thu hồi cổ phần
   public async handleCancelRound(round: any) {
+    if (this.stateService.isLoading()) return;
+
     const confirmed = await firstValueFrom(
       this.modalService.confirm({
         title: 'Xác nhận hủy vòng gọi vốn',
@@ -374,6 +382,8 @@ export class FundingComponent implements OnInit {
 
   // Nhận lại tiền hoàn trả (Refund)
   public async handleClaimRefund(round: any) {
+    if (this.stateService.isLoading()) return;
+
     const comp = this.stateService.currentCompany();
     if (!comp || !comp.funding_address) return;
 

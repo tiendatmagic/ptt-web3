@@ -167,6 +167,8 @@ export class SettingsComponent implements OnInit {
 
   // --- Auto Deploy ---
   public async handleDeployAll() {
+    if (this.deployAllLoading() || this.stateService.isLoading()) return;
+
     if (this.isAllContractsLinked()) {
       this.stateService.showToast('Hệ thống Smart Contracts đã được triển khai đầy đủ. Không thể deploy lại!', 'warning');
       return;
@@ -265,6 +267,8 @@ export class SettingsComponent implements OnInit {
 
   // --- Save contracts ---
   public async handleSaveContracts() {
+    if (this.saveContractsLoading()) return;
+
     const comp = this.stateService.currentCompany();
     if (!comp) return;
     this.saveContractsLoading.set(true);
@@ -336,6 +340,8 @@ Hãy lưu trữ cẩn thận và không chia sẻ khóa bảo mật (Private Key
 
   // --- Save Company info ---
   public async handleSaveCompanyInfo() {
+    if (this.saveInfoLoading()) return;
+
     const comp = this.stateService.currentCompany();
     if (!comp) return;
 
@@ -382,6 +388,8 @@ Hãy lưu trữ cẩn thận và không chia sẻ khóa bảo mật (Private Key
 
   // --- Xóa doanh nghiệp nháp ---
   public handleDeleteCompany() {
+    if (this.deleteLoading()) return;
+
     const comp = this.stateService.currentCompany();
     if (!comp) return;
 

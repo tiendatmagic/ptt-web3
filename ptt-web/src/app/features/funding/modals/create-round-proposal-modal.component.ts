@@ -108,6 +108,7 @@ export class CreateRoundProposalModalComponent {
   }
 
   async onSubmit() {
+    if (this.isLoading()) return;
     if (!this.newRound.name || !this.newRound.share_price || !this.newRound.max_supply) return;
     const comp = this.stateService.currentCompany();
     if (!comp || !comp.governance_address || !comp.funding_address || !comp.token_address) {
