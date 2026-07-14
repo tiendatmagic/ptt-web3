@@ -35,7 +35,8 @@ import { IconComponent } from '@shared/components/icon/icon.component';
             [options]="paymentOptions"
             valueKey="value"
             labelKey="label"
-            [(value)]="newDividend.paymentMethod"
+            [value]="paymentMethod()"
+            (valueChange)="onPaymentMethodChange($event)"
             placeholder="Chọn loại token..."
             triggerClass="w-full form-input !h-[42px] !bg-slate-50 !border-slate-200/40 dark:!bg-slate-900 dark:!border-slate-800 text-sm"
           />
@@ -48,11 +49,19 @@ import { IconComponent } from '@shared/components/icon/icon.component';
             placeholder="VD: 5000"
             class="form-input focus:border-violet-500 font-semibold"
           />
+          @if (boardBalance() !== null) {
+            <div class="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1 select-none">
+              <span>Số dư quỹ HĐQT khả dụng:</span>
+              <span class="text-violet-600 dark:text-violet-400 font-black">{{ formatNumber(boardBalance()!) }} {{ activeTokenSymbol() }}</span>
+            </div>
+          } @else if (isLoadingBalance()) {
+            <div class="text-[11px] text-slate-400 animate-pulse mt-1.5 select-none">Đang tải số dư quỹ...</div>
+          }
         </div>
       </div>
 
       <!-- Nếu chọn Custom Token hoặc ERC20 -->
-      @if (newDividend.paymentMethod === 'ERC20') {
+      @if (paymentMethod() === 'ERC20') {
         <div class="grid grid-cols-1 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
           @if (savedTokensList().length > 1) {
             <div class="form-field">
@@ -141,7 +150,7 @@ import { IconComponent } from '@shared/components/icon/icon.component';
           app-button
           variant="primary"
           (click)="onSubmit()"
-          [disabled]="isLoading() || !newDividend.name || !newDividend.totalAmount || !newDividend.checkpointBlock || (newDividend.paymentMethod === 'ERC20' && !detectedTokenSymbol())"
+          [disabled]="isLoading() || !newDividend.name || !newDividend.totalAmount || !newDividend.checkpointBlock || (paymentMethod() === 'ERC20' && !detectedTokenSymbol())"
           [loading]="isLoading()"
         >
           Đệ trình đề xuất
@@ -156,6 +165,18 @@ export class CreateDividendProposalModalComponent implements OnInit {
   private apiService = inject(ApiService);
 
   public isLoading = signal(false);
+
+  // Board Fund Balances
+  public boardBalance = signal<number | null>(null);
+  public isLoadingBalance = signal<boolean>(false);
+  public paymentMethod = signal<string>('BNB');
+
+  public activeTokenSymbol = computed(() => {
+    if (this.paymentMethod() === 'BNB') {
+      return 'BNB';
+    }
+    return this.detectedTokenSymbol() || 'Token';
+  });
 
   // ERC20 verification
   public detectedTokenSymbol = signal<string>('');
@@ -190,6 +211,7 @@ export class CreateDividendProposalModalComponent implements OnInit {
       this.detectedTokenSymbol.set('');
       this.detectedTokenDecimals.set(null);
       this.tokenValidationError.set('');
+      this.boardBalance.set(null);
     } else {
       const token = this.savedTokensList().find(t => t.value === val);
       if (token) {
@@ -197,8 +219,74 @@ export class CreateDividendProposalModalComponent implements OnInit {
         this.detectedTokenSymbol.set((token as any).symbol);
         this.detectedTokenDecimals.set((token as any).decimals);
         this.tokenValidationError.set('');
+        this.loadBoardBalance();
       }
     }
+  }
+
+  onPaymentMethodChange(val: string) {
+    this.paymentMethod.set(val);
+    this.newDividend.paymentMethod = val;
+    this.boardBalance.set(null);
+    if (val === 'BNB') {
+      this.newDividend.paymentTokenAddress = '';
+      this.detectedTokenSymbol.set('');
+      this.detectedTokenDecimals.set(null);
+      this.tokenValidationError.set('');
+      this.selectedSavedToken.set('custom');
+    }
+    this.loadBoardBalance();
+  }
+
+  async loadBoardBalance() {
+    const comp = this.stateService.currentCompany();
+    if (!comp || !comp.governance_address) {
+      this.boardBalance.set(null);
+      return;
+    }
+
+    const provider = this.stateService.getProvider();
+    if (!provider) {
+      this.boardBalance.set(null);
+      return;
+    }
+
+    this.isLoadingBalance.set(true);
+    try {
+      if (this.paymentMethod() === 'BNB') {
+        const balance = await provider.getBalance(comp.governance_address);
+        this.boardBalance.set(Number(ethers.formatEther(balance)));
+      } else {
+        const tokenAddr = this.newDividend.paymentTokenAddress;
+        if (!tokenAddr || !ethers.isAddress(tokenAddr)) {
+          this.boardBalance.set(null);
+          return;
+        }
+
+        const minErc20Abi = [
+          'function balanceOf(address) view returns (uint256)',
+          'function decimals() view returns (uint8)'
+        ];
+
+        const contract = new ethers.Contract(tokenAddr, minErc20Abi, provider);
+        const [balance, decimals] = await Promise.all([
+          contract['balanceOf'](comp.governance_address),
+          contract['decimals']()
+        ]);
+
+        this.boardBalance.set(Number(ethers.formatUnits(balance, decimals)));
+      }
+    } catch (e) {
+      console.warn('Lỗi khi tải số dư quỹ HĐQT:', e);
+      this.boardBalance.set(null);
+    } finally {
+      this.isLoadingBalance.set(false);
+    }
+  }
+
+  formatNumber(val: number): string {
+    if (val === null || val === undefined) return '0';
+    return new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 }).format(val);
   }
 
   public newDividend = {
@@ -213,6 +301,7 @@ export class CreateDividendProposalModalComponent implements OnInit {
 
   ngOnInit() {
     this.fetchCurrentBlock();
+    this.loadBoardBalance();
   }
 
   onCancel() {
@@ -277,6 +366,7 @@ export class CreateDividendProposalModalComponent implements OnInit {
 
       this.detectedTokenSymbol.set(symbol);
       this.detectedTokenDecimals.set(Number(decimals));
+      await this.loadBoardBalance();
     } catch (e: any) {
       console.error('Lỗi khi đọc token ERC20:', e);
       this.tokenValidationError.set('Địa chỉ không phải Token ERC20 hợp lệ trên mạng lưới hiện hành!');
