@@ -135,7 +135,8 @@ export class DeployModalComponent implements OnInit {
         this.data.tokenName.trim(),
         this.data.tokenSymbol.trim(),
         govAddr,
-        [financeAddr, marketplaceAddr, deployerAddr]
+        [financeAddr, marketplaceAddr, deployerAddr], // initialWhitelist
+        [financeAddr]                                  // initialMinters: FinanceManager được phép mint/burn
       );
       await tokenContract.waitForDeployment();
       const tokenAddr = await tokenContract.getAddress();

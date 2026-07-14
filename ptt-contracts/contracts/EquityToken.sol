@@ -65,11 +65,16 @@ contract EquityToken is ERC20, Ownable, Pausable {
         string memory name,
         string memory symbol,
         address initialOwner,
-        address[] memory initialWhitelist
+        address[] memory initialWhitelist,
+        address[] memory initialMinters
     ) ERC20(name, symbol) Ownable(initialOwner) {
         _addWhitelist(initialOwner);
         for (uint256 i = 0; i < initialWhitelist.length; i++) {
             _addWhitelist(initialWhitelist[i]);
+        }
+        for (uint256 i = 0; i < initialMinters.length; i++) {
+            isMinter[initialMinters[i]] = true;
+            emit MinterStatusUpdated(initialMinters[i], true);
         }
     }
 
@@ -78,6 +83,11 @@ contract EquityToken is ERC20, Ownable, Pausable {
     }
 
     function burn(address from, uint256 amount) external onlyOwner whenNotPaused {
+        _burn(from, amount);
+    }
+
+    // Cho phép minter (FinanceManager) đốt token của nhà đầu tư khi hoàn tiền (claimRefund)
+    function burnFrom(address from, uint256 amount) external onlyMinterOrOwner whenNotPaused {
         _burn(from, amount);
     }
 

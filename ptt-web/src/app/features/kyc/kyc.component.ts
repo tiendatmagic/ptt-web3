@@ -140,8 +140,37 @@ export class KycComponent implements OnInit {
 
     try {
       this.stateService.isLoading.set(true);
-      await firstValueFrom(this.apiService.post<any>(`users/kyc/${userId}/approve`, {}, comp.id));
-      this.stateService.showToast('Duyệt KYC thành công! Địa chỉ ví đã được Whitelist lên Blockchain.', 'success');
+
+      // Bước 1: Cập nhật trạng thái KYC trên DB backend
+      const res = await firstValueFrom(this.apiService.post<any>(`users/kyc/${userId}/approve`, {}, comp.id));
+      const walletAddress: string = res?.user?.wallet_address;
+
+      // Bước 2: Tự động Whitelist on-chain nếu contract đã deploy và ví tồn tại
+      if (comp.token_address && walletAddress && ethers.isAddress(walletAddress)) {
+        this.stateService.showToast('Đang gửi giao dịch Whitelist on-chain qua MetaMask...', 'warning');
+        try {
+          const signer = await this.stateService.getSigner();
+          const tokenContract = new Contract(comp.token_address, [
+            'function setWhitelisted(address account, bool status) external'
+          ], signer);
+          const gasOverrides = await this.stateService.getGasOverrides(signer);
+          const tx = await tokenContract['setWhitelisted'](walletAddress, true, gasOverrides);
+          await tx.wait();
+          this.stateService.showToast('Duyệt KYC & Whitelist on-chain thành công!', 'success');
+        } catch (onChainErr: any) {
+          // Không rollback DB nếu on-chain lỗi, chỉ cảnh báo
+          const rejected = onChainErr?.message?.includes('user rejected') || onChainErr?.message?.includes('rejected action');
+          if (rejected) {
+            this.stateService.showToast('KYC đã duyệt trên DB. Giao dịch Whitelist bị từ chối trên MetaMask — vui lòng Whitelist thủ công.', 'warning');
+          } else {
+            this.stateService.showToast('KYC đã duyệt trên DB nhưng Whitelist on-chain thất bại. Vui lòng Whitelist thủ công qua tab "Duyệt hàng loạt".', 'warning');
+          }
+        }
+      } else {
+        // Contract chưa deploy hoặc ví trống → chỉ cập nhật DB
+        this.stateService.showToast('Duyệt KYC thành công! (Smart Contract chưa deploy hoặc ví trống — Whitelist on-chain cần thực hiện thủ công).', 'success');
+      }
+
       this.selectedUser.set(null);
       await this.loadKycList();
       await this.loadOnchainLists();
@@ -163,10 +192,32 @@ export class KycComponent implements OnInit {
 
     try {
       this.stateService.isLoading.set(true);
-      await firstValueFrom(this.apiService.post<any>(`users/kyc/${userId}/reject`, {
+
+      // Bước 1: Cập nhật trạng thái KYC trên DB backend
+      const res = await firstValueFrom(this.apiService.post<any>(`users/kyc/${userId}/reject`, {
         reason: this.rejectionReason
       }, comp.id));
-      this.stateService.showToast('Đã từ chối KYC!', 'success');
+      const walletAddress: string = res?.user?.wallet_address;
+
+      // Bước 2: Tự động Remove Whitelist on-chain nếu contract đã deploy và ví tồn tại
+      if (comp.token_address && walletAddress && ethers.isAddress(walletAddress)) {
+        try {
+          const signer = await this.stateService.getSigner();
+          const tokenContract = new Contract(comp.token_address, [
+            'function setWhitelisted(address account, bool status) external'
+          ], signer);
+          const gasOverrides = await this.stateService.getGasOverrides(signer);
+          const tx = await tokenContract['setWhitelisted'](walletAddress, false, gasOverrides);
+          await tx.wait();
+          this.stateService.showToast('Từ chối KYC & Xóa Whitelist on-chain thành công!', 'success');
+        } catch (onChainErr: any) {
+          // Không rollback DB nếu on-chain lỗi
+          this.stateService.showToast('KYC đã từ chối trên DB. Xóa Whitelist on-chain thất bại — vui lòng xóa thủ công nếu cần.', 'warning');
+        }
+      } else {
+        this.stateService.showToast('Đã từ chối KYC!', 'success');
+      }
+
       this.selectedUser.set(null);
       this.rejectionReason = '';
       await this.loadKycList();
@@ -176,6 +227,7 @@ export class KycComponent implements OnInit {
       this.stateService.isLoading.set(false);
     }
   }
+
 
   // Thực thi Whitelist/Blacklist hàng loạt
   public async handleBatchAction() {

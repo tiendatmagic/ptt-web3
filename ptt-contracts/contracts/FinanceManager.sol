@@ -15,6 +15,12 @@ interface IEquityToken {
     ) external view returns (uint256);
 
     function isWhitelisted(address account) external view returns (bool);
+
+    // Mint token trực tiếp cho người mua (mint-on-demand)
+    function mint(address to, uint256 amount) external;
+
+    // Đốt token của nhà đầu tư khi hoàn tiền
+    function burnFrom(address from, uint256 amount) external;
 }
 
 contract FinanceManager is Ownable {
@@ -29,7 +35,6 @@ contract FinanceManager is Ownable {
     error RoundNotStarted();
     error RoundEnded();
     error ExceedsMaxSupply();
-    error InsufficientContractEquity();
     error NotWhitelistedInRound();
     error NotWhitelistedForHolding();
     error UnderMinLimit();
@@ -290,8 +295,6 @@ contract FinanceManager is Ownable {
 
         {
             address shareToken = _rounds[roundId].shareToken;
-            if (IERC20(shareToken).balanceOf(address(this)) < tokenAmount)
-                revert InsufficientContractEquity();
             if (_rounds[roundId].isWhitelistOnly) {
                 if (!roundWhitelist[roundId][msg.sender])
                     revert NotWhitelistedInRound();
@@ -322,12 +325,8 @@ contract FinanceManager is Ownable {
 
         _processPayment(_rounds[roundId].paymentToken, cost);
 
-        if (
-            !IERC20(_rounds[roundId].shareToken).transfer(
-                msg.sender,
-                tokenAmount
-            )
-        ) revert TransferFailed();
+        // Mint-on-demand: tự mint token cổ phần trực tiếp cho nhà đầu tư
+        IEquityToken(_rounds[roundId].shareToken).mint(msg.sender, tokenAmount);
 
         emit SharesPurchased(roundId, msg.sender, tokenAmount, cost);
     }
@@ -355,17 +354,9 @@ contract FinanceManager is Ownable {
             }
         }
 
-        uint256 remainingShares = round.maxSupply - round.soldAmount;
-        if (remainingShares > 0) {
-            if (
-                !IERC20(round.shareToken).transfer(
-                    round.treasury,
-                    remainingShares
-                )
-            ) revert TransferFailed();
-        }
+        // Mint-on-demand: không có pool token tồn đợng, không cần chuyển remaining shares
 
-        emit RoundFinalized(roundId, cost, remainingShares);
+        emit RoundFinalized(roundId, cost, 0);
     }
 
     function cancelFundingRound(uint256 roundId) external onlyOwner {
@@ -378,17 +369,9 @@ contract FinanceManager is Ownable {
         round.active = false;
         round.cancelled = true;
 
-        uint256 remainingShares = round.maxSupply - round.soldAmount;
-        if (remainingShares > 0) {
-            if (
-                !IERC20(round.shareToken).transfer(
-                    round.treasury,
-                    remainingShares
-                )
-            ) revert TransferFailed();
-        }
+        // Mint-on-demand: không có pool token tồn đợng, không cần chuyển remaining shares
 
-        emit RoundCancelled(roundId, remainingShares);
+        emit RoundCancelled(roundId, 0);
     }
 
     function claimRefund(uint256 roundId) external {
@@ -404,13 +387,8 @@ contract FinanceManager is Ownable {
         investorPurchases[roundId][msg.sender] = 0;
         investorPayments[roundId][msg.sender] = 0;
 
-        if (
-            !IERC20(round.shareToken).transferFrom(
-                msg.sender,
-                round.treasury,
-                shares
-            )
-        ) revert TransferFailed();
+        // Đốt token của nhà đầu tư khi hoàn tiền (mint-on-demand: không chuyển về treasury mà burn luôn)
+        IEquityToken(round.shareToken).burnFrom(msg.sender, shares);
 
         if (round.paymentToken == address(0)) {
             (bool success, ) = payable(msg.sender).call{value: payment}("");
