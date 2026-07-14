@@ -18,6 +18,7 @@ class CompanyModel extends Model
         'name',
         'logo',
         'valuation',
+        'chain_id',
         'governance_address',
         'token_address',
         'funding_address',
@@ -29,6 +30,7 @@ class CompanyModel extends Model
 
     protected $casts = [
         'valuation' => 'float',
+        'chain_id' => 'integer',
     ];
 
     /**

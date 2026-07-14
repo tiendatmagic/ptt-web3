@@ -33,6 +33,7 @@ class CompanyController extends Controller
                 'name' => $company->getName(),
                 'logo' => $company->getLogo(),
                 'valuation' => $company->getValuation(),
+                'chain_id' => $company->getChainId(),
                 'governance_address' => $company->getGovernanceAddress(),
                 'token_address' => $company->getTokenAddress(),
                 'funding_address' => $company->getFundingAddress(),
@@ -65,6 +66,7 @@ class CompanyController extends Controller
             'name' => $company->getName(),
             'logo' => $company->getLogo(),
             'valuation' => $company->getValuation(),
+            'chain_id' => $company->getChainId(),
             'governance_address' => $company->getGovernanceAddress(),
             'token_address' => $company->getTokenAddress(),
             'funding_address' => $company->getFundingAddress(),
@@ -168,9 +170,26 @@ class CompanyController extends Controller
             'token_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'funding_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
             'marketplace_address' => 'nullable|string|regex:/^0x[a-fA-F0-9]{40}$/',
+            'chain_id' => 'nullable|integer',
         ]);
 
-        foreach ($validated as $key => $value) {
+        if (isset($validated['chain_id'])) {
+            $newChainId = (int) $validated['chain_id'];
+            if (!empty($companyModel->chain_id) && (int)$companyModel->chain_id !== $newChainId) {
+                return response()->json([
+                    'message' => "Cannot modify or remove chain ID once it has been configured."
+                ], 400);
+            }
+            $companyModel->chain_id = $newChainId;
+        }
+
+        $addressFields = ['governance_address', 'token_address', 'funding_address', 'marketplace_address'];
+        foreach ($addressFields as $key) {
+            if (!array_key_exists($key, $validated)) {
+                continue;
+            }
+            $value = $validated[$key];
+
             // Chống scam: Nếu địa chỉ hiện tại trong DB đã có giá trị, không cho phép sửa đổi hoặc gỡ bỏ (trở thành null hoặc rỗng)
             if (!empty($companyModel->$key) && $companyModel->$key !== $value) {
                 return response()->json([
@@ -210,6 +229,7 @@ class CompanyController extends Controller
                 'name' => $companyModel->name,
                 'logo' => $companyModel->logo,
                 'valuation' => (float) $companyModel->valuation,
+                'chain_id' => $companyModel->chain_id,
                 'governance_address' => $companyModel->governance_address,
                 'token_address' => $companyModel->token_address,
                 'funding_address' => $companyModel->funding_address,
@@ -280,6 +300,7 @@ class CompanyController extends Controller
                 'name' => $companyModel->name,
                 'logo' => $companyModel->logo,
                 'valuation' => (float) $companyModel->valuation,
+                'chain_id' => $companyModel->chain_id,
                 'governance_address' => $companyModel->governance_address,
                 'token_address' => $companyModel->token_address,
                 'funding_address' => $companyModel->funding_address,

@@ -10,6 +10,7 @@ class Company
     private string $name;
     private ?string $logo;
     private float $valuation;
+    private ?int $chainId;
     private ?string $governanceAddress;
     private ?string $tokenAddress;
     private ?string $fundingAddress;
@@ -25,6 +26,7 @@ class Company
         string $name,
         ?string $logo,
         float $valuation,
+        ?int $chainId,
         ?string $governanceAddress,
         ?string $tokenAddress,
         ?string $fundingAddress,
@@ -39,6 +41,7 @@ class Company
         $this->name = $name;
         $this->logo = $logo;
         $this->valuation = $valuation;
+        $this->chainId = $chainId;
         $this->governanceAddress = $governanceAddress;
         $this->tokenAddress = $tokenAddress;
         $this->fundingAddress = $fundingAddress;
@@ -78,6 +81,11 @@ class Company
     public function getValuation(): float
     {
         return $this->valuation;
+    }
+
+    public function getChainId(): ?int
+    {
+        return $this->chainId;
     }
 
     public function getGovernanceAddress(): ?string

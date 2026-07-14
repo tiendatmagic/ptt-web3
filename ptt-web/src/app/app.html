@@ -53,7 +53,7 @@
 
     <!-- Danh sách các mạng hỗ trợ của DApp -->
     <div class="space-y-2.5 max-h-[250px] overflow-y-auto no-scrollbar px-1">
-      @for (chain of stateService.POPULAR_CHAINS; track chain.chainId) {
+      @for (chain of stateService.availableChains(); track chain.chainId) {
         <button
           (click)="switchNetwork(+chain.chainId)"
           class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all cursor-pointer group text-left"

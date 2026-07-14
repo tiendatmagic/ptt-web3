@@ -50,12 +50,37 @@ export class StateService {
   public readonly isConnected = this.web3Service.isConnected;
   public readonly balance = this.web3Service.balance;
   public readonly networkName = this.web3Service.networkName;
-  public readonly isWrongChain = this.web3Service.isWrongChain;
+  
+  // Wrong chain check: checking against both system support list and company specific chain lock-in
+  public readonly isWrongChain = computed(() => {
+    const systemWrongChain = this.web3Service.isWrongChain();
+    if (systemWrongChain) return true;
+
+    const connected = this.isConnected();
+    const walletChainId = this.chainId();
+    const company = this.currentCompany();
+    
+    if (connected && walletChainId && company && company.chain_id) {
+      return Number(walletChainId) !== Number(company.chain_id);
+    }
+    return false;
+  });
+
   public readonly chainSymbol = this.web3Service.chainSymbol;
   public readonly txSpeed = this.web3Service.txSpeed;
   public readonly gasMultiplier = this.web3Service.gasMultiplier;
   public readonly showWrongChainModal = this.web3Service.showWrongChainModal;
   public readonly POPULAR_CHAINS = this.web3Service.POPULAR_CHAINS;
+
+  // Lọc danh sách chain hiển thị cho người dùng chuyển đổi mạng
+  public readonly availableChains = computed(() => {
+    const company = this.currentCompany();
+    if (company && company.chain_id) {
+      const targetChain = this.POPULAR_CHAINS.find(c => Number(c.chainId) === Number(company.chain_id));
+      return targetChain ? [targetChain] : this.POPULAR_CHAINS;
+    }
+    return this.POPULAR_CHAINS;
+  });
 
   public readonly shortenedAddress = computed(() => {
     const addr = this.address();
@@ -65,7 +90,21 @@ export class StateService {
 
   constructor() {
     this.setupAuthSync();
+    this.setupWrongChainSync();
     this.checkExistingSession();
+  }
+
+  // Tự động kích hoạt hiển thị modal sai mạng khi ví kết nối không đúng mạng của doanh nghiệp
+  private setupWrongChainSync() {
+    effect(() => {
+      const wrong = this.isWrongChain();
+      const connected = this.isConnected();
+      if (connected && wrong) {
+        this.web3Service.showWrongChainModal.set(true);
+      } else {
+        this.web3Service.showWrongChainModal.set(false);
+      }
+    }, { allowSignalWrites: true });
   }
 
   // Tự động đồng bộ luồng login/logout backend khi ví Web3 thay đổi trạng thái

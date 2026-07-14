@@ -1,7 +1,7 @@
 import { Injectable, signal, inject, effect } from '@angular/core';
 import { createAppKit, type AppKit } from '@reown/appkit';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
-import { mainnet, arbitrum, arbitrumSepolia, bsc, bscTestnet } from '@reown/appkit/networks';
+import { bsc, bscTestnet } from '@reown/appkit/networks';
 import { ApiController } from '@reown/appkit-controllers';
 import { BrowserProvider, formatEther, JsonRpcProvider } from 'ethers';
 import { environment } from '@environments/environment';
@@ -30,7 +30,7 @@ export class Web3Service {
   public readonly POPULAR_CHAINS = POPULAR_CHAINS;
 
   // Mạng được hỗ trợ (cấu hình động RPC & Explorer từ POPULAR_CHAINS)
-  public readonly supportedChains = [arbitrum, mainnet, bsc, arbitrumSepolia, bscTestnet].map(chain => {
+  public readonly supportedChains = [bsc, bscTestnet].map(chain => {
     const popular = POPULAR_CHAINS.find(c => Number(c.chainId) === Number(chain.id));
     if (popular) {
       return {
@@ -82,10 +82,13 @@ export class Web3Service {
     // Để AppKit tự động lấy cấu hình từ Reown Cloud Dashboard (Social & Email)
     const isDark = this.themeService.isDarkMode();
 
+    const defaultChainIdNum = Number(environment.defaultChainId || 56);
+    const defaultNet = this.supportedChains.find(c => Number(c.id) === defaultChainIdNum) || this.supportedChains[0];
+
     this.modal = createAppKit({
       adapters: [new EthersAdapter()],
       networks: this.supportedChains as any,
-      defaultNetwork: this.supportedChains[0] as any, // Arbitrum One làm default
+      defaultNetwork: defaultNet as any,
       allowUnsupportedChain: true,
       metadata: {
         name: 'PTT DApp',
@@ -311,8 +314,10 @@ export class Web3Service {
     
     // Fallback sang Public JsonRpcProvider khi ví chưa kết nối
     const currentChainId = this.chainId();
+    const defaultChainIdNum = Number(environment.defaultChainId || 56);
     const chainConfig = POPULAR_CHAINS.find(c => Number(c.chainId) === Number(currentChainId))
-      || POPULAR_CHAINS.find(c => Number(c.chainId) === 97); // Mặc định lấy BSC Testnet (97)
+      || POPULAR_CHAINS.find(c => Number(c.chainId) === defaultChainIdNum)
+      || POPULAR_CHAINS[0];
       
     const rpcUrl = chainConfig ? chainConfig.rpcUrl : 'https://bsc-testnet-rpc.publicnode.com';
     return new JsonRpcProvider(rpcUrl);

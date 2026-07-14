@@ -177,7 +177,8 @@ export class DeployModalComponent implements OnInit {
 
   private async saveContractsToBackend(): Promise<void> {
     const payload = {
-      ...this.deployedAddresses
+      ...this.deployedAddresses,
+      chain_id: this.stateService.chainId()
     };
     const res = await firstValueFrom(
       this.apiService.put<any>(`companies/${this.data.company.id}/contracts`, payload)

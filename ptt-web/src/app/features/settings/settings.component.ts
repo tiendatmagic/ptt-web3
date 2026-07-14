@@ -270,7 +270,8 @@ export class SettingsComponent implements OnInit {
     this.saveContractsLoading.set(true);
     try {
       const payload = {
-        ...this.editingContracts
+        ...this.editingContracts,
+        chain_id: this.stateService.chainId()
       };
       const res = await firstValueFrom(this.apiService.put<any>(`companies/${comp.id}/contracts`, payload));
       this.stateService.showToast('Cập nhật địa chỉ Smart Contracts thành công!', 'success');
