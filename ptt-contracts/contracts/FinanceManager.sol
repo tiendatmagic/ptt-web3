@@ -279,14 +279,8 @@ contract FinanceManager is Ownable, ReentrancyGuard, IERC721Receiver, IERC1155Re
             if (msg.value != totalAmount) revert InsufficientBNB();
         } else {
             if (msg.value != 0) revert ZeroBNBRequired();
-            IERC20 token = IERC20(dividendToken);
-            uint256 currentBalance = token.balanceOf(address(this));
-            if (currentBalance < totalAmount) {
-                uint256 needed = totalAmount - currentBalance;
-                if (token.balanceOf(msg.sender) < needed) revert LowBalance();
-                if (!token.transferFrom(msg.sender, address(this), needed))
-                    revert TransferFailed();
-            }
+            
+            
         }
     }
 
