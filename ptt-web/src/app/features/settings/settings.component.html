@@ -381,9 +381,17 @@
               </div>
             </div>
 
-            <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-              Nhập địa chỉ hợp đồng đã triển khai lên mạng blockchaiin để liên kết với doanh nghiệp.
-            </p>
+            @if (stateService.currentCompany()?.chain_id) {
+              <div class="flex items-center gap-2 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/60 rounded-xl text-xs">
+                <span class="w-2.5 h-2.5 rounded-full inline-block shadow-sm" [style.backgroundColor]="stateService.currentCompanyChainInfo()?.color || '#94a3b8'"></span>
+                <span class="font-bold text-slate-700 dark:text-slate-200">Mạng lưới đã triển khai:</span>
+                <span class="text-slate-600 dark:text-slate-400 font-semibold">{{ stateService.currentCompanyChainInfo()?.name }}</span>
+              </div>
+            } @else {
+              <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                Nhập địa chỉ hợp đồng đã triển khai lên mạng blockchain để liên kết với doanh nghiệp.
+              </p>
+            }
 
             <div class="space-y-3">
               @for (c of contractList; track c.key) {

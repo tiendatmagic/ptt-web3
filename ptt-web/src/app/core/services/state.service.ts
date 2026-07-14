@@ -72,6 +72,13 @@ export class StateService {
   public readonly showWrongChainModal = this.web3Service.showWrongChainModal;
   public readonly POPULAR_CHAINS = this.web3Service.POPULAR_CHAINS;
 
+  // Lấy thông tin mạng lưới (chain) của doanh nghiệp hiện tại
+  public readonly currentCompanyChainInfo = computed(() => {
+    const company = this.currentCompany();
+    if (!company || !company.chain_id) return null;
+    return this.POPULAR_CHAINS.find(c => Number(c.chainId) === Number(company.chain_id));
+  });
+
   // Lọc danh sách chain hiển thị cho người dùng chuyển đổi mạng
   public readonly availableChains = computed(() => {
     const company = this.currentCompany();
