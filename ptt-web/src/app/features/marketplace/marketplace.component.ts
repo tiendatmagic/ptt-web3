@@ -30,11 +30,21 @@ export class MarketplaceComponent implements OnInit {
 
   // Cấu hình các payment tokens được hỗ trợ
   public supportedPaymentTokens = [
-    { symbol: 'USDT', address: '0x337610d27c682E347C9cD60BD4b3b107c913E45f', decimals: 18 },
-    { symbol: 'USDC', address: '0x645421226040516109Ed565B1b4a6ECd3159a2D5', decimals: 18 },
-    { symbol: 'LINK', address: '0x84b9B910527Ad5C03A9Ca831909EE2157D0b7b72', decimals: 18 }
+    { symbol: 'USDT', address: '0xa0f2AfaACe4cB692Ea9FF666d2eF7AB054a35407', decimals: 18 },
+    // { symbol: 'USDC', address: '0x645421226040516109Ed565B1b4a6ECd3159a2D5', decimals: 18 },
+    // { symbol: 'LINK', address: '0x84b9B910527Ad5C03A9Ca831909EE2157D0b7b72', decimals: 18 }
   ];
   public selectedPaymentToken = signal<any>(this.supportedPaymentTokens[0]);
+  
+  public myOrders = computed(() => {
+    const address = this.stateService.address()?.toLowerCase();
+    if (!address) return [];
+    
+    const buy = this.buyOrders().filter((o: any) => o.user_address?.toLowerCase() === address);
+    const sell = this.sellOrders().filter((o: any) => o.user_address?.toLowerCase() === address);
+    
+    return [...buy, ...sell].sort((a: any, b: any) => b.id - a.id);
+  });
 
   // Phân trang Lịch sử giao dịch (Trades History)
   public currentPageTrades = signal(1);

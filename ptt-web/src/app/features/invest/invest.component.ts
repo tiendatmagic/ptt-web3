@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '@core/services/state.service';
 import { ApiService } from '@core/services/api.service';
+import { ModalService } from '@core/services/modal.service';
 import { firstValueFrom } from 'rxjs';
 import { ethers } from 'ethers';
 
@@ -59,6 +60,7 @@ export class InvestComponent implements OnInit {
   private apiService = inject(ApiService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private modalService = inject(ModalService);
 
   // Tabs
   public activeTab = signal<'funding' | 'trade' | 'dividends' | 'portfolio'>('funding');
@@ -88,11 +90,21 @@ export class InvestComponent implements OnInit {
 
   // Cấu hình các payment tokens được hỗ trợ cho P2P
   public supportedPaymentTokens = [
-    { symbol: 'USDT', address: '0x337610d27c682E347C9cD60BD4b3b107c913E45f', decimals: 18 },
-    { symbol: 'USDC', address: '0x645421226040516109Ed565B1b4a6ECd3159a2D5', decimals: 18 },
-    { symbol: 'LINK', address: '0x84b9B910527Ad5C03A9Ca831909EE2157D0b7b72', decimals: 18 }
+    { symbol: 'USDT', address: '0xa0f2AfaACe4cB692Ea9FF666d2eF7AB054a35407', decimals: 18 },
+    // { symbol: 'USDC', address: '0x645421226040516109Ed565B1b4a6ECd3159a2D5', decimals: 18 },
+    // { symbol: 'LINK', address: '0x84b9B910527Ad5C03A9Ca831909EE2157D0b7b72', decimals: 18 }
   ];
   public selectedPaymentToken = signal<any>(this.supportedPaymentTokens[0]);
+
+  public myOrders = computed(() => {
+    const address = this.stateService.address()?.toLowerCase();
+    if (!address) return [];
+
+    const buy = (this.orderBook().bids || []).filter((o: any) => o.user_address?.toLowerCase() === address);
+    const sell = (this.orderBook().asks || []).filter((o: any) => o.user_address?.toLowerCase() === address);
+
+    return [...buy, ...sell].sort((a: any, b: any) => b.id - a.id);
+  });
 
   // Funding round
   public activeFundingRound = signal<any | null>(null);
@@ -473,7 +485,10 @@ export class InvestComponent implements OnInit {
           payment_token_address: this.selectedPaymentToken().address
         })
       );
-      this.orderBook.set(data || { bids: [], asks: [] });
+      this.orderBook.set({
+        bids: data?.buy || [],
+        asks: data?.sell || []
+      });
     } catch (e) {
       this.orderBook.set({ bids: [], asks: [] });
     }
@@ -576,6 +591,38 @@ export class InvestComponent implements OnInit {
     } finally {
       this.orderLoading.set(false);
     }
+  }
+
+  // Hủy lệnh giao dịch
+  public handleCancelOrder(orderId: number) {
+    if (this.orderLoading()) return;
+
+    const company = this.selectedCompany();
+    if (!company) return;
+
+    const confirmRef = this.modalService.confirm({
+      title: 'Hủy lệnh giao dịch',
+      description: 'Bạn có chắc chắn muốn hủy lệnh giao dịch này không?',
+      confirmText: 'HỦY LỆNH',
+      cancelText: 'QUAY LẠI',
+      confirmButtonClass: 'btn-danger'
+    });
+
+    confirmRef.afterClosed$.subscribe(async (confirmed) => {
+      if (confirmed) {
+        try {
+          this.orderLoading.set(true);
+          await firstValueFrom(this.apiService.post<any>(`marketplace/orders/${orderId}/cancel`, {}, company.id));
+          this.stateService.showToast('Đã hủy lệnh thành công!', 'success');
+          await this.loadOrderBook(company);
+          await this.loadPaymentTokenBalance();
+        } catch (e: any) {
+          this.stateService.showToast(e.error?.message || 'Có lỗi xảy ra khi hủy lệnh!', 'error');
+        } finally {
+          this.orderLoading.set(false);
+        }
+      }
+    });
   }
 
   // Nhận cổ tức (tự động nhận toàn bộ các đợt cổ tức chưa nhận)

@@ -194,6 +194,68 @@
           </div>
         </div>
       </div>
+      
+      <!-- BLOCK 1.5: MY ORDERS -->
+      <div
+        class="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-900/50 rounded-[15px] p-6 shadow-sm space-y-4"
+      >
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/60 pb-3">
+          <h2 class="text-sm font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+            <app-icon name="portfolio" class="w-4 h-4 text-violet-500" />
+            Lệnh của tôi (My Orders)
+          </h2>
+          <span class="text-xs text-slate-400 font-semibold">{{ myOrders().length }} lệnh đang treo</span>
+        </div>
+
+        <div class="overflow-x-auto border border-slate-100 dark:border-slate-900 rounded-xl">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 font-bold uppercase text-xs tracking-wider select-none">
+                <th class="p-3 pl-4">Thời gian</th>
+                <th class="p-3">Loại</th>
+                <th class="p-3">Giá</th>
+                <th class="p-3">Số lượng</th>
+                <th class="p-3">Đã khớp</th>
+                <th class="p-3 pr-4 text-right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (order of myOrders(); track order.id) {
+                <tr class="border-t border-slate-100 dark:border-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                  <td class="p-3 pl-4 text-slate-500 font-mono">{{ order.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="p-3">
+                    <span [class]="order.side === 'BUY' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' : 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400'" class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase">
+                      {{ order.side === 'BUY' ? 'MUA' : 'BÁN' }}
+                    </span>
+                  </td>
+                  <td class="p-3 font-extrabold text-slate-700 dark:text-slate-200">
+                    {{ order.price }} {{ order.payment_token_symbol || 'USDT' }}
+                  </td>
+                  <td class="p-3 font-semibold text-slate-700 dark:text-slate-300">{{ order.amount }}</td>
+                  <td class="p-3 font-mono text-slate-400">{{ order.filled_amount }}/{{ order.amount }}</td>
+                  <td class="p-3 pr-4 text-right">
+                    <button
+                      app-button
+                      variant="danger"
+                      size="sm"
+                      (click)="handleCancelOrder(order.id)"
+                      [disabled]="stateService.isLoading()"
+                    >
+                      Hủy lệnh
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="p-8 text-center text-slate-400">
+                    Bạn chưa có lệnh giao dịch nào đang treo.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       <!-- BLOCK 2: TRADE HISTORY -->
       <div
