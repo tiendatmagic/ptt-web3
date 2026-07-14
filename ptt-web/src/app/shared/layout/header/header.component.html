@@ -502,7 +502,7 @@
       }
 
       <!-- Sàn giao dịch (Marketplace) -->
-      <!-- @if (stateService.hasPermission('marketplace.view')) {
+      @if (stateService.hasPermission('marketplace.view')) {
         <a
           routerLink="/marketplace"
           routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
@@ -512,7 +512,7 @@
           <app-icon name="refresh" class="w-5 h-5 flex-shrink-0" />
           <span>Sàn giao dịch</span>
         </a>
-      } -->
+      }
 
       <!-- Gọi vốn & Cổ tức (Funding) -->
       @if (
