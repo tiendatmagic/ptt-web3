@@ -11,6 +11,7 @@ import { ethers } from 'ethers';
 import { TabGroupComponent, TabOption } from '@shared/components/tab-group/tab-group.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { IconComponent } from '@shared/components/icon/icon.component';
+import { CustomSelectComponent } from '@shared/components/custom-select/custom-select.component';
 
 // Minimal ABIs — chỉ những function cần thiết cho investor
 const EQUITY_TOKEN_ABI = [
@@ -53,7 +54,7 @@ const MARKETPLACE_ABI = [
 @Component({
   selector: 'app-invest',
   standalone: true,
-  imports: [CommonModule, FormsModule, TabGroupComponent, ButtonComponent, IconComponent],
+  imports: [CommonModule, FormsModule, TabGroupComponent, ButtonComponent, IconComponent, CustomSelectComponent],
   templateUrl: './invest.component.html'
 })
 export class InvestComponent implements OnInit {
@@ -110,6 +111,7 @@ export class InvestComponent implements OnInit {
 
   // Funding round
   public activeFundingRound = signal<any | null>(null);
+  public activeFundingRoundsList = signal<any[]>([]);
   public buyAmount = signal<number>(1);
   public buyLoading = signal(false);
 
@@ -394,7 +396,8 @@ export class InvestComponent implements OnInit {
             }
           }
 
-          // 2. Tìm round mới nhất có active = true
+          // 2. Tìm tất cả các round có active = true
+          const roundsList: any[] = [];
           for (let i = count; i >= 1; i--) {
             const r = await funding['rounds'](i);
             if (r.active) {
@@ -418,7 +421,7 @@ export class InvestComponent implements OnInit {
                 }
               }
 
-              found = {
+              roundsList.push({
                 id: Number(r.id),
                 name: r.name,
                 paymentToken: r.paymentToken,
@@ -433,33 +436,20 @@ export class InvestComponent implements OnInit {
                 isActive: r.active,
                 startTime: Number(r.startTime),
                 endTime: Number(r.endTime)
-              };
-
-              const userAddress = this.walletAddress();
-              if (userAddress) {
-                try {
-                  if (isERC20) {
-                    const tokenContract = new ethers.Contract(r.paymentToken, ERC20_ABI, provider);
-                    const bal = await tokenContract['balanceOf'](userAddress);
-                    this.myPaymentTokenBalance.set(ethers.formatUnits(bal, tokenDecimals));
-                  } else {
-                    const bal = await provider.getBalance(userAddress);
-                    this.myPaymentTokenBalance.set(ethers.formatEther(bal));
-                  }
-                  this.myPaymentTokenSymbol.set(tokenSymbol);
-                } catch (balErr) {
-                  console.warn('Lỗi đọc số dư payment token:', balErr);
-                  this.myPaymentTokenBalance.set('0');
-                }
-              } else {
-                this.myPaymentTokenBalance.set('0');
-              }
-
-              break;
+              });
             }
           }
 
-          if (!found) {
+          this.activeFundingRoundsList.set(roundsList);
+
+          if (roundsList.length > 0) {
+            const currentSelected = this.activeFundingRound();
+            const stillActive = currentSelected ? roundsList.find(r => r.id === currentSelected.id) : null;
+            const targetRound = stillActive || roundsList[0];
+            
+            this.activeFundingRound.set(targetRound);
+            await this.updatePaymentTokenBalanceForSelectedRound(targetRound);
+          } else {
             this.activeFundingRound.set(null);
             this.myPaymentTokenSymbol.set(defaultTokenSymbol);
 
@@ -480,8 +470,6 @@ export class InvestComponent implements OnInit {
             } else {
               this.myPaymentTokenBalance.set('0');
             }
-          } else {
-            this.activeFundingRound.set(found);
           }
         } catch (err) {
           console.warn('Lỗi đọc funding round:', err);
@@ -737,5 +725,40 @@ export class InvestComponent implements OnInit {
   // Format số lớn
   formatNumber(n: string | number): string {
     return Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 4 });
+  }
+
+  // Cập nhật số dư ví payment token cho vòng gọi vốn được chọn
+  async updatePaymentTokenBalanceForSelectedRound(round: any) {
+    const userAddress = this.walletAddress();
+    if (!userAddress || !round) {
+      this.myPaymentTokenBalance.set('0');
+      return;
+    }
+    try {
+      const provider = new ethers.JsonRpcProvider('https://bsc-testnet-rpc.publicnode.com');
+      const isERC20 = round.paymentToken !== ethers.ZeroAddress;
+      if (isERC20) {
+        const tokenContract = new ethers.Contract(round.paymentToken, ERC20_ABI, provider);
+        const bal = await tokenContract['balanceOf'](userAddress);
+        this.myPaymentTokenBalance.set(ethers.formatUnits(bal, round.paymentTokenDecimals));
+      } else {
+        const bal = await provider.getBalance(userAddress);
+        this.myPaymentTokenBalance.set(ethers.formatEther(bal));
+      }
+      this.myPaymentTokenSymbol.set(round.paymentTokenSymbol);
+    } catch (e) {
+      console.warn('Lỗi cập nhật số dư payment token cho vòng chọn:', e);
+      this.myPaymentTokenBalance.set('0');
+    }
+  }
+
+  // Sự kiện khi nhà đầu tư đổi vòng gọi vốn trên Dropdown
+  async onSelectFundingRound(roundId: any) {
+    const rId = Number(roundId);
+    const round = this.activeFundingRoundsList().find(r => r.id === rId);
+    if (round) {
+      this.activeFundingRound.set(round);
+      await this.updatePaymentTokenBalanceForSelectedRound(round);
+    }
   }
 }

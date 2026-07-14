@@ -353,14 +353,44 @@
 
         <!-- ==================== TAB: MUA CỔ PHẦN ==================== -->
         @if (activeTab() === 'funding') {
-          <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Thông tin vòng gọi vốn -->
-            <div class="space-y-4">
-              <h3 class="text-base font-black text-slate-700 dark:text-slate-200">
-                Vòng gọi vốn hiện tại
-              </h3>
-              @if (activeFundingRound(); as round) {
-                <div class="space-y-4">
+          <div class="p-6 space-y-5">
+            <!-- Bộ chọn vòng gọi vốn nếu doanh nghiệp có nhiều vòng đang mở -->
+            @if (activeFundingRoundsList().length > 1) {
+              <div
+                class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200/50 dark:border-slate-800/50"
+              >
+                <div class="space-y-0.5">
+                  <span class="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider block"
+                    >Nhiều vòng gọi vốn đang mở</span
+                  >
+                  <span class="text-xs text-slate-400"
+                    >Doanh nghiệp này đang mở nhiều vòng gọi vốn. Chọn vòng bạn muốn đầu tư.</span
+                  >
+                </div>
+                <app-custom-select
+                  [options]="activeFundingRoundsList()"
+                  valueKey="id"
+                  labelKey="name"
+                  [value]="activeFundingRound()?.id"
+                  (valueChange)="onSelectFundingRound($event)"
+                  containerClass="min-w-[240px]"
+                />
+              </div>
+            }
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <!-- Thông tin vòng gọi vốn -->
+              <div class="space-y-4">
+                @if (activeFundingRound(); as round) {
+                  <div class="flex items-center justify-between">
+                    <h3 class="text-base font-black text-slate-700 dark:text-slate-200">
+                      Vòng gọi vốn: <span class="text-[var(--color-primary)] font-black">{{ round.name }}</span>
+                    </h3>
+                    <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400">
+                      ID: #{{ round.id }}
+                    </span>
+                  </div>
+                  <div class="space-y-4">
                   <div class="grid grid-cols-2 gap-3">
                     <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3.5 space-y-1">
                       <span class="text-xs font-black text-slate-400 uppercase block"
@@ -516,7 +546,8 @@
               }
             </div>
           </div>
-        }
+        </div>
+      }
 
         <!-- ==================== TAB: GIAO DỊCH P2P ==================== -->
         @if (activeTab() === 'trade') {
