@@ -179,62 +179,76 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             @for (
               contract of [
-                { label: 'Equity Token', key: 'token_address', icon: 'ethereum' },
                 { label: 'Board Governance', key: 'governance_address', icon: 'scale' },
-                { label: 'Treasury', key: 'governance_address', icon: 'bank' },
-                { label: 'Marketplace', key: 'marketplace_address', icon: 'sync' },
+                { label: 'Equity Token', key: 'token_address', icon: 'ethereum' },
+                { label: 'Finance Manager', key: 'funding_address', icon: 'bank' },
+                { label: 'Marketplace', key: 'marketplace_address', icon: 'sync' }
               ];
               track contract.label
             ) {
               <div
-                class="bg-slate-50 dark:bg-slate-900/30 rounded-xl p-4 border border-slate-100 dark:border-slate-800/40 space-y-1.5 hover:border-violet-500/20 transition-all duration-200"
+                class="bg-slate-50 dark:bg-slate-900/30 rounded-xl p-4 border border-slate-100 dark:border-slate-800/40 space-y-1.5 hover:border-violet-500/20 transition-all duration-200 flex flex-col justify-between"
               >
-                <div class="flex items-center gap-1.5">
-                  <app-icon [name]="contract.icon" class="w-4 h-4 text-violet-500 shrink-0" />
-                  <span class="text-xs font-black text-slate-400 uppercase tracking-wider">{{
-                    contract.label
-                  }}</span>
-                </div>
-                <div class="flex items-center justify-between gap-2 min-w-0">
-                  <a
-                    [href]="
-                      'https://testnet.bscscan.com/address/' +
-                      stateService.currentCompany()[contract.key]
-                    "
-                    target="_blank"
-                    [title]="stateService.currentCompany()[contract.key]"
-                    class="font-mono text-xs text-violet-500 hover:text-violet-700 hover:underline leading-tight block truncate flex-1"
-                  >
-                    {{ stateService.currentCompany()[contract.key] | appShortAddress }}
-                  </a>
-                  @if (stateService.currentCompany()[contract.key]) {
-                    <button
-                      (click)="
-                        stateService.copyToClipboard(
-                          stateService.currentCompany()[contract.key],
-                          'Đã sao chép địa chỉ hợp đồng!'
-                        );
-                        $event.stopPropagation()
+                <div class="space-y-1.5">
+                  <div class="flex items-center gap-1.5">
+                    <app-icon [name]="contract.icon" class="w-4 h-4 text-violet-500 shrink-0" />
+                    <span class="text-xs font-black text-slate-400 uppercase tracking-wider">{{
+                      contract.label
+                    }}</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-2 min-w-0">
+                    <a
+                      [href]="
+                        'https://testnet.bscscan.com/address/' +
+                        stateService.currentCompany()[contract.key]
                       "
-                      title="Sao chép địa chỉ"
-                      class="text-slate-400 hover:text-[var(--color-primary)] shrink-0 transition-colors"
+                      target="_blank"
+                      [title]="stateService.currentCompany()[contract.key]"
+                      class="font-mono text-xs text-violet-500 hover:text-violet-700 hover:underline leading-tight block truncate flex-1"
                     >
-                      <svg
-                        class="w-3.5 h-3.5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                      {{ stateService.currentCompany()[contract.key] | appShortAddress }}
+                    </a>
+                    @if (stateService.currentCompany()[contract.key]) {
+                      <button
+                        (click)="
+                          stateService.copyToClipboard(
+                            stateService.currentCompany()[contract.key],
+                            'Đã sao chép địa chỉ hợp đồng!'
+                          );
+                          $event.stopPropagation()
+                        "
+                        title="Sao chép địa chỉ"
+                        class="text-slate-400 hover:text-[var(--color-primary)] shrink-0 transition-colors"
                       >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2.5"
-                          d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-                        />
-                      </svg>
-                    </button>
-                  }
+                        <svg
+                          class="w-3.5 h-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2.5"
+                            d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                          />
+                        </svg>
+                      </button>
+                    }
+                  </div>
                 </div>
+
+                @if (contract.label === 'Board Governance') {
+                  <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex flex-wrap items-center justify-between gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                    <span>Số dư quỹ:</span>
+                    <span class="text-violet-600 dark:text-violet-400 font-extrabold select-all select-text">
+                      {{ treasuryBnbBalance() }} BNB
+                      @for (erc20 of treasuryErc20Balances(); track erc20.symbol) {
+                        | {{ erc20.balance }} {{ erc20.symbol }}
+                      }
+                    </span>
+                  </div>
+                }
               </div>
             }
           </div>
