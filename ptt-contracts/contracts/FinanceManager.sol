@@ -271,7 +271,6 @@ contract FinanceManager is Ownable, ReentrancyGuard, IERC721Receiver, IERC1155Re
                 revert TransferFailed();
         }
     }
-
     function _depositDividend(
         address dividendToken,
         uint256 totalAmount
@@ -281,9 +280,13 @@ contract FinanceManager is Ownable, ReentrancyGuard, IERC721Receiver, IERC1155Re
         } else {
             if (msg.value != 0) revert ZeroBNBRequired();
             IERC20 token = IERC20(dividendToken);
-            if (token.balanceOf(msg.sender) < totalAmount) revert LowBalance();
-            if (!token.transferFrom(msg.sender, address(this), totalAmount))
-                revert TransferFailed();
+            uint256 currentBalance = token.balanceOf(address(this));
+            if (currentBalance < totalAmount) {
+                uint256 needed = totalAmount - currentBalance;
+                if (token.balanceOf(msg.sender) < needed) revert LowBalance();
+                if (!token.transferFrom(msg.sender, address(this), needed))
+                    revert TransferFailed();
+            }
         }
     }
 
