@@ -1,4 +1,4 @@
-import { Injectable, inject, computed, signal, effect } from '@angular/core';
+import { Injectable, inject, computed, signal, effect, untracked } from '@angular/core';
 import { Web3Service } from './web3.service';
 import { UiStateService } from './ui-state.service';
 import { ThemeService } from './theme.service';
@@ -27,6 +27,7 @@ export class StateService {
 
   // Cờ session đã kiểm tra xong (tránh race condition với wallet reconnect)
   private isSessionRestored = signal<boolean>(false);
+  private currentLoginRunId = 0;
 
   // ====================================================
   // DELEGATED UI STATE
@@ -122,24 +123,38 @@ export class StateService {
 
   // Tự động đồng bộ luồng login/logout backend khi ví Web3 thay đổi trạng thái
   private setupAuthSync() {
-    effect(async () => {
+    effect(async (onCleanup) => {
       const connected = this.isConnected();
       const walletAddr = this.address();
-      const user = this.currentUser();
       const sessionRestored = this.isSessionRestored();
 
       // Chờ checkExistingSession hoàn thành trước khi xét login
       // Tránh race condition: ví kết nối lại nhanh hơn session restore
       if (!sessionRestored) return;
 
+      const runId = ++this.currentLoginRunId;
+
+      onCleanup(() => {
+        console.log(`[AuthSync] Cleanup runId ${runId} (currentLoginRunId: ${this.currentLoginRunId})`);
+      });
+
+      // Sử dụng untracked để tránh effect tự chạy lại khi thay đổi currentUser
+      const user = untracked(() => this.currentUser());
+
       if (connected && walletAddr) {
         if (!user) {
           // Thực hiện login ví Web3
-          await this.loginWithWeb3(walletAddr);
+          await this.loginWithWeb3(walletAddr, runId, () => runId === this.currentLoginRunId);
         } else if (user.wallet_address?.toLowerCase() !== walletAddr.toLowerCase()) {
           // Nếu đổi ví trên MetaMask, thực hiện logout ví cũ và tự động login ví mới
           await this.logoutBackend();
-          await this.loginWithWeb3(walletAddr);
+          
+          if (runId !== this.currentLoginRunId) {
+            console.warn(`[AuthSync] Bỏ qua đăng nhập ví mới cho runId ${runId} sau khi logout ví cũ`);
+            return;
+          }
+
+          await this.loginWithWeb3(walletAddr, runId, () => runId === this.currentLoginRunId);
         }
       } else if (!connected && user) {
         // Thực hiện logout backend
@@ -175,7 +190,7 @@ export class StateService {
   }
 
   // Thực hiện luồng Login Web3
-  private async loginWithWeb3(walletAddress: string) {
+  private async loginWithWeb3(walletAddress: string, runId: number, checkValid: () => boolean) {
     this.isLoading.set(true);
     try {
       // 1. Lấy challenge nonce từ API challenge
@@ -183,9 +198,19 @@ export class StateService {
         this.apiService.get<any>('auth/challenge', undefined, { address: walletAddress })
       );
 
+      if (!checkValid()) {
+        console.warn(`[Auth] Bỏ qua loginWithWeb3 cho runId ${runId} (đã có kết nối mới hoặc thay đổi trạng thái ví)`);
+        return;
+      }
+
       // 2. Yêu cầu ví ký thông điệp challenge
       const signer = await this.web3Service.getSigner();
       const signature = await signer.signMessage(challenge.message);
+
+      if (!checkValid()) {
+        console.warn(`[Auth] Bỏ qua loginWithWeb3 sau khi ký cho runId ${runId}`);
+        return;
+      }
 
       // 3. Gửi signature lên API login
       const response = await firstValueFrom(
@@ -196,6 +221,11 @@ export class StateService {
         })
       );
 
+      if (!checkValid()) {
+        console.warn(`[Auth] Bỏ qua loginWithWeb3 sau khi login backend cho runId ${runId}`);
+        return;
+      }
+
       // 4. Lưu thông tin user — auth qua HttpOnly cookie, không cần token trong JS
       this.currentUser.set(response.user);
       this.showToast('Đăng nhập ví Web3 thành công!', 'success');
@@ -203,12 +233,18 @@ export class StateService {
       // Tải danh sách công ty
       await this.loadCompanies();
     } catch (error: any) {
-      console.error('[Auth] Đăng nhập ví Web3 thất bại:', error);
-      this.showToast(error.error?.message || 'Chữ ký không hợp lệ hoặc bị từ chối!', 'error');
-      // Ngắt kết nối ví nếu login backend lỗi
-      await this.disconnectWallet();
+      if (checkValid()) {
+        console.error('[Auth] Đăng nhập ví Web3 thất bại:', error);
+        this.showToast(error.error?.message || 'Chữ ký không hợp lệ hoặc bị từ chối!', 'error');
+        // Ngắt kết nối ví nếu login backend lỗi
+        await this.disconnectWallet();
+      } else {
+        console.warn(`[Auth] Bỏ qua lỗi login của runId ${runId} vì lượt chạy không còn hiệu lực:`, error);
+      }
     } finally {
-      this.isLoading.set(false);
+      if (checkValid()) {
+        this.isLoading.set(false);
+      }
     }
   }
 
