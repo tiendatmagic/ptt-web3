@@ -478,7 +478,17 @@
         <span>Tổng quan</span>
       </a>
 
-      <!-- Hội đồng Quản trị (Governance) -->
+      <!-- Sàn Đầu tư (Invest Portal) -->
+      <a
+        routerLink="/invest"
+        routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
+        (click)="stateService.showMobileMenu.set(false)"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
+      >
+        <app-icon name="blockchain" class="w-5 h-5 flex-shrink-0" />
+        <span>Sàn Đầu tư</span>
+      </a>
+
       @if (stateService.hasPermission('proposals.view')) {
         <a
           routerLink="/governance"
@@ -516,6 +526,35 @@
         >
           <app-icon name="send" class="w-5 h-5 flex-shrink-0" />
           <span>Gọi vốn & Cổ tức</span>
+        </a>
+      }
+
+      <!-- Xét duyệt KYC (Admin) -->
+      @if (stateService.hasPermission('kyc.view')) {
+        <a
+          routerLink="/kyc"
+          routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
+          (click)="stateService.showMobileMenu.set(false)"
+          class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
+        >
+          <app-icon name="info" class="w-5 h-5 flex-shrink-0" />
+          <span>Xét duyệt KYC</span>
+        </a>
+      }
+
+      <!-- Divider -->
+      @if (stateService.hasPermission('staffs.edit')) {
+        <div class="my-2 border-t border-slate-100 dark:border-slate-800/60"></div>
+
+        <!-- Cấu hình doanh nghiệp -->
+        <a
+          routerLink="/settings"
+          routerLinkActive="!bg-primary/10 !text-primary !font-extrabold"
+          (click)="stateService.showMobileMenu.set(false)"
+          class="flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-semibold text-sm transition-colors duration-200 cursor-pointer"
+        >
+          <app-icon name="settings" class="w-5 h-5 flex-shrink-0" />
+          <span>Cấu hình doanh nghiệp</span>
         </a>
       }
     </nav>
