@@ -1,7 +1,7 @@
 <div class="w-full px-4 sm:px-6 py-5 space-y-5">
   <!-- TITLE HEADER -->
   <div
-    class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/50 dark:border-slate-900/50 pb-5"
+    class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200/50 dark:border-slate-900/50 pb-5"
   >
     <div>
       <h1 class="text-xl sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">
@@ -11,7 +11,7 @@
         Tham gia mua cổ phần trực tiếp từ doanh nghiệp và nhận chia sẻ lợi nhuận cổ tức on-chain.
       </p>
     </div>
-    <div class="flex items-center gap-3">
+    <div class="flex flex-wrap items-center gap-3 shrink-0">
       @if (stateService.hasPermission('funding.view')) {
         <button
           app-button
