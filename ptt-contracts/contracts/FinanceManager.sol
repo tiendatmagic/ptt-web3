@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+﻿
 pragma solidity ^0.8.34;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -25,10 +25,8 @@ interface IEquityToken {
 
     function isWhitelisted(address account) external view returns (bool);
 
-    // Mint token trực tiếp cho người mua (mint-on-demand)
     function mint(address to, uint256 amount) external;
 
-    // Đốt token của nhà đầu tư khi hoàn tiền
     function burnFrom(address from, uint256 amount) external;
 }
 
@@ -334,7 +332,6 @@ contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
 
         _processPayment(_rounds[roundId].paymentToken, cost);
 
-        // Mint-on-demand: tự mint token cổ phần trực tiếp cho nhà đầu tư
         IEquityToken(_rounds[roundId].shareToken).mint(msg.sender, tokenAmount);
 
         emit SharesPurchased(roundId, msg.sender, tokenAmount, cost);
@@ -363,8 +360,6 @@ contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
             }
         }
 
-        // Mint-on-demand: không có pool token tồn đợng, không cần chuyển remaining shares
-
         emit RoundFinalized(roundId, cost, 0);
     }
 
@@ -377,8 +372,6 @@ contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
 
         round.active = false;
         round.cancelled = true;
-
-        // Mint-on-demand: không có pool token tồn đợng, không cần chuyển remaining shares
 
         emit RoundCancelled(roundId, 0);
     }
@@ -396,7 +389,6 @@ contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
         investorPurchases[roundId][msg.sender] = 0;
         investorPayments[roundId][msg.sender] = 0;
 
-        // Đốt token của nhà đầu tư khi hoàn tiền (mint-on-demand: không chuyển về treasury mà burn luôn)
         IEquityToken(round.shareToken).burnFrom(msg.sender, shares);
 
         if (round.paymentToken == address(0)) {
@@ -539,7 +531,6 @@ contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
 
     receive() external payable {}
 
-    // Rút Native Token (BNB)
     function rescueNative(address payable recipient, uint256 amount) external onlyOwner {
         require(recipient != address(0), "Invalid recipient");
         require(amount <= address(this).balance, "Insufficient balance");
@@ -547,28 +538,24 @@ contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
         require(success, "Transfer failed");
     }
 
-    // Rút ERC20
     function rescueERC20(address token, address recipient, uint256 amount) external onlyOwner {
         require(token != address(0), "Invalid token");
         require(recipient != address(0), "Invalid recipient");
         require(IERC20(token).transfer(recipient, amount), "Transfer failed");
     }
 
-    // Rút ERC721
     function rescueERC721(address token, address recipient, uint256 tokenId) external onlyOwner {
         require(token != address(0), "Invalid token");
         require(recipient != address(0), "Invalid recipient");
         IERC721(token).safeTransferFrom(address(this), recipient, tokenId);
     }
 
-    // Rút ERC1155
     function rescueERC1155(address token, address recipient, uint256 tokenId, uint256 amount, bytes calldata data) external onlyOwner {
         require(token != address(0), "Invalid token");
         require(recipient != address(0), "Invalid recipient");
         IERC1155(token).safeTransferFrom(address(this), recipient, tokenId, amount, data);
     }
 
-    // Callbacks nhận NFT
     function onERC721Received(
         address,
         address,
@@ -598,7 +585,7 @@ contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
         return this.onERC1155BatchReceived.selector;
     }
 
-    function supportsInterface(bytes4 interfaceId) external view override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
         return
             interfaceId == type(IERC721Receiver).interfaceId ||
             interfaceId == type(IERC1155Receiver).interfaceId ||

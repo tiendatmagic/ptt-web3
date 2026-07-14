@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+﻿
 pragma solidity ^0.8.34;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -38,21 +38,21 @@ contract Marketplace is Ownable, IERC721Receiver, IERC1155Receiver {
     }
 
     mapping(address => bool) public isOperator;
-    
+
     uint256 public feePercentBps = 50;
     address public feeTreasury;
 
     mapping(address => mapping(uint256 => bool)) public usedNonces;
 
     bytes32 public DOMAIN_SEPARATOR;
-    bytes32 public constant BUY_ORDER_TYPEHASH = 
+    bytes32 public constant BUY_ORDER_TYPEHASH =
         keccak256("BuyOrder(address buyer,address token,uint256 amount,uint256 price,uint256 nonce,uint256 deadline)");
-    bytes32 public constant SELL_ORDER_TYPEHASH = 
+    bytes32 public constant SELL_ORDER_TYPEHASH =
         keccak256("SellOrder(address seller,address token,uint256 amount,uint256 price,uint256 nonce,uint256 deadline)");
 
     event OperatorStatusUpdated(address indexed operator, bool status);
     event FeeConfigUpdated(uint256 feeBps, address indexed treasury);
-    
+
     event TradeSettled(
         address indexed token,
         address indexed buyer,
@@ -139,11 +139,11 @@ contract Marketplace is Ownable, IERC721Receiver, IERC1155Receiver {
 
         IERC20 stablecoin = IERC20(p.paymentToken);
         require(stablecoin.balanceOf(p.buyer) >= cost, "Buyer insufficient stablecoin balance");
-        
+
         if (fee > 0) {
             require(stablecoin.transferFrom(p.buyer, feeTreasury, fee), "Fee payment failed");
         }
-        
+
         require(stablecoin.transferFrom(p.buyer, p.seller, netSellerProceeds), "Seller payment failed");
 
         IERC20 equity = IERC20(p.token);
@@ -153,7 +153,6 @@ contract Marketplace is Ownable, IERC721Receiver, IERC1155Receiver {
         emit TradeSettled(p.token, p.buyer, p.seller, p.amount, p.price, fee);
     }
 
-    // Rút Native Token (BNB)
     function rescueNative(address payable recipient, uint256 amount) external onlyOwner {
         require(recipient != address(0), "Invalid recipient");
         require(amount <= address(this).balance, "Insufficient balance");
@@ -161,28 +160,24 @@ contract Marketplace is Ownable, IERC721Receiver, IERC1155Receiver {
         require(success, "Transfer failed");
     }
 
-    // Rút ERC20
     function rescueERC20(address token, address recipient, uint256 amount) external onlyOwner {
         require(token != address(0), "Invalid token");
         require(recipient != address(0), "Invalid recipient");
         require(IERC20(token).transfer(recipient, amount), "Transfer failed");
     }
 
-    // Rút ERC721
     function rescueERC721(address token, address recipient, uint256 tokenId) external onlyOwner {
         require(token != address(0), "Invalid token");
         require(recipient != address(0), "Invalid recipient");
         IERC721(token).safeTransferFrom(address(this), recipient, tokenId);
     }
 
-    // Rút ERC1155
     function rescueERC1155(address token, address recipient, uint256 tokenId, uint256 amount, bytes calldata data) external onlyOwner {
         require(token != address(0), "Invalid token");
         require(recipient != address(0), "Invalid recipient");
         IERC1155(token).safeTransferFrom(address(this), recipient, tokenId, amount, data);
     }
 
-    // Callbacks nhận NFT
     function onERC721Received(
         address,
         address,
@@ -212,7 +207,7 @@ contract Marketplace is Ownable, IERC721Receiver, IERC1155Receiver {
         return this.onERC1155BatchReceived.selector;
     }
 
-    function supportsInterface(bytes4 interfaceId) external view override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
         return
             interfaceId == type(IERC721Receiver).interfaceId ||
             interfaceId == type(IERC1155Receiver).interfaceId ||

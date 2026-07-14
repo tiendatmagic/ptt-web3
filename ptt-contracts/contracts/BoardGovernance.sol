@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+﻿
 pragma solidity ^0.8.34;
 
 contract BoardGovernance {
@@ -128,7 +128,7 @@ contract BoardGovernance {
         Proposal storage proposal = proposals[proposalId];
         require(!proposal.executed, "Proposal already executed");
         require(!proposal.cancelled, "Proposal already cancelled");
-        
+
         proposal.cancelled = true;
         emit ProposalCancelled(proposalId);
     }
@@ -144,9 +144,9 @@ contract BoardGovernance {
     function removeMember(address member) external onlySelf {
         require(isMember[member], "Not a member");
         require(_members.length > 1, "Cannot remove last member");
-        
+
         isMember[member] = false;
-        
+
         for (uint256 i = 0; i < _members.length; i++) {
             if (_members[i] == member) {
                 _members[i] = _members[_members.length - 1];

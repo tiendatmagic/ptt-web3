@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+﻿
 pragma solidity ^0.8.34;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -33,9 +33,9 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
 
     mapping(address => uint256) private _whitelistAddressIndex;
     mapping(address => uint256) private _blacklistAddressIndex;
-    
+
     mapping(address => bool) public isOperator;
-    
+
     bool public isWhitelistEnabled = true;
 
     mapping(address => bool) public isMinter;
@@ -59,7 +59,7 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
             try IBoardGovernance(currentOwner).isMember(msg.sender) returns (bool memberStatus) {
                 isBoardMember = memberStatus;
             } catch {
-                // If owner is not a governance contract or doesn't have isMember, ignore
+
             }
         }
         require(msg.sender == currentOwner || isOperator[msg.sender] || isBoardMember, "Not authorized: must be owner, operator or board member");
@@ -91,7 +91,6 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         _burn(from, amount);
     }
 
-    // Cho phép minter (FinanceManager) đốt token của nhà đầu tư khi hoàn tiền (claimRefund)
     function burnFrom(address from, uint256 amount) external onlyMinterOrOwner whenNotPaused {
         _burn(from, amount);
     }
@@ -200,17 +199,17 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         if (offset >= totalAddresses) {
             return (new address[](0), totalAddresses);
         }
-        
+
         uint256 size = limit;
         if (offset + limit > totalAddresses) {
             size = totalAddresses - offset;
         }
-        
+
         result = new address[](size);
         for (uint256 i = 0; i < size; i++) {
             result[i] = whitelistAddresses[offset + i];
         }
-        
+
         return (result, totalAddresses);
     }
 
@@ -219,17 +218,17 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         if (offset >= totalAddresses) {
             return (new address[](0), totalAddresses);
         }
-        
+
         uint256 size = limit;
         if (offset + limit > totalAddresses) {
             size = totalAddresses - offset;
         }
-        
+
         result = new address[](size);
         for (uint256 i = 0; i < size; i++) {
             result[i] = blacklistAddresses[offset + i];
         }
-        
+
         return (result, totalAddresses);
     }
 
@@ -326,7 +325,6 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         return ckpts[low].value;
     }
 
-    // Rút Native Token (BNB)
     function rescueNative(address payable recipient, uint256 amount) external onlyOwner {
         require(recipient != address(0), "Invalid recipient");
         require(amount <= address(this).balance, "Insufficient balance");
@@ -334,28 +332,24 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         require(success, "Transfer failed");
     }
 
-    // Rút ERC20
     function rescueERC20(address token, address recipient, uint256 amount) external onlyOwner {
         require(token != address(0), "Invalid token");
         require(recipient != address(0), "Invalid recipient");
         require(IERC20(token).transfer(recipient, amount), "Transfer failed");
     }
 
-    // Rút ERC721
     function rescueERC721(address token, address recipient, uint256 tokenId) external onlyOwner {
         require(token != address(0), "Invalid token");
         require(recipient != address(0), "Invalid recipient");
         IERC721(token).safeTransferFrom(address(this), recipient, tokenId);
     }
 
-    // Rút ERC1155
     function rescueERC1155(address token, address recipient, uint256 tokenId, uint256 amount, bytes calldata data) external onlyOwner {
         require(token != address(0), "Invalid token");
         require(recipient != address(0), "Invalid recipient");
         IERC1155(token).safeTransferFrom(address(this), recipient, tokenId, amount, data);
     }
 
-    // Callbacks nhận NFT
     function onERC721Received(
         address,
         address,
@@ -385,7 +379,7 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         return this.onERC1155BatchReceived.selector;
     }
 
-    function supportsInterface(bytes4 interfaceId) external view override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
         return
             interfaceId == type(IERC721Receiver).interfaceId ||
             interfaceId == type(IERC1155Receiver).interfaceId ||
