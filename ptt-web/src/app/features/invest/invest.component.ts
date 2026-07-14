@@ -563,6 +563,24 @@ export class InvestComponent implements OnInit {
         return;
       }
 
+      // Kiểm tra số dư khả dụng trước khi đặt lệnh
+      if (this.orderSide() === 'SELL') {
+        const shareBalance = parseFloat(this.myBalance() || '0');
+        if (amount > shareBalance) {
+          this.stateService.showToast(`Số dư cổ phần không đủ để thực hiện lệnh bán (Số dư hiện tại: ${shareBalance} ${company.token_symbol || 'PTT'})`, 'error');
+          this.orderLoading.set(false);
+          return;
+        }
+      } else if (this.orderSide() === 'BUY') {
+        const paymentBalance = parseFloat(this.myPaymentTokenBalance() || '0');
+        const totalCost = price * amount;
+        if (totalCost > paymentBalance) {
+          this.stateService.showToast(`Số dư ${token.symbol} không đủ để thực hiện lệnh mua (Cần: ${totalCost} ${token.symbol}, Số dư hiện tại: ${paymentBalance} ${token.symbol})`, 'error');
+          this.orderLoading.set(false);
+          return;
+        }
+      }
+
       // 1. Tạo thông điệp EIP-712 / personal_sign đặt lệnh
       const message = `Place ${this.orderSide()} Order for ${company.name}\nPrice: ${price} ${token.symbol}\nAmount: ${amount} Shares\nPayment Token: ${token.address}`;
 

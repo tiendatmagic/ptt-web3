@@ -271,11 +271,27 @@ export class MarketplaceComponent implements OnInit {
     if (!comp) return;
 
     try {
-      this.stateService.isLoading.set(true);
-
       const price = parseFloat(this.orderForm.price);
       const amount = parseFloat(this.orderForm.amount);
       const token = this.selectedPaymentToken();
+
+      // Kiểm tra số dư khả dụng trước khi đặt lệnh
+      if (this.orderForm.side === 'SELL') {
+        const shareBalance = parseFloat(this.myBalance() || '0');
+        if (amount > shareBalance) {
+          this.stateService.showToast(`Số dư cổ phần không đủ để thực hiện lệnh bán (Số dư hiện tại: ${shareBalance} ${comp.token_symbol || 'PTT'})`, 'error');
+          return;
+        }
+      } else if (this.orderForm.side === 'BUY') {
+        const paymentBalance = parseFloat(this.myPaymentTokenBalance() || '0');
+        const totalCost = price * amount;
+        if (totalCost > paymentBalance) {
+          this.stateService.showToast(`Số dư ${token.symbol} không đủ để thực hiện lệnh mua (Cần: ${totalCost} ${token.symbol}, Số dư hiện tại: ${paymentBalance} ${token.symbol})`, 'error');
+          return;
+        }
+      }
+
+      this.stateService.isLoading.set(true);
 
       // 1. Tạo thông điệp EIP-712 / personal_sign đặt lệnh
       const walletAddress = this.stateService.address();
