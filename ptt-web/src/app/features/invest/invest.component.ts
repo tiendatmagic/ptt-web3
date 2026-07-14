@@ -88,6 +88,7 @@ export class InvestComponent implements OnInit {
   public dividendTokenSymbol = signal<string>('USDT'); // Symbol token cổ tức
   public myPaymentTokenBalance = signal<string>('0'); // Số dư ví dùng thanh toán (USDT/BNB)
   public myPaymentTokenSymbol = signal<string>('BNB');
+  public contractDivBalance = signal<string>('0');  // Số dư token cổ tức hiện tại của hợp đồng FinanceManager
 
   // Cấu hình các payment tokens được hỗ trợ cho P2P
   public supportedPaymentTokens = [
@@ -293,6 +294,7 @@ export class InvestComponent implements OnInit {
           const divCount = Number(await funding['dividendCount']());
           let totalClaimable = 0n;
           let currentDivTokenSymbol = this.myPaymentTokenSymbol(); // Mặc định theo symbol của payment token
+          let currentDivTokenAddress = ethers.ZeroAddress;
 
           for (let i = 1; i <= divCount; i++) {
             const hasClaimed = await funding['hasClaimed'](i, this.walletAddress());
@@ -303,6 +305,7 @@ export class InvestComponent implements OnInit {
                 if (nowSec >= Number(divRound.startTime) && nowSec <= Number(divRound.endTime)) {
                   // Đọc symbol của token cổ tức nếu là ERC20
                   if (divRound.dividendToken !== ethers.ZeroAddress) {
+                    currentDivTokenAddress = divRound.dividendToken;
                     try {
                       const tokenContract = new ethers.Contract(divRound.dividendToken, ERC20_ABI, provider);
                       currentDivTokenSymbol = await tokenContract['symbol']();
@@ -310,6 +313,7 @@ export class InvestComponent implements OnInit {
                       currentDivTokenSymbol = 'USDT';
                     }
                   } else {
+                    currentDivTokenAddress = ethers.ZeroAddress;
                     currentDivTokenSymbol = 'BNB';
                   }
 
@@ -332,10 +336,27 @@ export class InvestComponent implements OnInit {
           }
           this.claimableDiv.set(ethers.formatEther(totalClaimable));
           this.dividendTokenSymbol.set(currentDivTokenSymbol);
+
+          // Đọc số dư token cổ tức trong hợp đồng FinanceManager
+          let contractBalance = 0n;
+          if (totalClaimable > 0n) {
+            try {
+              if (currentDivTokenAddress !== ethers.ZeroAddress) {
+                const tokenContract = new ethers.Contract(currentDivTokenAddress, ERC20_ABI, provider);
+                contractBalance = await tokenContract['balanceOf'](company.funding_address);
+              } else {
+                contractBalance = await provider.getBalance(company.funding_address);
+              }
+            } catch (balErr) {
+              console.warn('Lỗi đọc số dư token cổ tức của contract:', balErr);
+            }
+          }
+          this.contractDivBalance.set(ethers.formatEther(contractBalance));
         } catch (divErr) {
           console.warn('Lỗi khi tính toán tổng cổ tức claimable:', divErr);
           this.claimableDiv.set('0.0000');
           this.dividendTokenSymbol.set('USDT');
+          this.contractDivBalance.set('0');
         }
       }
 
@@ -664,6 +685,11 @@ export class InvestComponent implements OnInit {
 
     const company = this.selectedCompany();
     if (!company || !this.isConnected()) return;
+
+    if (+this.claimableDiv() > +this.contractDivBalance()) {
+      this.stateService.showToast(`Lỗi: Smart Contract không đủ số dư tài sản chi trả cổ tức (Số dư hợp đồng: ${this.formatNumber(this.contractDivBalance())} ${this.dividendTokenSymbol()}). Vui lòng liên hệ ban quản trị!`, 'error');
+      return;
+    }
 
     this.dividendLoading.set(true);
     try {

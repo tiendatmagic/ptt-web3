@@ -277,13 +277,18 @@
             <span class="text-sm font-bold text-slate-400">{{ dividendTokenSymbol() }}</span>
           </p>
           @if (+claimableDiv() > 0) {
+            @if (+claimableDiv() > +contractDivBalance()) {
+              <div class="text-[10px] text-red-500 font-extrabold text-center py-1 select-none">
+                ⚠️ Hợp đồng thiếu số dư
+              </div>
+            }
             <button
               app-button
               variant="primary"
               size="sm"
               class="w-full"
               (click)="handleClaimDividend()"
-              [disabled]="!isConnected()"
+              [disabled]="!isConnected() || +claimableDiv() > +contractDivBalance()"
               [loading]="dividendLoading()"
             >
               Nhận cổ tức
@@ -728,13 +733,24 @@
                 </p>
                 <p class="text-sm text-amber-600 font-bold mt-1">{{ dividendTokenSymbol() }}</p>
               </div>
+              @if (+claimableDiv() > 0 && +claimableDiv() > +contractDivBalance()) {
+                <div class="text-xs text-red-600 dark:text-red-400 font-bold bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/30 rounded-xl p-3 text-left space-y-1 select-none">
+                  <p class="flex items-center gap-1.5 font-extrabold text-red-700 dark:text-red-400">
+                    <span>⚠️</span> Doanh nghiệp chưa nạp đủ tài sản chi trả
+                  </p>
+                  <p class="text-slate-500 dark:text-slate-400 font-normal leading-relaxed">
+                    Số dư hiện có trên Smart Contract là <strong>{{ formatNumber(contractDivBalance()) }} {{ dividendTokenSymbol() }}</strong>, nhỏ hơn lượng cổ tức bạn được nhận. Vui lòng liên hệ ban quản trị để nạp thêm tài sản chi trả.
+                  </p>
+                </div>
+              }
+
               <button
                 app-button
                 variant="primary"
                 size="lg"
                 class="w-full"
                 (click)="handleClaimDividend()"
-                [disabled]="!isConnected() || +claimableDiv() === 0"
+                [disabled]="!isConnected() || +claimableDiv() === 0 || +claimableDiv() > +contractDivBalance()"
                 [loading]="dividendLoading()"
               >
                 @if (!isConnected()) {
