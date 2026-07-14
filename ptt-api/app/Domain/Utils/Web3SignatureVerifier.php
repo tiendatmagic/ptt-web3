@@ -44,7 +44,12 @@ class Web3SignatureVerifier
             }
 
             // Build the Ethereum Signed Message prefix hash
-            $ethMessage = "\x19Ethereum Signed Message:\n" . strlen($message) . $message;
+            if (preg_match('/^0x[a-fA-F0-9]{64}$/', $message)) {
+                $binMessage = hex2bin(substr($message, 2));
+                $ethMessage = "\x19Ethereum Signed Message:\n32" . $binMessage;
+            } else {
+                $ethMessage = "\x19Ethereum Signed Message:\n" . strlen($message) . $message;
+            }
             $msgHash = Keccak::hash($ethMessage, 256);
 
             // Recover the public key from signature using EC point recovery
