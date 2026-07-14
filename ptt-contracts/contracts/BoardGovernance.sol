@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.34;
 
-contract BoardGovernance {
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+contract BoardGovernance is ReentrancyGuard {
     struct Proposal {
         uint256 id;
         address target;
@@ -126,7 +128,7 @@ contract BoardGovernance {
 
     function executeProposal(
         uint256 proposalId
-    ) external returns (bytes memory) {
+    ) external nonReentrant returns (bytes memory) {
         Proposal storage proposal = proposals[proposalId];
         require(!proposal.executed, "Proposal already executed");
         require(!proposal.cancelled, "Proposal cancelled");

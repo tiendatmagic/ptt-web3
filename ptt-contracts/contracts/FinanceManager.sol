@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.34;
 
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -31,7 +33,7 @@ interface IEquityToken {
     function burnFrom(address from, uint256 amount) external;
 }
 
-contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
+contract FinanceManager is Ownable, ReentrancyGuard, IERC721Receiver, IERC1155Receiver {
     error NotOwnerOrOperator();
     error RoundDoesNotExist();
     error InvalidPrice();
@@ -285,7 +287,7 @@ contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
         }
     }
 
-    function buyShares(uint256 roundId, uint256 tokenAmount) external payable {
+    function buyShares(uint256 roundId, uint256 tokenAmount) external payable nonReentrant {
         if (roundId > roundCount || roundId == 0) revert RoundDoesNotExist();
 
         {
@@ -338,7 +340,7 @@ contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
         emit SharesPurchased(roundId, msg.sender, tokenAmount, cost);
     }
 
-    function finalizeFundingRound(uint256 roundId) external onlyOwner {
+    function finalizeFundingRound(uint256 roundId) external onlyOwner nonReentrant {
         if (roundId > roundCount || roundId == 0) revert RoundDoesNotExist();
         FundingRound storage round = _rounds[roundId];
         if (!round.active) revert RoundNotActive();
@@ -364,7 +366,7 @@ contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
         emit RoundFinalized(roundId, cost, 0);
     }
 
-    function cancelFundingRound(uint256 roundId) external onlyOwner {
+    function cancelFundingRound(uint256 roundId) external onlyOwner nonReentrant {
         if (roundId > roundCount || roundId == 0) revert RoundDoesNotExist();
         FundingRound storage round = _rounds[roundId];
         if (!round.active) revert RoundNotActive();
@@ -377,7 +379,7 @@ contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
         emit RoundCancelled(roundId, 0);
     }
 
-    function claimRefund(uint256 roundId) external {
+    function claimRefund(uint256 roundId) external nonReentrant {
         if (roundId > roundCount || roundId == 0) revert RoundDoesNotExist();
         FundingRound storage round = _rounds[roundId];
         if (!round.cancelled) revert RoundFinishedOrCancelled();
@@ -454,7 +456,7 @@ contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
         emit DividendRoundStatusUpdated(dividendId, active);
     }
 
-    function claimDividend(uint256 dividendId) external {
+    function claimDividend(uint256 dividendId) external nonReentrant {
         if (dividendId > dividendCount || dividendId == 0)
             revert RoundDoesNotExist();
         if (hasClaimed[dividendId][msg.sender]) revert AlreadyClaimed();
@@ -506,7 +508,7 @@ contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
     function reclaimLeftoverDividend(
         uint256 dividendId,
         address recipient
-    ) external onlyOwner {
+    ) external onlyOwner nonReentrant {
         if (dividendId > dividendCount || dividendId == 0)
             revert RoundDoesNotExist();
         if (recipient == address(0)) revert InvalidAddresses();
