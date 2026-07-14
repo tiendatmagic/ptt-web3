@@ -45,6 +45,16 @@ export class SettingsComponent implements OnInit {
   public tokenSymbol = signal<string>('');
   public saveInfoLoading = signal<boolean>(false);
 
+  // --- Saved Tokens ---
+  public savedTokens = signal<any[]>([]);
+  public newTokenAddr = '';
+  public newTokenSymbol = '';
+  public newTokenName = '';
+  public newTokenDecimals = 18;
+  public isValidatingNewToken = signal<boolean>(false);
+  public newTokenValidationError = signal<string>('');
+  public saveTokensLoading = signal<boolean>(false);
+
   // --- Threshold state ---
   public minSignatures = signal<number>(1);
   public thresholdOptions = computed(() => {
@@ -91,6 +101,7 @@ export class SettingsComponent implements OnInit {
           funding_address: comp.funding_address || '',
           marketplace_address: comp.marketplace_address || '',
         };
+        this.savedTokens.set(comp.saved_tokens || []);
 
         if (companyChanged) {
           this.companyName.set(comp.name || '');
@@ -431,5 +442,143 @@ Hãy lưu trữ cẩn thận và không chia sẻ khóa bảo mật (Private Key
         }
       }
     });
+  }
+
+  // Tự động load thông tin ERC20 khi nhập địa chỉ trong Settings
+  async onNewTokenAddressChange(addr: string) {
+    this.newTokenAddr = addr.trim();
+    const cleanAddr = this.newTokenAddr;
+
+    if (!cleanAddr) {
+      this.newTokenSymbol = '';
+      this.newTokenName = '';
+      this.newTokenDecimals = 18;
+      this.newTokenValidationError.set('');
+      return;
+    }
+
+    if (!ethers.isAddress(cleanAddr)) {
+      this.newTokenSymbol = '';
+      this.newTokenName = '';
+      this.newTokenDecimals = 18;
+      this.newTokenValidationError.set('Địa chỉ ví không đúng định dạng 0x...!');
+      return;
+    }
+
+    this.isValidatingNewToken.set(true);
+    this.newTokenValidationError.set('');
+
+    try {
+      const provider = this.stateService.getProvider();
+      if (!provider) {
+        this.newTokenValidationError.set('Ví chưa kết nối, không thể tải thông tin!');
+        this.isValidatingNewToken.set(false);
+        return;
+      }
+
+      const minErc20Abi = [
+        'function symbol() view returns (string)',
+        'function name() view returns (string)',
+        'function decimals() view returns (uint8)'
+      ];
+
+      const contract = new ethers.Contract(cleanAddr, minErc20Abi, provider);
+
+      const [symbol, name, decimals] = await Promise.all([
+        contract['symbol'](),
+        contract['name'](),
+        contract['decimals']()
+      ]);
+
+      this.newTokenSymbol = symbol;
+      this.newTokenName = name;
+      this.newTokenDecimals = Number(decimals);
+    } catch (e: any) {
+      console.error('Lỗi khi đọc token ERC20:', e);
+      this.newTokenValidationError.set('Địa chỉ không phải Token ERC20 hợp lệ trên blockchain!');
+    } finally {
+      this.isValidatingNewToken.set(false);
+    }
+  }
+
+  async addSavedToken() {
+    const comp = this.stateService.currentCompany();
+    if (!comp) return;
+
+    if (!this.newTokenAddr || !ethers.isAddress(this.newTokenAddr)) {
+      this.stateService.showToast('Địa chỉ contract Token không hợp lệ!', 'warning');
+      return;
+    }
+
+    if (!this.newTokenSymbol) {
+      this.stateService.showToast('Ký hiệu token không được trống!', 'warning');
+      return;
+    }
+
+    // Kiểm tra xem đã tồn tại chưa
+    const exists = this.savedTokens().some(t => t.address.toLowerCase() === this.newTokenAddr.toLowerCase());
+    if (exists) {
+      this.stateService.showToast('Token này đã tồn tại trong danh sách đã lưu!', 'warning');
+      return;
+    }
+
+    const newTokens = [
+      ...this.savedTokens(),
+      {
+        address: this.newTokenAddr,
+        symbol: this.newTokenSymbol,
+        name: this.newTokenName || this.newTokenSymbol,
+        decimals: this.newTokenDecimals
+      }
+    ];
+
+    await this.updateSavedTokensApi(newTokens);
+
+    // Clear form
+    this.newTokenAddr = '';
+    this.newTokenSymbol = '';
+    this.newTokenName = '';
+    this.newTokenDecimals = 18;
+  }
+
+  async removeSavedToken(tokenAddress: string) {
+    const comp = this.stateService.currentCompany();
+    if (!comp) return;
+
+    const newTokens = this.savedTokens().filter(t => t.address.toLowerCase() !== tokenAddress.toLowerCase());
+    await this.updateSavedTokensApi(newTokens);
+  }
+
+  private async updateSavedTokensApi(tokens: any[]) {
+    const comp = this.stateService.currentCompany();
+    if (!comp) return;
+
+    try {
+      this.saveTokensLoading.set(true);
+      const response = await firstValueFrom(
+        this.apiService.put<any>(`companies/${comp.id}/saved-tokens`, { saved_tokens: tokens })
+      );
+      
+      this.stateService.showToast('Cập nhật danh sách Token ERC20 thành công!', 'success');
+      
+      // Cập nhật lại state local
+      this.savedTokens.set(response.company.saved_tokens || []);
+      
+      // Đồng bộ lại stateService.currentCompany để cập nhật phản ứng ở các trang khác
+      comp.saved_tokens = response.company.saved_tokens;
+      this.stateService.currentCompany.set({ ...comp });
+      
+      // Cập nhật lại list company trong list
+      const currentList = this.stateService.companiesList();
+      const idx = currentList.findIndex(c => c.id === comp.id);
+      if (idx !== -1) {
+        currentList[idx].saved_tokens = response.company.saved_tokens;
+        this.stateService.companiesList.set([...currentList]);
+      }
+    } catch (e: any) {
+      this.stateService.showToast(e.error?.message || 'Không thể lưu danh sách token!', 'error');
+    } finally {
+      this.saveTokensLoading.set(false);
+    }
   }
 }

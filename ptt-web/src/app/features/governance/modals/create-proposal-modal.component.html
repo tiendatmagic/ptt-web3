@@ -133,17 +133,34 @@
   <!-- 3.1. WITHDRAW ERC20 -->
   @if (newProposal.type === 'WITHDRAW_ERC20') {
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
-      <div class="form-field">
-        <label>Địa chỉ contract Token (ERC20)</label>
+      @if (savedTokensList().length > 1) {
+        <div class="form-field col-span-1 sm:col-span-2">
+          <label class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Chọn nhanh Token đã lưu</label>
+          <app-custom-select
+            [options]="savedTokensList()"
+            valueKey="value"
+            labelKey="label"
+            [value]="selectedSavedToken()"
+            (valueChange)="onSavedTokenChange($event)"
+            placeholder="Chọn Token..."
+            triggerClass="w-full form-input !h-[42px] !bg-white dark:!bg-slate-950 !border-slate-200 dark:!border-slate-800 text-xs text-slate-800 dark:text-slate-100"
+          />
+        </div>
+      }
+
+      <div class="form-field col-span-1 sm:col-span-2">
+        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Địa chỉ contract Token (ERC20)</label>
         <input
           type="text"
-          [(ngModel)]="newProposal.withdrawErc20Params.tokenAddress"
+          [ngModel]="newProposal.withdrawErc20Params.tokenAddress"
+          (ngModelChange)="newProposal.withdrawErc20Params.tokenAddress = $event; selectedSavedToken.set('custom')"
           placeholder="0x..."
-          class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-mono text-xs outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+          [disabled]="selectedSavedToken() !== 'custom'"
+          class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-mono text-xs outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100 disabled:bg-slate-100 dark:disabled:bg-slate-900/60 disabled:cursor-not-allowed"
         />
       </div>
-      <div class="form-field">
-        <label>Địa chỉ ví nhận</label>
+      <div class="form-field col-span-1 sm:col-span-2">
+        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Địa chỉ ví nhận</label>
         <input
           type="text"
           [(ngModel)]="newProposal.withdrawErc20Params.recipient"
@@ -152,7 +169,7 @@
         />
       </div>
       <div class="form-field col-span-1">
-        <label>Số lượng token rút</label>
+        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Số lượng token rút</label>
         <input
           type="number"
           [(ngModel)]="newProposal.withdrawErc20Params.amount"
@@ -161,12 +178,13 @@
         />
       </div>
       <div class="form-field col-span-1">
-        <label>Số Decimals của Token</label>
+        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Số Decimals của Token</label>
         <input
           type="number"
           [(ngModel)]="newProposal.withdrawErc20Params.decimals"
           placeholder="Mặc định: 18"
-          class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+          [disabled]="selectedSavedToken() !== 'custom'"
+          class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm font-semibold outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100 disabled:bg-slate-100 dark:disabled:bg-slate-900/60 disabled:cursor-not-allowed"
         />
       </div>
     </div>

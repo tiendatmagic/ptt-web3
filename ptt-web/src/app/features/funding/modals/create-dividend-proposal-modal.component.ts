@@ -53,24 +53,40 @@ import { IconComponent } from '@shared/components/icon/icon.component';
 
       <!-- Nếu chọn Custom Token hoặc ERC20 -->
       @if (newDividend.paymentMethod === 'ERC20') {
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
-          <div class="form-field col-span-2">
-            <label>Địa chỉ contract Token (ERC20)</label>
+        <div class="grid grid-cols-1 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900/20">
+          @if (savedTokensList().length > 1) {
+            <div class="form-field">
+              <label class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Chọn nhanh Token đã lưu</label>
+              <app-custom-select
+                [options]="savedTokensList()"
+                valueKey="value"
+                labelKey="label"
+                [value]="selectedSavedToken()"
+                (valueChange)="onSavedTokenChange($event)"
+                placeholder="Chọn Token..."
+                triggerClass="w-full form-input !h-[42px] !bg-white dark:!bg-slate-950 !border-slate-200 dark:!border-slate-800 text-xs text-slate-800 dark:text-slate-100"
+              />
+            </div>
+          }
+
+          <div class="form-field">
+            <label class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Địa chỉ contract Token (ERC20)</label>
             <input
               type="text"
               [ngModel]="newDividend.paymentTokenAddress"
-              (ngModelChange)="onTokenAddressChange($event)"
+              (ngModelChange)="onTokenAddressChange($event); selectedSavedToken.set('custom')"
               placeholder="0x..."
-              class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-mono text-xs outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100"
+              [disabled]="selectedSavedToken() !== 'custom'"
+              class="w-full h-[42px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-mono text-xs outline-none focus:border-violet-500 transition-all text-slate-800 dark:text-slate-100 disabled:bg-slate-100 dark:disabled:bg-slate-900/60 disabled:cursor-not-allowed"
             />
             @if (isValidatingToken()) {
-              <p class="text-[10px] text-violet-500 font-bold mt-1 animate-pulse">Đang xác thực contract trên mạng lưới...</p>
+              <p class="text-[10px] text-violet-500 font-bold mt-1 animate-pulse select-none">Đang xác thực contract trên mạng lưới...</p>
             }
             @if (detectedTokenSymbol()) {
-              <p class="text-[10px] text-emerald-600 font-black mt-1">✓ Đã nhận diện Token: {{ detectedTokenSymbol() }} ({{ detectedTokenDecimals() }} Decimals)</p>
+              <p class="text-[10px] text-emerald-600 font-black mt-1 select-none">✓ Đã nhận diện Token: {{ detectedTokenSymbol() }} ({{ detectedTokenDecimals() }} Decimals)</p>
             }
             @if (tokenValidationError()) {
-              <p class="text-[10px] text-red-500 font-bold mt-1">✗ {{ tokenValidationError() }}</p>
+              <p class="text-[10px] text-red-500 font-bold mt-1 select-none">✗ {{ tokenValidationError() }}</p>
             }
           </div>
         </div>
@@ -151,6 +167,39 @@ export class CreateDividendProposalModalComponent implements OnInit {
     { value: 'BNB', label: 'BNB (Native)' },
     { value: 'ERC20', label: 'Token ERC20' }
   ];
+
+  public savedTokensList = computed(() => {
+    const comp = this.stateService.currentCompany();
+    const tokens = comp?.saved_tokens || [];
+    return [
+      { value: 'custom', label: 'Nhập địa chỉ tùy chỉnh...' },
+      ...tokens.map((t: any) => ({
+        value: t.address,
+        label: `${t.symbol} - ${t.name} (${t.address.substring(0, 6)}...${t.address.substring(t.address.length - 4)})`,
+        decimals: t.decimals,
+        symbol: t.symbol
+      }))
+    ];
+  });
+  public selectedSavedToken = signal<string>('custom');
+
+  onSavedTokenChange(val: string) {
+    this.selectedSavedToken.set(val);
+    if (val === 'custom') {
+      this.newDividend.paymentTokenAddress = '';
+      this.detectedTokenSymbol.set('');
+      this.detectedTokenDecimals.set(null);
+      this.tokenValidationError.set('');
+    } else {
+      const token = this.savedTokensList().find(t => t.value === val);
+      if (token) {
+        this.newDividend.paymentTokenAddress = token.value;
+        this.detectedTokenSymbol.set((token as any).symbol);
+        this.detectedTokenDecimals.set((token as any).decimals);
+        this.tokenValidationError.set('');
+      }
+    }
+  }
 
   public newDividend = {
     name: '',

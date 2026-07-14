@@ -26,6 +26,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('{code}', [CompanyController::class, 'show']);
         Route::post('register', [CompanyController::class, 'register'])->middleware('auth:sanctum');
         Route::put('{id}/contracts', [CompanyController::class, 'updateContracts'])->middleware('auth:sanctum');
+        Route::put('{id}/saved-tokens', [CompanyController::class, 'updateSavedTokens'])->middleware('auth:sanctum');
         Route::put('{id}', [CompanyController::class, 'update'])->middleware('auth:sanctum');
         Route::delete('{id}', [CompanyController::class, 'destroy'])->middleware('auth:sanctum');
     });

@@ -23,6 +23,7 @@ class CompanyMapper
             $model->marketplace_address,
             $model->token_name,
             $model->token_symbol,
+            $model->saved_tokens ?: [],
             $model->status
         );
     }
@@ -46,6 +47,7 @@ class CompanyMapper
         $model->marketplace_address = $entity->getMarketplaceAddress();
         $model->token_name = $entity->getTokenName();
         $model->token_symbol = $entity->getTokenSymbol();
+        $model->saved_tokens = $entity->getSavedTokens() ?: [];
         $model->status = $entity->getStatus();
         
         return $model;

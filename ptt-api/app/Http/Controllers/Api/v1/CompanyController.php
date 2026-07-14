@@ -40,6 +40,7 @@ class CompanyController extends Controller
                 'marketplace_address' => $company->getMarketplaceAddress(),
                 'token_name' => $company->getTokenName(),
                 'token_symbol' => $company->getTokenSymbol(),
+                'saved_tokens' => $company->getSavedTokens() ?: [],
                 'status' => $company->getStatus(),
             ];
         }, $companies);
@@ -73,6 +74,7 @@ class CompanyController extends Controller
             'marketplace_address' => $company->getMarketplaceAddress(),
             'token_name' => $company->getTokenName(),
             'token_symbol' => $company->getTokenSymbol(),
+            'saved_tokens' => $company->getSavedTokens() ?: [],
             'status' => $company->getStatus(),
         ]);
     }
@@ -236,6 +238,7 @@ class CompanyController extends Controller
                 'marketplace_address' => $companyModel->marketplace_address,
                 'token_name' => $companyModel->token_name,
                 'token_symbol' => $companyModel->token_symbol,
+                'saved_tokens' => $companyModel->saved_tokens ?: [],
                 'status' => $companyModel->status,
             ]
         ]);
@@ -307,6 +310,7 @@ class CompanyController extends Controller
                 'marketplace_address' => $companyModel->marketplace_address,
                 'token_name' => $companyModel->token_name,
                 'token_symbol' => $companyModel->token_symbol,
+                'saved_tokens' => $companyModel->saved_tokens ?: [],
                 'status' => $companyModel->status,
             ]
         ]);
@@ -383,6 +387,52 @@ class CompanyController extends Controller
             'message' => 'Verification request submitted successfully',
             'guid' => $guid,
             'status' => 'submitted'
+        ]);
+    }
+
+    /**
+     * Cập nhật danh sách Token ERC20 đã lưu của doanh nghiệp.
+     */
+    public function updateSavedTokens(Request $request, int $id)
+    {
+        $companyModel = \App\Infrastructure\Persistence\Eloquent\CompanyModel::find($id);
+        if (!$companyModel) {
+            return response()->json([
+                'message' => 'Company not found'
+            ], 404);
+        }
+
+        // Validate đầu vào
+        $validated = $request->validate([
+            'saved_tokens' => 'present|array',
+            'saved_tokens.*.address' => 'required|string|regex:/^0x[a-fA-F0-9]{40}$/',
+            'saved_tokens.*.symbol' => 'required|string|max:50',
+            'saved_tokens.*.name' => 'required|string|max:255',
+            'saved_tokens.*.decimals' => 'required|integer|min:0|max:255',
+        ]);
+
+        $companyModel->saved_tokens = $validated['saved_tokens'];
+        $companyModel->save();
+
+        return response()->json([
+            'message' => 'Saved ERC20 tokens updated successfully',
+            'company' => [
+                'id' => $companyModel->id,
+                'uuid' => $companyModel->uuid,
+                'code' => $companyModel->code,
+                'name' => $companyModel->name,
+                'logo' => $companyModel->logo,
+                'valuation' => (float) $companyModel->valuation,
+                'chain_id' => $companyModel->chain_id,
+                'governance_address' => $companyModel->governance_address,
+                'token_address' => $companyModel->token_address,
+                'funding_address' => $companyModel->funding_address,
+                'marketplace_address' => $companyModel->marketplace_address,
+                'token_name' => $companyModel->token_name,
+                'token_symbol' => $companyModel->token_symbol,
+                'saved_tokens' => $companyModel->saved_tokens ?: [],
+                'status' => $companyModel->status,
+            ]
         ]);
     }
 }

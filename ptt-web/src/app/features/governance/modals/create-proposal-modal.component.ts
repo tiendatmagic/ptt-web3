@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '@core/services/state.service';
@@ -23,6 +23,35 @@ export class CreateProposalModalComponent {
   private apiService = inject(ApiService);
 
   public isLoading = signal(false);
+
+  public savedTokensList = computed(() => {
+    const comp = this.stateService.currentCompany();
+    const tokens = comp?.saved_tokens || [];
+    return [
+      { value: 'custom', label: 'Nhập địa chỉ tùy chỉnh...' },
+      ...tokens.map((t: any) => ({
+        value: t.address,
+        label: `${t.symbol} - ${t.name} (${t.address.substring(0, 6)}...${t.address.substring(t.address.length - 4)})`,
+        decimals: t.decimals,
+        symbol: t.symbol
+      }))
+    ];
+  });
+  public selectedSavedToken = signal<string>('custom');
+
+  onSavedTokenChange(val: string) {
+    this.selectedSavedToken.set(val);
+    if (val === 'custom') {
+      this.newProposal.withdrawErc20Params.tokenAddress = '';
+      this.newProposal.withdrawErc20Params.decimals = 18;
+    } else {
+      const token = this.savedTokensList().find(t => t.value === val);
+      if (token) {
+        this.newProposal.withdrawErc20Params.tokenAddress = token.value;
+        this.newProposal.withdrawErc20Params.decimals = (token as any).decimals || 18;
+      }
+    }
+  }
 
   public withdrawSources = [
     { value: 'governance', label: 'Quỹ HĐQT (Board Governance)' },

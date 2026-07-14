@@ -36,6 +36,39 @@ export class CreateRoundProposalModalComponent {
     { value: 'BNB', label: 'BNB (Native)' }
   ];
 
+  public savedTokensList = computed(() => {
+    const comp = this.stateService.currentCompany();
+    const tokens = comp?.saved_tokens || [];
+    return [
+      { value: 'custom', label: 'Nhập địa chỉ tùy chỉnh...' },
+      ...tokens.map((t: any) => ({
+        value: t.address,
+        label: `${t.symbol} - ${t.name} (${t.address.substring(0, 6)}...${t.address.substring(t.address.length - 4)})`,
+        decimals: t.decimals,
+        symbol: t.symbol
+      }))
+    ];
+  });
+  public selectedSavedToken = signal<string>('custom');
+
+  onSavedTokenChange(val: string) {
+    this.selectedSavedToken.set(val);
+    if (val === 'custom') {
+      this.newRound.paymentTokenAddress = '';
+      this.detectedTokenSymbol.set('');
+      this.detectedTokenDecimals.set(null);
+      this.tokenValidationError.set('');
+    } else {
+      const token = this.savedTokensList().find(t => t.value === val);
+      if (token) {
+        this.newRound.paymentTokenAddress = token.value;
+        this.detectedTokenSymbol.set((token as any).symbol);
+        this.detectedTokenDecimals.set((token as any).decimals);
+        this.tokenValidationError.set('');
+      }
+    }
+  }
+
   public newRound = {
     name: 'Vòng Seed',
     share_price: '0.1', // mặc định giá 0.1

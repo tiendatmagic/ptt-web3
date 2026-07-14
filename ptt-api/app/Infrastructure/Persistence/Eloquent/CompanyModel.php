@@ -25,12 +25,14 @@ class CompanyModel extends Model
         'marketplace_address',
         'token_name',
         'token_symbol',
+        'saved_tokens',
         'status',
     ];
 
     protected $casts = [
         'valuation' => 'float',
         'chain_id' => 'integer',
+        'saved_tokens' => 'array',
     ];
 
     /**

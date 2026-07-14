@@ -17,6 +17,7 @@ class Company
     private ?string $marketplaceAddress;
     private ?string $tokenName;
     private ?string $tokenSymbol;
+    private ?array $savedTokens;
     private string $status;
 
     public function __construct(
@@ -33,6 +34,7 @@ class Company
         ?string $marketplaceAddress,
         ?string $tokenName = null,
         ?string $tokenSymbol = null,
+        ?array $savedTokens = null,
         string $status = 'ACTIVE'
     ) {
         $this->id = $id;
@@ -48,6 +50,7 @@ class Company
         $this->marketplaceAddress = $marketplaceAddress;
         $this->tokenName = $tokenName;
         $this->tokenSymbol = $tokenSymbol;
+        $this->savedTokens = $savedTokens;
         $this->status = $status;
     }
 
@@ -140,5 +143,15 @@ class Company
         if (isset($addresses['token'])) $this->tokenAddress = $addresses['token'];
         if (isset($addresses['funding'])) $this->fundingAddress = $addresses['funding'];
         if (isset($addresses['marketplace'])) $this->marketplaceAddress = $addresses['marketplace'];
+    }
+
+    public function getSavedTokens(): ?array
+    {
+        return $this->savedTokens;
+    }
+
+    public function updateSavedTokens(?array $savedTokens): void
+    {
+        $this->savedTokens = $savedTokens;
     }
 }
