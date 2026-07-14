@@ -1,4 +1,5 @@
-﻿
+﻿// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.34;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -14,7 +15,13 @@ interface IBoardGovernance {
     function isMember(address member) external view returns (bool);
 }
 
-contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Receiver {
+contract EquityToken is
+    ERC20,
+    Ownable,
+    Pausable,
+    IERC721Receiver,
+    IERC1155Receiver
+{
     struct Checkpoint {
         uint32 fromBlock;
         uint256 value;
@@ -48,7 +55,10 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
     event MinterStatusUpdated(address indexed minter, bool status);
 
     modifier onlyMinterOrOwner() {
-        require(msg.sender == owner() || isMinter[msg.sender], "Not authorized minter or owner");
+        require(
+            msg.sender == owner() || isMinter[msg.sender],
+            "Not authorized minter or owner"
+        );
         _;
     }
 
@@ -56,13 +66,18 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         bool isBoardMember = false;
         address currentOwner = owner();
         if (currentOwner != address(0) && currentOwner.code.length > 0) {
-            try IBoardGovernance(currentOwner).isMember(msg.sender) returns (bool memberStatus) {
+            try IBoardGovernance(currentOwner).isMember(msg.sender) returns (
+                bool memberStatus
+            ) {
                 isBoardMember = memberStatus;
-            } catch {
-
-            }
+            } catch {}
         }
-        require(msg.sender == currentOwner || isOperator[msg.sender] || isBoardMember, "Not authorized: must be owner, operator or board member");
+        require(
+            msg.sender == currentOwner ||
+                isOperator[msg.sender] ||
+                isBoardMember,
+            "Not authorized: must be owner, operator or board member"
+        );
         _;
     }
 
@@ -83,15 +98,24 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         }
     }
 
-    function mint(address to, uint256 amount) external onlyMinterOrOwner whenNotPaused {
+    function mint(
+        address to,
+        uint256 amount
+    ) external onlyMinterOrOwner whenNotPaused {
         _mint(to, amount);
     }
 
-    function burn(address from, uint256 amount) external onlyOwner whenNotPaused {
+    function burn(
+        address from,
+        uint256 amount
+    ) external onlyOwner whenNotPaused {
         _burn(from, amount);
     }
 
-    function burnFrom(address from, uint256 amount) external onlyMinterOrOwner whenNotPaused {
+    function burnFrom(
+        address from,
+        uint256 amount
+    ) external onlyMinterOrOwner whenNotPaused {
         _burn(from, amount);
     }
 
@@ -158,7 +182,10 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         }
     }
 
-    function setWhitelisted(address account, bool status) external onlyOwnerOrOperator {
+    function setWhitelisted(
+        address account,
+        bool status
+    ) external onlyOwnerOrOperator {
         if (status) {
             _addWhitelist(account);
         } else {
@@ -166,7 +193,10 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         }
     }
 
-    function setBlacklisted(address account, bool status) external onlyOwnerOrOperator {
+    function setBlacklisted(
+        address account,
+        bool status
+    ) external onlyOwnerOrOperator {
         if (status) {
             _addBlacklist(account);
         } else {
@@ -174,7 +204,10 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         }
     }
 
-    function setWhitelistedBatch(address[] calldata accounts, bool status) external onlyOwnerOrOperator {
+    function setWhitelistedBatch(
+        address[] calldata accounts,
+        bool status
+    ) external onlyOwnerOrOperator {
         for (uint256 i = 0; i < accounts.length; i++) {
             if (status) {
                 _addWhitelist(accounts[i]);
@@ -184,7 +217,10 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         }
     }
 
-    function setBlacklistedBatch(address[] calldata accounts, bool status) external onlyOwnerOrOperator {
+    function setBlacklistedBatch(
+        address[] calldata accounts,
+        bool status
+    ) external onlyOwnerOrOperator {
         for (uint256 i = 0; i < accounts.length; i++) {
             if (status) {
                 _addBlacklist(accounts[i]);
@@ -194,7 +230,10 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         }
     }
 
-    function getWhitelistedAddresses(uint256 offset, uint256 limit) external view returns (address[] memory result, uint256 total) {
+    function getWhitelistedAddresses(
+        uint256 offset,
+        uint256 limit
+    ) external view returns (address[] memory result, uint256 total) {
         uint256 totalAddresses = whitelistAddresses.length;
         if (offset >= totalAddresses) {
             return (new address[](0), totalAddresses);
@@ -213,7 +252,10 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         return (result, totalAddresses);
     }
 
-    function getBlacklistedAddresses(uint256 offset, uint256 limit) external view returns (address[] memory result, uint256 total) {
+    function getBlacklistedAddresses(
+        uint256 offset,
+        uint256 limit
+    ) external view returns (address[] memory result, uint256 total) {
         uint256 totalAddresses = blacklistAddresses.length;
         if (offset >= totalAddresses) {
             return (new address[](0), totalAddresses);
@@ -248,12 +290,17 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         emit MinterStatusUpdated(minter, status);
     }
 
-    function getPastBalanceOf(address account, uint256 blockNumber) external view returns (uint256) {
+    function getPastBalanceOf(
+        address account,
+        uint256 blockNumber
+    ) external view returns (uint256) {
         require(blockNumber < block.number, "Block number must be in the past");
         return _getPastValue(_balancesCheckpoints[account], blockNumber);
     }
 
-    function getPastTotalSupply(uint256 blockNumber) external view returns (uint256) {
+    function getPastTotalSupply(
+        uint256 blockNumber
+    ) external view returns (uint256) {
         require(blockNumber < block.number, "Block number must be in the past");
         return _getPastValue(_totalSupplyCheckpoints, blockNumber);
     }
@@ -268,7 +315,10 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
             require(!isBlacklisted[to], "Receiver is blacklisted");
 
             if (isWhitelistEnabled) {
-                require(isWhitelisted[from] || from == address(this), "Sender is not whitelisted");
+                require(
+                    isWhitelisted[from] || from == address(this),
+                    "Sender is not whitelisted"
+                );
             }
 
             if (maxOwnershipPercent > 0) {
@@ -296,7 +346,10 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         }
     }
 
-    function _updateCheckpoint(Checkpoint[] storage ckpts, uint256 newValue) private {
+    function _updateCheckpoint(
+        Checkpoint[] storage ckpts,
+        uint256 newValue
+    ) private {
         uint32 blockNumber = uint32(block.number);
         uint256 len = ckpts.length;
         if (len > 0 && ckpts[len - 1].fromBlock == blockNumber) {
@@ -306,11 +359,15 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         }
     }
 
-    function _getPastValue(Checkpoint[] storage ckpts, uint256 blockNumber) private view returns (uint256) {
+    function _getPastValue(
+        Checkpoint[] storage ckpts,
+        uint256 blockNumber
+    ) private view returns (uint256) {
         uint256 len = ckpts.length;
         if (len == 0) return 0;
         if (ckpts[0].fromBlock > blockNumber) return 0;
-        if (ckpts[len - 1].fromBlock <= blockNumber) return ckpts[len - 1].value;
+        if (ckpts[len - 1].fromBlock <= blockNumber)
+            return ckpts[len - 1].value;
 
         uint256 low = 0;
         uint256 high = len - 1;
@@ -325,29 +382,52 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         return ckpts[low].value;
     }
 
-    function rescueNative(address payable recipient, uint256 amount) external onlyOwner {
+    function rescueNative(
+        address payable recipient,
+        uint256 amount
+    ) external onlyOwner {
         require(recipient != address(0), "Invalid recipient");
         require(amount <= address(this).balance, "Insufficient balance");
         (bool success, ) = recipient.call{value: amount}("");
         require(success, "Transfer failed");
     }
 
-    function rescueERC20(address token, address recipient, uint256 amount) external onlyOwner {
+    function rescueERC20(
+        address token,
+        address recipient,
+        uint256 amount
+    ) external onlyOwner {
         require(token != address(0), "Invalid token");
         require(recipient != address(0), "Invalid recipient");
         require(IERC20(token).transfer(recipient, amount), "Transfer failed");
     }
 
-    function rescueERC721(address token, address recipient, uint256 tokenId) external onlyOwner {
+    function rescueERC721(
+        address token,
+        address recipient,
+        uint256 tokenId
+    ) external onlyOwner {
         require(token != address(0), "Invalid token");
         require(recipient != address(0), "Invalid recipient");
         IERC721(token).safeTransferFrom(address(this), recipient, tokenId);
     }
 
-    function rescueERC1155(address token, address recipient, uint256 tokenId, uint256 amount, bytes calldata data) external onlyOwner {
+    function rescueERC1155(
+        address token,
+        address recipient,
+        uint256 tokenId,
+        uint256 amount,
+        bytes calldata data
+    ) external onlyOwner {
         require(token != address(0), "Invalid token");
         require(recipient != address(0), "Invalid recipient");
-        IERC1155(token).safeTransferFrom(address(this), recipient, tokenId, amount, data);
+        IERC1155(token).safeTransferFrom(
+            address(this),
+            recipient,
+            tokenId,
+            amount,
+            data
+        );
     }
 
     function onERC721Received(
@@ -379,7 +459,9 @@ contract EquityToken is ERC20, Ownable, Pausable, IERC721Receiver, IERC1155Recei
         return this.onERC1155BatchReceived.selector;
     }
 
-    function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) external pure override returns (bool) {
         return
             interfaceId == type(IERC721Receiver).interfaceId ||
             interfaceId == type(IERC1155Receiver).interfaceId ||

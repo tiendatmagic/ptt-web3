@@ -1,4 +1,5 @@
-﻿
+﻿// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.34;
 
 contract BoardGovernance {
@@ -27,7 +28,11 @@ contract BoardGovernance {
     event MemberAdded(address indexed member);
     event MemberRemoved(address indexed member);
     event ThresholdChanged(uint256 newThreshold);
-    event ProposalCreated(uint256 indexed id, address indexed target, string description);
+    event ProposalCreated(
+        uint256 indexed id,
+        address indexed target,
+        string description
+    );
     event ProposalSigned(uint256 indexed id, address indexed member);
     event ProposalExecuted(uint256 indexed id);
     event ProposalCancelled(uint256 indexed id);
@@ -38,13 +43,19 @@ contract BoardGovernance {
     }
 
     modifier onlySelf() {
-        require(msg.sender == address(this), "Only governance can execute this");
+        require(
+            msg.sender == address(this),
+            "Only governance can execute this"
+        );
         _;
     }
 
     constructor(address[] memory initialMembers, uint256 initialThreshold) {
         require(initialMembers.length > 0, "Members required");
-        require(initialThreshold > 0 && initialThreshold <= initialMembers.length, "Invalid threshold");
+        require(
+            initialThreshold > 0 && initialThreshold <= initialMembers.length,
+            "Invalid threshold"
+        );
 
         for (uint256 i = 0; i < initialMembers.length; i++) {
             address member = initialMembers[i];
@@ -81,7 +92,9 @@ contract BoardGovernance {
             description: description,
             voteCount: 0,
             effectiveDate: block.timestamp + delaySeconds,
-            expirationDate: durationSeconds > 0 ? block.timestamp + delaySeconds + durationSeconds : 0,
+            expirationDate: durationSeconds > 0
+                ? block.timestamp + delaySeconds + durationSeconds
+                : 0,
             executed: false,
             cancelled: false,
             thresholdSnapshot: threshold
@@ -98,7 +111,11 @@ contract BoardGovernance {
         Proposal storage proposal = proposals[proposalId];
         require(!proposal.executed, "Proposal already executed");
         require(!proposal.cancelled, "Proposal cancelled");
-        require(proposal.expirationDate == 0 || block.timestamp <= proposal.expirationDate, "Proposal expired");
+        require(
+            proposal.expirationDate == 0 ||
+                block.timestamp <= proposal.expirationDate,
+            "Proposal expired"
+        );
         require(!hasVoted[proposalId][msg.sender], "Already signed");
 
         hasVoted[proposalId][msg.sender] = true;
@@ -107,17 +124,28 @@ contract BoardGovernance {
         emit ProposalSigned(proposalId, msg.sender);
     }
 
-    function executeProposal(uint256 proposalId) external returns (bytes memory) {
+    function executeProposal(
+        uint256 proposalId
+    ) external returns (bytes memory) {
         Proposal storage proposal = proposals[proposalId];
         require(!proposal.executed, "Proposal already executed");
         require(!proposal.cancelled, "Proposal cancelled");
-        require(block.timestamp >= proposal.effectiveDate, "Proposal not active yet");
-        require(proposal.expirationDate == 0 || block.timestamp <= proposal.expirationDate, "Proposal expired");
+        require(
+            block.timestamp >= proposal.effectiveDate,
+            "Proposal not active yet"
+        );
+        require(
+            proposal.expirationDate == 0 ||
+                block.timestamp <= proposal.expirationDate,
+            "Proposal expired"
+        );
         require(proposal.voteCount >= threshold, "Not enough signatures");
 
         proposal.executed = true;
 
-        (bool success, bytes memory returnData) = proposal.target.call{value: proposal.value}(proposal.data);
+        (bool success, bytes memory returnData) = proposal.target.call{
+            value: proposal.value
+        }(proposal.data);
         require(success, "Execution failed");
 
         emit ProposalExecuted(proposalId);
@@ -163,12 +191,17 @@ contract BoardGovernance {
     }
 
     function changeThreshold(uint256 newThreshold) external onlySelf {
-        require(newThreshold > 0 && newThreshold <= _members.length, "Invalid threshold");
+        require(
+            newThreshold > 0 && newThreshold <= _members.length,
+            "Invalid threshold"
+        );
         threshold = newThreshold;
         emit ThresholdChanged(newThreshold);
     }
 
-    function getProposalThreshold(uint256 proposalId) external view returns (uint256) {
+    function getProposalThreshold(
+        uint256 proposalId
+    ) external view returns (uint256) {
         return proposals[proposalId].thresholdSnapshot;
     }
 

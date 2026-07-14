@@ -1,4 +1,5 @@
-﻿
+﻿// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.34;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -531,29 +532,52 @@ contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
 
     receive() external payable {}
 
-    function rescueNative(address payable recipient, uint256 amount) external onlyOwner {
+    function rescueNative(
+        address payable recipient,
+        uint256 amount
+    ) external onlyOwner {
         require(recipient != address(0), "Invalid recipient");
         require(amount <= address(this).balance, "Insufficient balance");
         (bool success, ) = recipient.call{value: amount}("");
         require(success, "Transfer failed");
     }
 
-    function rescueERC20(address token, address recipient, uint256 amount) external onlyOwner {
+    function rescueERC20(
+        address token,
+        address recipient,
+        uint256 amount
+    ) external onlyOwner {
         require(token != address(0), "Invalid token");
         require(recipient != address(0), "Invalid recipient");
         require(IERC20(token).transfer(recipient, amount), "Transfer failed");
     }
 
-    function rescueERC721(address token, address recipient, uint256 tokenId) external onlyOwner {
+    function rescueERC721(
+        address token,
+        address recipient,
+        uint256 tokenId
+    ) external onlyOwner {
         require(token != address(0), "Invalid token");
         require(recipient != address(0), "Invalid recipient");
         IERC721(token).safeTransferFrom(address(this), recipient, tokenId);
     }
 
-    function rescueERC1155(address token, address recipient, uint256 tokenId, uint256 amount, bytes calldata data) external onlyOwner {
+    function rescueERC1155(
+        address token,
+        address recipient,
+        uint256 tokenId,
+        uint256 amount,
+        bytes calldata data
+    ) external onlyOwner {
         require(token != address(0), "Invalid token");
         require(recipient != address(0), "Invalid recipient");
-        IERC1155(token).safeTransferFrom(address(this), recipient, tokenId, amount, data);
+        IERC1155(token).safeTransferFrom(
+            address(this),
+            recipient,
+            tokenId,
+            amount,
+            data
+        );
     }
 
     function onERC721Received(
@@ -585,7 +609,9 @@ contract FinanceManager is Ownable, IERC721Receiver, IERC1155Receiver {
         return this.onERC1155BatchReceived.selector;
     }
 
-    function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) external pure override returns (bool) {
         return
             interfaceId == type(IERC721Receiver).interfaceId ||
             interfaceId == type(IERC1155Receiver).interfaceId ||
