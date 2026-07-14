@@ -79,6 +79,12 @@ export class StateService {
     return this.POPULAR_CHAINS.find(c => Number(c.chainId) === Number(company.chain_id));
   });
 
+  // Lấy ký hiệu Token Native của doanh nghiệp hiện tại (ví dụ: BNB, tBNB, ETH...)
+  public readonly currentCompanyNativeSymbol = computed(() => {
+    const info = this.currentCompanyChainInfo();
+    return (info as any)?.nativeSymbol || 'BNB';
+  });
+
   // Lọc danh sách chain hiển thị cho người dùng chuyển đổi mạng
   public readonly availableChains = computed(() => {
     const company = this.currentCompany();

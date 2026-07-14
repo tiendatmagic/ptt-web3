@@ -150,7 +150,8 @@
             <div
               class="bg-slate-50 dark:bg-slate-900/40 rounded-xl px-5 py-3 space-y-0.5 border border-slate-100 dark:border-slate-800/20"
             >
-              <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider block"
+              <span
+                class="text-[10px] font-black text-slate-400 uppercase tracking-wider block text-left"
                 >Định giá</span
               >
               <span class="text-sm font-black text-slate-800 dark:text-white">
@@ -160,13 +161,84 @@
             <div
               class="bg-slate-50 dark:bg-slate-900/40 rounded-xl px-5 py-3 space-y-0.5 border border-slate-100 dark:border-slate-800/20"
             >
-              <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider block"
+              <span
+                class="text-[10px] font-black text-slate-400 uppercase tracking-wider block text-left"
                 >Trạng thái</span
               >
               <span class="text-sm font-black text-emerald-600 dark:text-emerald-400">
                 ● {{ stateService.currentCompany().status }}
               </span>
             </div>
+          </div>
+        </div>
+
+        <!-- QUỸ DOANH NGHIỆP (TREASURY) — Hiển thị ngay dưới thông tin công ty -->
+        <div
+          class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center shrink-0"
+            >
+              <app-icon name="financials" class="w-6 h-6 text-violet-600 dark:text-violet-400" />
+            </div>
+            <div>
+              <h4 class="text-xs font-black text-slate-400 uppercase tracking-wider">
+                Quỹ khả dụng HĐQT (Treasury)
+              </h4>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span
+                  class="text-xs font-mono text-slate-500 dark:text-slate-400 font-semibold select-all select-text"
+                >
+                  Hợp đồng lưu giữ: {{ stateService.currentCompany().governance_address }}
+                </span>
+                <button
+                  (click)="
+                    stateService.copyToClipboard(
+                      stateService.currentCompany().governance_address,
+                      'Đã sao chép địa chỉ hợp đồng HĐQT!'
+                    );
+                    $event.stopPropagation()
+                  "
+                  title="Sao chép địa chỉ"
+                  class="text-slate-400 hover:text-[var(--color-primary)] transition-colors inline-flex items-center justify-center"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2.5"
+                      d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            class="flex flex-wrap items-center gap-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 px-4 py-2.5 rounded-xl"
+          >
+            <div class="text-right">
+              <span
+                class="text-[10px] font-black text-slate-400 uppercase tracking-wider block text-left"
+                >Số dư Native {{ stateService.currentCompanyNativeSymbol() }}</span
+              >
+              <span class="text-sm font-black text-violet-600 dark:text-violet-400 text-left block"
+                >{{ treasuryBnbBalance() }} {{ stateService.currentCompanyNativeSymbol() }}</span
+              >
+            </div>
+            @for (erc20 of treasuryErc20Balances(); track erc20.symbol) {
+              <div class="w-px h-8 bg-slate-100 dark:bg-slate-800 hidden sm:block"></div>
+              <div class="text-right">
+                <span
+                  class="text-[10px] font-black text-slate-400 uppercase tracking-wider block text-left"
+                  >Số dư {{ erc20.symbol }}</span
+                >
+                <span class="text-sm font-black text-teal-600 dark:text-teal-400 text-left block"
+                  >{{ erc20.balance }} {{ erc20.symbol }}</span
+                >
+              </div>
+            }
           </div>
         </div>
 
@@ -182,7 +254,7 @@
                 { label: 'Board Governance', key: 'governance_address', icon: 'scale' },
                 { label: 'Equity Token', key: 'token_address', icon: 'ethereum' },
                 { label: 'Finance Manager', key: 'funding_address', icon: 'bank' },
-                { label: 'Marketplace', key: 'marketplace_address', icon: 'sync' }
+                { label: 'Marketplace', key: 'marketplace_address', icon: 'sync' },
               ];
               track contract.label
             ) {
@@ -237,18 +309,6 @@
                     }
                   </div>
                 </div>
-
-                @if (contract.label === 'Board Governance') {
-                  <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex flex-wrap items-center justify-between gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                    <span>Số dư quỹ:</span>
-                    <span class="text-violet-600 dark:text-violet-400 font-extrabold select-all select-text">
-                      {{ treasuryBnbBalance() }} BNB
-                      @for (erc20 of treasuryErc20Balances(); track erc20.symbol) {
-                        | {{ erc20.balance }} {{ erc20.symbol }}
-                      }
-                    </span>
-                  </div>
-                }
               </div>
             }
           </div>

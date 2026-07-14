@@ -1,6 +1,6 @@
 export const POPULAR_CHAINS = [
-  { name: 'BNB Smart Chain', chainId: '56', rpcUrl: 'https://bsc-dataseed.binance.org', explorerUrl: 'https://bscscan.com', color: '#F3BA2F' },
-  { name: 'BSC Testnet', chainId: '97', rpcUrl: 'https://bsc-testnet-rpc.publicnode.com', explorerUrl: 'https://testnet.bscscan.com', color: '#e6a817' },
+  { name: 'BNB Smart Chain', chainId: '56', rpcUrl: 'https://bsc-dataseed.binance.org', explorerUrl: 'https://bscscan.com', color: '#F3BA2F', nativeSymbol: 'BNB' },
+  { name: 'BSC Testnet', chainId: '97', rpcUrl: 'https://bsc-testnet-rpc.publicnode.com', explorerUrl: 'https://testnet.bscscan.com', color: '#e6a817', nativeSymbol: 'tBNB' },
 ];
 
 /**
