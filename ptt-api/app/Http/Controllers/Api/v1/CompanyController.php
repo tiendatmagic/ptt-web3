@@ -100,8 +100,8 @@ class CompanyController extends Controller
                 $request->input('token_address'),
                 $request->input('funding_address'),
                 $request->input('marketplace_address'),
-                $request->input('token_name') ?: $request->input('name'),
-                $request->input('token_symbol') ?: $request->input('code')
+                $request->input('token_name'),
+                $request->input('token_symbol')
             );
 
             $savedCompany = $this->companyRepository->save($company);

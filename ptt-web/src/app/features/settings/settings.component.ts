@@ -94,12 +94,14 @@ export class SettingsComponent implements OnInit {
         const companyChanged = this.lastCompanyId !== comp.id;
         this.lastCompanyId = comp.id;
 
-        // Luôn đồng bộ địa chỉ hợp đồng từ state service để cập nhật phản ứng (reactive)
+        // Đồng bộ địa chỉ hợp đồng từ state, chỉ giữ lại giá trị Ethereum hợp lệ
+        const toAddr = (v: string | null | undefined) =>
+          v && ethers.isAddress(v) ? v : '';
         this.editingContracts = {
-          governance_address: comp.governance_address || '',
-          token_address: comp.token_address || '',
-          funding_address: comp.funding_address || '',
-          marketplace_address: comp.marketplace_address || '',
+          governance_address: toAddr(comp.governance_address),
+          token_address: toAddr(comp.token_address),
+          funding_address: toAddr(comp.funding_address),
+          marketplace_address: toAddr(comp.marketplace_address),
         };
         this.savedTokens.set(comp.saved_tokens || []);
 
@@ -107,8 +109,10 @@ export class SettingsComponent implements OnInit {
           this.companyName.set(comp.name || '');
           this.companyValuation.set(comp.valuation || 0);
           this.companyLogo.set(comp.logo || '');
-          this.tokenName.set(comp.token_name || '');
-          this.tokenSymbol.set(comp.token_symbol || '');
+          // Nếu token_name chỉ là code (do logic cũ tự set) → dùng tên doanh nghiệp làm mặc định
+          const rawTokenName = comp.token_name || '';
+          this.tokenName.set(rawTokenName && rawTokenName !== comp.code ? rawTokenName : (comp.name || ''));
+          this.tokenSymbol.set(comp.token_symbol || comp.code || '');
           
           const hasContracts = !!(
             comp.governance_address ||
@@ -117,17 +121,10 @@ export class SettingsComponent implements OnInit {
             comp.marketplace_address
           );
 
-          if (comp.wallet_address) {
-            this.contractOwners.set([comp.wallet_address]);
-            this.minSignatures.set(1);
-          } else if (!hasContracts) {
-            const defaultAddr = userAddr || '';
-            this.contractOwners.set(defaultAddr ? [defaultAddr] : []);
-            this.minSignatures.set(1);
-          } else {
-            this.contractOwners.set([]);
-            this.minSignatures.set(1);
-          }
+          // Luôn đảm bảo ví đang kết nối có trong list owners khi mới chọn doanh nghiệp
+          const defaultAddr = userAddr || comp.wallet_address || '';
+          this.contractOwners.set(defaultAddr ? [defaultAddr] : []);
+          this.minSignatures.set(1);
 
           // Check if deletable: all contract addresses must be null or empty
           const isLinked = !!(
@@ -140,15 +137,9 @@ export class SettingsComponent implements OnInit {
           );
           this.isDeletable.set(!isLinked);
         } else {
-          // If it is the same company but the connected wallet changes (or is connected later)
-          // and there is no deployed contract, and current owner list is empty, default to userAddr
-          const hasContracts = !!(
-            comp.governance_address ||
-            comp.token_address ||
-            comp.funding_address ||
-            comp.marketplace_address
-          );
-          if (!hasContracts && this.contractOwners().length === 0 && userAddr) {
+          // Cùng doanh nghiệp nhưng ví kết nối thay đổi hoặc kết nối muộn hơn
+          // → nếu list đang rỗng, thêm sẵn ví hiện tại
+          if (this.contractOwners().length === 0 && userAddr) {
             this.contractOwners.set([userAddr]);
             this.minSignatures.set(1);
           }
@@ -162,17 +153,18 @@ export class SettingsComponent implements OnInit {
   public isContractLinked(key: string): boolean {
     const comp = this.stateService.currentCompany();
     if (!comp) return false;
-    return !!(comp as any)[key];
+    const val = (comp as any)[key];
+    return !!(val && ethers.isAddress(val));
   }
 
   public isAllContractsLinked(): boolean {
     const comp = this.stateService.currentCompany();
     if (!comp) return false;
     return !!(
-      comp.governance_address &&
-      comp.token_address &&
-      comp.funding_address &&
-      comp.marketplace_address
+      comp.governance_address && ethers.isAddress(comp.governance_address) &&
+      comp.token_address && ethers.isAddress(comp.token_address) &&
+      comp.funding_address && ethers.isAddress(comp.funding_address) &&
+      comp.marketplace_address && ethers.isAddress(comp.marketplace_address)
     );
   }
 
@@ -284,8 +276,14 @@ export class SettingsComponent implements OnInit {
     if (!comp) return;
     this.saveContractsLoading.set(true);
     try {
+      // Validate: chỉ cho phép địa chỉ Ethereum hợp lệ (0x...) hoặc rỗng
+      const sanitized: Record<string, string> = {};
+      for (const [k, v] of Object.entries(this.editingContracts)) {
+        const trimmed = (v as string).trim();
+        sanitized[k] = (trimmed && ethers.isAddress(trimmed)) ? trimmed : '';
+      }
       const payload = {
-        ...this.editingContracts,
+        ...sanitized,
         chain_id: this.stateService.chainId()
       };
       const res = await firstValueFrom(this.apiService.put<any>(`companies/${comp.id}/contracts`, payload));
