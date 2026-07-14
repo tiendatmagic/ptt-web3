@@ -53,7 +53,7 @@
             </span>
           } @else {
             <span class="font-extrabold text-slate-700 dark:text-slate-200">
-              {{ +myBalance() | number: '1.0-4' }} {{ stateService.currentCompany()?.token_symbol || 'Cổ phần' }}
+              {{ +myBalance() | number: '1.0-4' }} {{ stateService.currentCompanyTokenSymbol() }}
             </span>
           }
         </div>
@@ -61,7 +61,7 @@
         <!-- Price -->
         <div class="space-y-1">
           <label class="text-[12px] font-black text-slate-400 uppercase tracking-wider"
-            >Giá cổ phần ({{ selectedPaymentToken().symbol }} / {{ stateService.currentCompany()?.token_symbol || 'SHARE' }})</label
+            >Giá cổ phần ({{ selectedPaymentToken().symbol }} / {{ stateService.currentCompanyTokenSymbol() }})</label
           >
           <input
             type="number"
@@ -74,7 +74,7 @@
         <!-- Amount -->
         <div class="space-y-1">
           <label class="text-[12px] font-black text-slate-400 uppercase tracking-wider"
-            >Số lượng cổ phần ({{ stateService.currentCompany()?.token_symbol || 'SHARES' }})</label
+            >Số lượng cổ phần ({{ stateService.currentCompanyTokenSymbol() }})</label
           >
           <input
             type="number"
@@ -97,7 +97,7 @@
           class="w-full h-12 rounded-xl font-extrabold flex items-center justify-center gap-2 border-0 text-white shadow-md"
         >
           <app-icon name="send" class="w-4 h-4" />
-          {{ orderForm.side === 'BUY' ? 'ĐẶT LỆNH MUA ' + (stateService.currentCompany()?.token_symbol || '') : 'ĐẶT LỆNH BÁN ' + (stateService.currentCompany()?.token_symbol || '') }}
+          {{ orderForm.side === 'BUY' ? 'ĐẶT LỆNH MUA ' + stateService.currentCompanyTokenSymbol() : 'ĐẶT LỆNH BÁN ' + stateService.currentCompanyTokenSymbol() }}
         </button>
       </div>
     </div>

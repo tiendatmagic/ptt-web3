@@ -604,7 +604,7 @@ export class InvestComponent implements OnInit {
           await appTx.wait();
         }
 
-        this.stateService.showToast(`Đang gửi giao dịch mua ${company.token_symbol || 'cổ phần'} (${formattedCost} ${round.paymentTokenSymbol})...`, 'warning');
+        this.stateService.showToast(`Đang gửi giao dịch mua ${this.stateService.currentCompanyTokenSymbol()} (${formattedCost} ${round.paymentTokenSymbol})...`, 'warning');
         const tx = await funding['buyShares'](round.id, tokenAmount, gasOverrides);
         await tx.wait();
       } else {
@@ -614,7 +614,7 @@ export class InvestComponent implements OnInit {
         await tx.wait();
       }
 
-      this.stateService.showToast(`Mua thành công ${this.buyAmount()} ${company.token_symbol || 'cổ phần'}!`, 'success');
+      this.stateService.showToast(`Mua thành công ${this.buyAmount()} ${this.stateService.currentCompanyTokenSymbol()}!`, 'success');
       await this.loadOnChainData(company);
     } catch (e: any) {
       this.stateService.showToast(e.reason || e.message || 'Giao dịch thất bại!', 'error');
@@ -646,7 +646,7 @@ export class InvestComponent implements OnInit {
       if (this.orderSide() === 'SELL') {
         const shareBalance = parseFloat(this.myBalance() || '0');
         if (amount > shareBalance) {
-          this.stateService.showToast(`Số dư cổ phần không đủ để thực hiện lệnh bán (Số dư hiện tại: ${this.formatNumber(shareBalance)} ${company.token_symbol || 'PTT'})`, 'error');
+          this.stateService.showToast(`Số dư cổ phần không đủ để thực hiện lệnh bán (Số dư hiện tại: ${this.formatNumber(shareBalance)} ${this.stateService.currentCompanyTokenSymbol()})`, 'error');
           this.orderLoading.set(false);
           return;
         }

@@ -141,7 +141,7 @@
                     <input
                       type="number"
                       [(ngModel)]="purchaseAmount"
-                      placeholder="Số lượng {{ stateService.currentCompany()?.token_symbol || 'cổ phần' }} muốn mua..."
+                      placeholder="Số lượng {{ stateService.currentCompanyTokenSymbol() }} muốn mua..."
                       class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold bg-white dark:bg-slate-950"
                     />
                     <button
@@ -152,7 +152,7 @@
                       [loading]="stateService.isLoading()"
                       class="h-10 px-4 rounded-xl text-xs font-extrabold shrink-0"
                     >
-                      MUA {{ stateService.currentCompany()?.token_symbol || 'CỔ PHẦN' }}
+                      MUA {{ stateService.currentCompanyTokenSymbol() }}
                     </button>
                   </div>
                 </div>

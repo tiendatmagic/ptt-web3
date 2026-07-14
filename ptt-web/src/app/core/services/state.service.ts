@@ -86,6 +86,12 @@ export class StateService {
     return (info as any)?.nativeSymbol || 'BNB';
   });
 
+  // Lấy ký hiệu Token cổ phần của doanh nghiệp hiện tại (ví dụ: PTT, ...)
+  public readonly currentCompanyTokenSymbol = computed(() => {
+    const comp = this.currentCompany();
+    return comp?.token_symbol || comp?.code || 'PTT';
+  });
+
   // Lọc danh sách chain hiển thị cho người dùng chuyển đổi mạng
   public readonly availableChains = computed(() => {
     const company = this.currentCompany();

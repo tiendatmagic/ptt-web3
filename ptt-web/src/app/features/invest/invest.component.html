@@ -243,7 +243,7 @@
           <p class="text-2xl font-black text-slate-800 dark:text-white">
             {{ formatNumber(myBalance()) }}
           </p>
-          <p class="text-xs text-slate-400">trên tổng {{ formatNumber(totalSupply()) }} {{ selectedCompany()?.token_symbol || 'cổ phần' }}</p>
+          <p class="text-xs text-slate-400">trên tổng {{ formatNumber(totalSupply()) }} {{ stateService.currentCompanyTokenSymbol() }}</p>
         </div>
 
         <!-- Cổ tức có thể nhận -->
@@ -398,7 +398,7 @@
                       >
                       <span class="text-lg font-black text-slate-800 dark:text-white"
                         >{{ formatNumber(round.price) }} {{ round.paymentTokenSymbol }} = 1
-                        {{ selectedCompany()?.code || 'PTT' }}</span
+                        {{ stateService.currentCompanyTokenSymbol() }}</span
                       >
                     </div>
                     <div class="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3.5 space-y-1">
@@ -420,11 +420,11 @@
                     <div class="flex justify-between text-xs text-slate-400">
                       <span
                         >Đã bán: {{ formatNumber(round.soldAmount) }}
-                        {{ selectedCompany()?.code || 'PTT' }}</span
+                        {{ stateService.currentCompanyTokenSymbol() }}</span
                       >
                       <span
                         >Chào bán tối đa: {{ formatNumber(round.maxSupply) }}
-                        {{ selectedCompany()?.code || 'PTT' }}</span
+                        {{ stateService.currentCompanyTokenSymbol() }}</span
                       >
                     </div>
                     <div class="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -481,14 +481,14 @@
 
             <!-- Form mua cổ phần -->
             <div class="space-y-4">
-              <h3 class="text-base font-black text-slate-700 dark:text-slate-200">Mua {{ selectedCompany()?.token_symbol || 'cổ phần' }}</h3>
+              <h3 class="text-base font-black text-slate-700 dark:text-slate-200">Mua {{ stateService.currentCompanyTokenSymbol() }}</h3>
               @if (activeFundingRound()?.isActive) {
                 <div class="space-y-3">
                   <div class="space-y-1.5">
                     <div class="flex justify-between items-center select-none">
                       <label
                         class="text-xs font-black text-slate-400 uppercase tracking-wider block"
-                        >Số lượng {{ selectedCompany()?.token_symbol || 'cổ phần' }}</label
+                        >Số lượng {{ stateService.currentCompanyTokenSymbol() }}</label
                       >
                       @if (isConnected()) {
                         <span class="text-[10px] font-black text-slate-400">
@@ -533,7 +533,7 @@
                       Kết nối ví để mua
                     } @else {
                       <app-icon name="plus" class="w-4 h-4" />
-                      Mua {{ buyAmount() }} {{ selectedCompany()?.token_symbol || 'cổ phần' }} bằng {{ purchaseCostText() }}
+                      Mua {{ buyAmount() }} {{ stateService.currentCompanyTokenSymbol() }} bằng {{ purchaseCostText() }}
                     }
                   </button>
                 </div>
@@ -587,7 +587,7 @@
                   </span>
                 } @else {
                   <span class="font-extrabold text-slate-700 dark:text-slate-200">
-                    {{ +myBalance() | number: '1.0-4' }} {{ selectedCompany()?.token_symbol || 'Cổ phần' }}
+                    {{ +myBalance() | number: '1.0-4' }} {{ stateService.currentCompanyTokenSymbol() }}
                   </span>
                 }
               </div>
@@ -595,7 +595,7 @@
               <div class="grid grid-cols-2 gap-3">
                 <div class="space-y-1.5">
                   <label class="text-xs font-black text-slate-400 uppercase tracking-wider block"
-                    >Giá ({{ selectedPaymentToken().symbol }} / {{ selectedCompany()?.token_symbol || 'SHARE' }})</label
+                    >Giá ({{ selectedPaymentToken().symbol }} / {{ stateService.currentCompanyTokenSymbol() }})</label
                   >
                   <input
                     type="text"
@@ -606,7 +606,7 @@
                 </div>
                 <div class="space-y-1.5">
                   <label class="text-xs font-black text-slate-400 uppercase tracking-wider block"
-                    >Số lượng ({{ selectedCompany()?.token_symbol || 'SHARES' }})</label
+                    >Số lượng ({{ stateService.currentCompanyTokenSymbol() }})</label
                   >
                   <input
                     type="number"
@@ -626,7 +626,7 @@
                 [disabled]="!isConnected() || !orderPrice()"
                 [loading]="orderLoading()"
               >
-                {{ orderSide() === 'BUY' ? '▲ Đặt lệnh MUA ' + (selectedCompany()?.token_symbol || '') : '▼ Đặt lệnh BÁN ' + (selectedCompany()?.token_symbol || '') }}
+                {{ orderSide() === 'BUY' ? '▲ Đặt lệnh MUA ' + stateService.currentCompanyTokenSymbol() : '▼ Đặt lệnh BÁN ' + stateService.currentCompanyTokenSymbol() }}
               </button>
             </div>
 
@@ -839,7 +839,7 @@
                   <p class="text-3xl font-black text-violet-700 dark:text-violet-400">
                     {{ formatNumber(myBalance()) }}
                   </p>
-                  <p class="text-xs text-slate-400">{{ selectedCompany()?.code }} Token</p>
+                  <p class="text-xs text-slate-400">{{ stateService.currentCompanyTokenSymbol() }} Token</p>
                 </div>
 
                 <div
@@ -856,7 +856,7 @@
                     }}%
                   </p>
                   <p class="text-xs text-slate-400">
-                    trên tổng {{ formatNumber(totalSupply()) }} {{ selectedCompany()?.token_symbol || 'cổ phần' }}
+                    trên tổng {{ formatNumber(totalSupply()) }} {{ stateService.currentCompanyTokenSymbol() }}
                   </p>
                 </div>
 

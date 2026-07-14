@@ -149,7 +149,7 @@ export class FundingComponent implements OnInit {
 
     if (!this.purchaseAmount || Number(this.purchaseAmount) <= 0) {
       const comp = this.stateService.currentCompany();
-      this.stateService.showToast(`Vui lòng nhập số lượng ${comp?.token_symbol || 'cổ phần'} muốn mua`, 'warning');
+      this.stateService.showToast(`Vui lòng nhập số lượng ${this.stateService.currentCompanyTokenSymbol()} muốn mua`, 'warning');
       return;
     }
 
@@ -205,10 +205,10 @@ export class FundingComponent implements OnInit {
           this.stateService.showToast(`Vui lòng xác nhận phê duyệt (Approve) chi tiêu ${formattedCost} ${tokenSymbol}...`, 'warning');
           const approveTx = await tokenContract['approve'](comp.funding_address, cost, gasOverrides);
           await approveTx.wait();
-          this.stateService.showToast(`Đã phê duyệt thành công! Tiến hành giao dịch mua ${comp?.token_symbol || 'cổ phần'}...`, 'warning');
+          this.stateService.showToast(`Đã phê duyệt thành công! Tiến hành giao dịch mua ${this.stateService.currentCompanyTokenSymbol()}...`, 'warning');
         }
 
-        this.stateService.showToast(`Đang gửi giao dịch mua ${comp?.token_symbol || 'cổ phần'} (${formattedCost} ${tokenSymbol})...`, 'warning');
+        this.stateService.showToast(`Đang gửi giao dịch mua ${this.stateService.currentCompanyTokenSymbol()} (${formattedCost} ${tokenSymbol})...`, 'warning');
         // Đối với ERC20, không gửi BNB kèm theo (value = 0)
         const tx = await financeContract['buyShares'](onchainRoundId, tokenAmount, {
           value: 0,
@@ -253,7 +253,7 @@ export class FundingComponent implements OnInit {
         }, comp.id)
       );
 
-      this.stateService.showToast(`Mua ${comp?.token_symbol || 'cổ phần'} thành công! ${comp?.token_symbol || 'Cổ phần'} đã được phân phối trực tiếp về ví của bạn.`, 'success');
+      this.stateService.showToast(`Mua ${this.stateService.currentCompanyTokenSymbol()} thành công! ${this.stateService.currentCompanyTokenSymbol()} đã được phân phối trực tiếp về ví của bạn.`, 'success');
       this.purchaseAmount = '';
       await this.loadFundingData();
     } catch (e: any) {
