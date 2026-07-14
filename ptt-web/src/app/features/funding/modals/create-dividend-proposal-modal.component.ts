@@ -301,7 +301,6 @@ export class CreateDividendProposalModalComponent implements OnInit {
       const govContract = new ethers.Contract(comp.governance_address, BoardGovernance.abi, signer);
 
       const target = comp.funding_address;
-      const value = '0';
       const financeInterface = new ethers.Interface(FinanceManager.abi);
 
       let dividendToken = ethers.ZeroAddress;
@@ -323,6 +322,9 @@ export class CreateDividendProposalModalComponent implements OnInit {
       const totalAmountWei = ethers.parseUnits(this.newDividend.totalAmount.toString(), tokenDecimals);
       const startTime = Math.floor(Date.now() / 1000);
       const endTime = startTime + this.newDividend.duration_days * 86400;
+
+      // Nếu chia bằng BNB, value của đề xuất gửi sang BoardGovernance phải bằng tổng số BNB để hợp đồng trích quỹ chuyển đi
+      const value = this.newDividend.paymentMethod === 'BNB' ? totalAmountWei.toString() : '0';
 
       // Encode function arguments
       const calldata = financeInterface.encodeFunctionData('createDividendRound', [
