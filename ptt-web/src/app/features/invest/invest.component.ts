@@ -567,7 +567,7 @@ export class InvestComponent implements OnInit {
       if (this.orderSide() === 'SELL') {
         const shareBalance = parseFloat(this.myBalance() || '0');
         if (amount > shareBalance) {
-          this.stateService.showToast(`Số dư cổ phần không đủ để thực hiện lệnh bán (Số dư hiện tại: ${shareBalance} ${company.token_symbol || 'PTT'})`, 'error');
+          this.stateService.showToast(`Số dư cổ phần không đủ để thực hiện lệnh bán (Số dư hiện tại: ${this.formatNumber(shareBalance)} ${company.token_symbol || 'PTT'})`, 'error');
           this.orderLoading.set(false);
           return;
         }
@@ -575,7 +575,7 @@ export class InvestComponent implements OnInit {
         const paymentBalance = parseFloat(this.myPaymentTokenBalance() || '0');
         const totalCost = price * amount;
         if (totalCost > paymentBalance) {
-          this.stateService.showToast(`Số dư ${token.symbol} không đủ để thực hiện lệnh mua (Cần: ${totalCost} ${token.symbol}, Số dư hiện tại: ${paymentBalance} ${token.symbol})`, 'error');
+          this.stateService.showToast(`Số dư ${token.symbol} không đủ để thực hiện lệnh mua (Cần: ${this.formatNumber(totalCost)} ${token.symbol}, Số dư hiện tại: ${this.formatNumber(paymentBalance)} ${token.symbol})`, 'error');
           this.orderLoading.set(false);
           return;
         }

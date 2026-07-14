@@ -279,14 +279,14 @@ export class MarketplaceComponent implements OnInit {
       if (this.orderForm.side === 'SELL') {
         const shareBalance = parseFloat(this.myBalance() || '0');
         if (amount > shareBalance) {
-          this.stateService.showToast(`Số dư cổ phần không đủ để thực hiện lệnh bán (Số dư hiện tại: ${shareBalance} ${comp.token_symbol || 'PTT'})`, 'error');
+          this.stateService.showToast(`Số dư cổ phần không đủ để thực hiện lệnh bán (Số dư hiện tại: ${this.formatNumber(shareBalance)} ${comp.token_symbol || 'PTT'})`, 'error');
           return;
         }
       } else if (this.orderForm.side === 'BUY') {
         const paymentBalance = parseFloat(this.myPaymentTokenBalance() || '0');
         const totalCost = price * amount;
         if (totalCost > paymentBalance) {
-          this.stateService.showToast(`Số dư ${token.symbol} không đủ để thực hiện lệnh mua (Cần: ${totalCost} ${token.symbol}, Số dư hiện tại: ${paymentBalance} ${token.symbol})`, 'error');
+          this.stateService.showToast(`Số dư ${token.symbol} không đủ để thực hiện lệnh mua (Cần: ${this.formatNumber(totalCost)} ${token.symbol}, Số dư hiện tại: ${this.formatNumber(paymentBalance)} ${token.symbol})`, 'error');
           return;
         }
       }
@@ -421,5 +421,10 @@ export class MarketplaceComponent implements OnInit {
     } finally {
       this.stateService.isLoading.set(false);
     }
+  }
+
+  // Format số lớn
+  public formatNumber(n: string | number): string {
+    return Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 4 });
   }
 }
