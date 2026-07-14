@@ -31,7 +31,8 @@ const FUNDING_MANAGER_ABI = [
   // Hàm cổ tức bổ sung
   'function dividendCount() view returns (uint256)',
   'function dividends(uint256 dividendId) view returns (tuple(uint256 id, string name, address shareToken, address dividendToken, uint256 totalAmount, uint256 claimedAmount, uint256 checkpointBlock, uint256 startTime, uint256 endTime, bool active))',
-  'function hasClaimed(uint256 dividendId, address account) view returns (bool)'
+  'function hasClaimed(uint256 dividendId, address account) view returns (bool)',
+  'function claimDividend(uint256 dividendId) external'
 ];
 
 // ABI rút gọn của ERC20 để xử lý phê duyệt (approve)
