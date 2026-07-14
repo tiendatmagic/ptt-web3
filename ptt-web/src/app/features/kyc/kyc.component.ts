@@ -290,22 +290,39 @@ export class KycComponent implements OnInit {
       this.stateService.showToast('Giao dịch batch đang chờ xác nhận từ mạng lưới...', 'warning');
       await tx.wait();
 
+      // On-chain đã thành công — đây là nguồn sự thật (source of truth)
+      // Tiếp tục đồng bộ DB nhưng không để lỗi DB ảnh hưởng kết quả chính
       this.stateService.showToast('Giao dịch Blockchain thành công! Đang đồng bộ về Database...', 'warning');
 
-      // 2. Đồng bộ backend
-      await firstValueFrom(
-        this.apiService.post<any>('users/kyc/batch-sync', {
-          addresses: uniqueAddresses,
-          action: actionType
-        }, comp.id)
-      );
+      // 2. Đồng bộ backend (non-critical: DB chỉ là cache, on-chain mới là thật)
+      try {
+        await firstValueFrom(
+          this.apiService.post<any>('users/kyc/batch-sync', {
+            addresses: uniqueAddresses,
+            action: actionType
+          }, comp.id)
+        );
+        this.stateService.showToast(`Đã cập nhật và đồng bộ hàng loạt thành công cho ${uniqueAddresses.length} địa chỉ ví!`, 'success');
+      } catch (dbErr: any) {
+        // On-chain đã confirm → người dùng KHÔNG cần làm lại, chỉ cần thông báo DB lệch
+        console.warn('DB sync thất bại sau khi on-chain thành công:', dbErr);
+        this.stateService.showToast(
+          `On-chain thành công cho ${uniqueAddresses.length} ví! DB đồng bộ thất bại (không ảnh hưởng giao dịch). Danh sách sẽ cập nhật từ blockchain.`,
+          'warning'
+        );
+      }
 
-      this.stateService.showToast(`Đã cập nhật và đồng bộ hàng loạt thành công cho ${uniqueAddresses.length} địa chỉ ví!`, 'success');
       this.batchAddressesInput.set('');
-      await this.loadOnchainLists();
+      await this.loadOnchainLists(); // Luôn reload từ on-chain để UI hiển thị đúng
     } catch (e: any) {
+      // Lỗi ở đây = on-chain thất bại (MetaMask từ chối hoặc contract revert)
       console.error(e);
-      this.stateService.showToast(e.message || 'Lỗi xử lý giao dịch hoặc đồng bộ database!', 'error');
+      const rejected = e?.message?.includes('user rejected') || e?.message?.includes('rejected action');
+      if (rejected) {
+        this.stateService.showToast('Giao dịch bị từ chối trên MetaMask. Không có thay đổi nào được thực hiện.', 'warning');
+      } else {
+        this.stateService.showToast(e.message || 'Lỗi giao dịch on-chain! Không có thay đổi nào được thực hiện.', 'error');
+      }
     } finally {
       this.isBatchExecuting.set(false);
       this.stateService.isLoading.set(false);
