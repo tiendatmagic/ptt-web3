@@ -24,6 +24,13 @@ export class CreateProposalModalComponent {
 
   public isLoading = signal(false);
 
+  public withdrawSources = [
+    { value: 'governance', label: 'Quỹ HĐQT (Board Governance)' },
+    { value: 'finance', label: 'Quản lý Tài chính (Finance Manager)' },
+    { value: 'marketplace', label: 'Sàn giao dịch (Marketplace)' },
+    { value: 'token', label: 'Cổ phần Doanh nghiệp (Equity Token)' }
+  ];
+
   public proposalTypes = [
     { value: 'GRP1', label: 'Cổ phần & Quỹ doanh nghiệp', isHeader: true },
     { value: 'MINT', label: 'Phát hành cổ phần', parentGroup: 'GRP1' },
@@ -51,6 +58,7 @@ export class CreateProposalModalComponent {
     title: '',
     description: '',
     type: '',
+    withdrawSource: 'governance',
     target: '',
     value: '0',
     mintParams: {
@@ -111,42 +119,115 @@ export class CreateProposalModalComponent {
 
       // 1. Phân loại và encode calldata tương ứng
       if (this.newProposal.type === 'WITHDRAW') {
-        target = this.newProposal.target;
-        value = ethers.parseEther(this.newProposal.value.toString()).toString();
-        // Rút BNB đơn giản gửi trực tiếp tới địa chỉ target với value BNB
-      } else if (this.newProposal.type === 'WITHDRAW_ERC20') {
-        target = this.newProposal.withdrawErc20Params.tokenAddress;
-        const tokenInterface = new ethers.Interface([
-          "function transfer(address to, uint256 value) external returns (bool)"
-        ]);
-        const decimals = this.newProposal.withdrawErc20Params.decimals || 18;
-        const amountWei = ethers.parseUnits(this.newProposal.withdrawErc20Params.amount.toString(), decimals);
-        calldata = tokenInterface.encodeFunctionData('transfer', [
-          this.newProposal.withdrawErc20Params.recipient,
-          amountWei
-        ]);
-      } else if (this.newProposal.type === 'WITHDRAW_NFT') {
-        target = this.newProposal.withdrawNftParams.nftAddress;
-        if (this.newProposal.withdrawNftParams.nftType === 'ERC721') {
-          const nftInterface = new ethers.Interface([
-            "function transferFrom(address from, address to, uint256 tokenId) external"
+        if (this.newProposal.withdrawSource === 'governance') {
+          target = this.newProposal.target;
+          value = ethers.parseEther(this.newProposal.value.toString()).toString();
+          calldata = '0x';
+        } else {
+          target = this.newProposal.withdrawSource === 'finance' ? comp.funding_address :
+                   this.newProposal.withdrawSource === 'marketplace' ? comp.marketplace_address :
+                   comp.token_address;
+          if (!target) {
+            this.stateService.showToast('Hợp đồng vệ tinh được chọn chưa được cấu hình địa chỉ!', 'error');
+            this.isLoading.set(false);
+            return;
+          }
+          const rescueInterface = new ethers.Interface([
+            "function rescueNative(address recipient, uint256 amount) external"
           ]);
-          calldata = nftInterface.encodeFunctionData('transferFrom', [
-            comp.governance_address,
-            this.newProposal.withdrawNftParams.recipient,
-            this.newProposal.withdrawNftParams.tokenId
+          const amountWei = ethers.parseEther(this.newProposal.value.toString()).toString();
+          calldata = rescueInterface.encodeFunctionData('rescueNative', [
+            this.newProposal.target,
+            amountWei
+          ]);
+          value = '0';
+        }
+      } else if (this.newProposal.type === 'WITHDRAW_ERC20') {
+        if (this.newProposal.withdrawSource === 'governance') {
+          target = this.newProposal.withdrawErc20Params.tokenAddress;
+          const tokenInterface = new ethers.Interface([
+            "function transfer(address to, uint256 value) external returns (bool)"
+          ]);
+          const decimals = this.newProposal.withdrawErc20Params.decimals || 18;
+          const amountWei = ethers.parseUnits(this.newProposal.withdrawErc20Params.amount.toString(), decimals);
+          calldata = tokenInterface.encodeFunctionData('transfer', [
+            this.newProposal.withdrawErc20Params.recipient,
+            amountWei
           ]);
         } else {
-          const nftInterface = new ethers.Interface([
-            "function safeTransferFrom(address from, address to, uint256 id, uint256 value, bytes calldata data) external"
+          target = this.newProposal.withdrawSource === 'finance' ? comp.funding_address :
+                   this.newProposal.withdrawSource === 'marketplace' ? comp.marketplace_address :
+                   comp.token_address;
+          if (!target) {
+            this.stateService.showToast('Hợp đồng vệ tinh được chọn chưa được cấu hình địa chỉ!', 'error');
+            this.isLoading.set(false);
+            return;
+          }
+          const rescueInterface = new ethers.Interface([
+            "function rescueERC20(address token, address recipient, uint256 amount) external"
           ]);
-          calldata = nftInterface.encodeFunctionData('safeTransferFrom', [
-            comp.governance_address,
-            this.newProposal.withdrawNftParams.recipient,
-            this.newProposal.withdrawNftParams.tokenId,
-            this.newProposal.withdrawNftParams.amount,
-            '0x'
+          const decimals = this.newProposal.withdrawErc20Params.decimals || 18;
+          const amountWei = ethers.parseUnits(this.newProposal.withdrawErc20Params.amount.toString(), decimals);
+          calldata = rescueInterface.encodeFunctionData('rescueERC20', [
+            this.newProposal.withdrawErc20Params.tokenAddress,
+            this.newProposal.withdrawErc20Params.recipient,
+            amountWei
           ]);
+        }
+      } else if (this.newProposal.type === 'WITHDRAW_NFT') {
+        if (this.newProposal.withdrawSource === 'governance') {
+          target = this.newProposal.withdrawNftParams.nftAddress;
+          if (this.newProposal.withdrawNftParams.nftType === 'ERC721') {
+            const nftInterface = new ethers.Interface([
+              "function transferFrom(address from, address to, uint256 tokenId) external"
+            ]);
+            calldata = nftInterface.encodeFunctionData('transferFrom', [
+              comp.governance_address,
+              this.newProposal.withdrawNftParams.recipient,
+              this.newProposal.withdrawNftParams.tokenId
+            ]);
+          } else {
+            const nftInterface = new ethers.Interface([
+              "function safeTransferFrom(address from, address to, uint256 id, uint256 value, bytes calldata data) external"
+            ]);
+            calldata = nftInterface.encodeFunctionData('safeTransferFrom', [
+              comp.governance_address,
+              this.newProposal.withdrawNftParams.recipient,
+              this.newProposal.withdrawNftParams.tokenId,
+              this.newProposal.withdrawNftParams.amount,
+              '0x'
+            ]);
+          }
+        } else {
+          target = this.newProposal.withdrawSource === 'finance' ? comp.funding_address :
+                   this.newProposal.withdrawSource === 'marketplace' ? comp.marketplace_address :
+                   comp.token_address;
+          if (!target) {
+            this.stateService.showToast('Hợp đồng vệ tinh được chọn chưa được cấu hình địa chỉ!', 'error');
+            this.isLoading.set(false);
+            return;
+          }
+          if (this.newProposal.withdrawNftParams.nftType === 'ERC721') {
+            const rescueInterface = new ethers.Interface([
+              "function rescueERC721(address token, address recipient, uint256 tokenId) external"
+            ]);
+            calldata = rescueInterface.encodeFunctionData('rescueERC721', [
+              this.newProposal.withdrawNftParams.nftAddress,
+              this.newProposal.withdrawNftParams.recipient,
+              this.newProposal.withdrawNftParams.tokenId
+            ]);
+          } else {
+            const rescueInterface = new ethers.Interface([
+              "function rescueERC1155(address token, address recipient, uint256 tokenId, uint256 amount, bytes calldata data) external"
+            ]);
+            calldata = rescueInterface.encodeFunctionData('rescueERC1155', [
+              this.newProposal.withdrawNftParams.nftAddress,
+              this.newProposal.withdrawNftParams.recipient,
+              this.newProposal.withdrawNftParams.tokenId,
+              this.newProposal.withdrawNftParams.amount,
+              '0x'
+            ]);
+          }
         }
       } else if (this.newProposal.type === 'MINT') {
         target = comp.token_address;

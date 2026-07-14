@@ -41,6 +41,21 @@
     </div>
   </div>
 
+  <!-- LỰA CHỌN NGUỒN RÚT TÀI SẢN (NẾU CHỌN RÚT QUỸ/TOKEN/NFT) -->
+  @if (newProposal.type === 'WITHDRAW' || newProposal.type === 'WITHDRAW_ERC20' || newProposal.type === 'WITHDRAW_NFT') {
+    <div class="form-field">
+      <label>Nguồn rút tài sản</label>
+      <app-custom-select
+        [options]="withdrawSources"
+        valueKey="value"
+        labelKey="label"
+        [(value)]="newProposal.withdrawSource"
+        placeholder="Chọn nguồn rút..."
+        triggerClass="w-full form-input !h-[42px] !bg-slate-50 !border-slate-200/40 dark:!bg-slate-900 dark:!border-slate-800 text-sm"
+      />
+    </div>
+  }
+
   <!-- TRƯỜNG NHẬP DỮ LIỆU ĐỘNG TÙY THEO LOẠI PROPOSAL -->
   
   <!-- 1. MINT CO PHAN -->
