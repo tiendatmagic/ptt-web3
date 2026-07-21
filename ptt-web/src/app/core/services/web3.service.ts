@@ -2,7 +2,6 @@ import { Injectable, signal, inject, effect } from '@angular/core';
 import { createAppKit, type AppKit } from '@reown/appkit';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
 import { bsc, bscTestnet } from '@reown/appkit/networks';
-import { ApiController } from '@reown/appkit-controllers';
 import { BrowserProvider, formatEther, JsonRpcProvider } from 'ethers';
 import { environment } from '@environments/environment';
 import { ThemeService } from './theme.service';
@@ -15,6 +14,8 @@ import { POPULAR_CHAINS } from '../utils/blockchain.utils';
 export class Web3Service {
   private modal!: AppKit;
 
+  public readonly isEnabled: boolean = true; // Luôn bật Web3 trong dự án này
+
   // Signals quản lý trạng thái ví
   public address = signal<string | null>(null);
   public chainId = signal<number | null>(null);
@@ -26,6 +27,11 @@ export class Web3Service {
   public txSpeed = signal<'default' | 'fast' | 'custom'>('default');
   public gasMultiplier = signal<number>(2);
   public showWrongChainModal = signal<boolean>(false);
+
+  // Mạng cấu hình mong muốn (đồng bộ LocalStorage)
+  public readonly configuredChainId = signal<string>(
+    (typeof window !== 'undefined' && localStorage.getItem('angular_web3_configured_chain_id')) || environment.defaultChainId || '56'
+  );
 
   public readonly POPULAR_CHAINS = POPULAR_CHAINS;
 
@@ -52,8 +58,32 @@ export class Web3Service {
   private readonly toastService = inject(ToastService);
 
   constructor() {
+    if (!this.isEnabled) {
+      console.info('[Web3] Web3 đã bị tắt');
+      return;
+    }
     this.initAppKit();
     this.setupThemeSync();
+
+    // Effect đồng bộ hóa tên mạng hiển thị và symbol khi ví chưa kết nối
+    effect(() => {
+      const isConn = this.isConnected();
+      const confId = this.configuredChainId();
+      if (!isConn) {
+        const popular = POPULAR_CHAINS.find(c => c.chainId === confId);
+        this.networkName.set(popular ? popular.name : 'Unknown Network');
+        const symbol = popular ? (popular.chainId === '56' || popular.chainId === '97' ? 'BNB' : 'ETH') : 'ETH';
+        this.chainSymbol.set(symbol);
+      }
+    }, { allowSignalWrites: true });
+
+    // Effect lưu cấu hình mạng đã chọn vào LocalStorage
+    effect(() => {
+      const chain = this.configuredChainId();
+      if (typeof window !== 'undefined' && chain) {
+        localStorage.setItem('angular_web3_configured_chain_id', chain);
+      }
+    });
   }
 
   // Tự động đồng bộ theme hệ thống/lựa chọn sang WalletConnect Modal
@@ -70,7 +100,7 @@ export class Web3Service {
     });
   }
 
-  private initAppKit() {
+  private async initAppKit() {
     if (typeof window === 'undefined') return;
 
     const projectId = environment.walletConnectProjectId;
@@ -79,10 +109,13 @@ export class Web3Service {
       return;
     }
 
-    // Để AppKit tự động lấy cấu hình từ Reown Cloud Dashboard (Social & Email)
-    const isDark = this.themeService.isDarkMode();
+    // Tự động dọn dẹp các session treo của WalletConnect nếu chưa kết nối
+    if (!this.isConnected()) {
+      await this.clearWalletConnectStorage();
+    }
 
-    const defaultChainIdNum = Number(environment.defaultChainId || 56);
+    const isDark = this.themeService.isDarkMode();
+    const defaultChainIdNum = Number(this.configuredChainId());
     const defaultNet = this.supportedChains.find(c => Number(c.id) === defaultChainIdNum) || this.supportedChains[0];
 
     this.modal = createAppKit({
@@ -103,7 +136,7 @@ export class Web3Service {
       },
       features: {
         analytics: false,
-        reownAuthentication: false // Vẫn giữ tắt local SIWX để an toàn
+        reownAuthentication: false
       },
       enableCoinbase: false
     } as any);
@@ -117,9 +150,15 @@ export class Web3Service {
       if (accountState.isConnected && accountState.address) {
         await this.updateBalanceAndNetwork();
         
-        // Cập nhật hiển thị modal nếu mạng hiện tại sai sau khi load account (khi reload)
         const currentChainId = this.chainId();
-        if (currentChainId) {
+        const targetChainId = Number(this.configuredChainId());
+
+        if (currentChainId && currentChainId !== targetChainId) {
+          // Delay chuyển mạng một chút để đảm bảo ví đã sẵn sàng nhận request
+          setTimeout(async () => {
+            await this.switchNetwork(targetChainId);
+          }, 500);
+        } else if (currentChainId) {
           this.checkAndUpdateNetworkState(currentChainId, false);
         }
       } else {
@@ -143,6 +182,24 @@ export class Web3Service {
 
       if (this.isConnected()) {
         this.updateBalanceAndNetwork();
+      }
+    });
+
+    // Lắng nghe sự kiện AppKit để bắt lỗi treo session/ví từ chối, tự động giải phóng
+    this.modal.subscribeEvents(async (event: any) => {
+      const eventName = event.data?.event;
+      const errorMsg = event.data?.properties?.message || event.data?.error || '';
+      const isConnectionError = 
+        eventName === 'CONNECT_ERROR' || 
+        errorMsg.toString().toLowerCase().includes('declined') || 
+        errorMsg.toString().toLowerCase().includes('active');
+      
+      if (isConnectionError) {
+        console.warn('[Web3] Phát hiện lỗi kết nối hoặc treo session từ AppKit, tự động giải phóng...');
+        try {
+          await this.modal.disconnect();
+          await this.clearWalletConnectStorage();
+        } catch (e) {}
       }
     });
   }
@@ -234,15 +291,40 @@ export class Web3Service {
 
   // Mở popup kết nối ví
   public async connect() {
+    if (!this.isEnabled) return;
     try {
+      // Ép mạng mong muốn trước khi kết nối để tránh lỗi
+      const defaultChainIdNum = Number(this.configuredChainId());
+      const defaultChain = this.supportedChains.find(c => Number(c.id) === defaultChainIdNum) || this.supportedChains[0];
+      if (defaultChain) {
+        try {
+          await this.modal.switchNetwork(defaultChain as any);
+        } catch (e) {
+          console.warn('[Web3] Ép mạng trước khi mở modal thất bại:', e);
+        }
+      }
+
+      if (!this.isConnected()) {
+        try {
+          await this.modal.disconnect();
+        } catch (e) {}
+      }
       await this.modal.open();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Lỗi kết nối ví:', error);
+      // Bẫy lỗi treo session để thử ngắt kết nối và thử lại
+      if (error?.message?.includes('declined') || error?.message?.includes('active')) {
+        try {
+          await this.modal.disconnect();
+          await this.modal.open();
+        } catch (e) {}
+      }
     }
   }
 
   // Mở popup chuyển mạng
   public async openNetworkModal() {
+    if (!this.isEnabled) return;
     try {
       await this.modal.open({ view: 'Networks' });
     } catch (error) {
@@ -252,6 +334,7 @@ export class Web3Service {
 
   // Mở popup chi tiết ví (Account view của AppKit)
   public async openAccountModal() {
+    if (!this.isEnabled) return;
     try {
       await this.modal.open({ view: 'Account' });
     } catch (error) {
@@ -261,6 +344,7 @@ export class Web3Service {
 
   // Ngắt kết nối ví
   public async disconnect() {
+    if (!this.isEnabled) return;
     try {
       await this.modal.disconnect();
     } catch (error) {
@@ -270,20 +354,119 @@ export class Web3Service {
 
   // Chuyển sang mạng cụ thể
   public async switchNetwork(chainId: number) {
-    try {
-      const network = this.supportedChains.find(chain => Number(chain.id) === chainId);
-      if (network) {
-        await this.modal.switchNetwork(network as any);
-      } else {
-        console.warn(`[Web3] Mạng với chainId ${chainId} không được hỗ trợ để chuyển.`);
-      }
-    } catch (error) {
-      console.error(`Lỗi chuyển mạng ${chainId}:`, error);
+    if (!this.isEnabled) return;
+
+    const chainIdStr = chainId.toString();
+    this.configuredChainId.set(chainIdStr);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('angular_web3_configured_chain_id', chainIdStr);
     }
+
+    if (this.isConnected()) {
+      try {
+        const network = this.supportedChains.find(chain => Number(chain.id) === chainId);
+        if (network) {
+          try {
+            await this.modal.switchNetwork(network as any);
+          } catch (switchErr: any) {
+            console.warn(`[Web3] AppKit switchNetwork thất bại cho chain ${chainId}, thử addNetworkToWallet:`, switchErr);
+            // Tự động thêm mạng nếu chuyển mạng bị lỗi (thường do ví chưa cấu hình mạng này)
+            const added = await this.addNetworkToWallet(chainId);
+            if (added) {
+              await this.modal.switchNetwork(network as any);
+            } else {
+              throw switchErr;
+            }
+          }
+        } else {
+          console.warn(`[Web3] Mạng với chainId ${chainId} không được hỗ trợ để chuyển.`);
+        }
+      } catch (error) {
+        console.error(`Lỗi chuyển mạng ${chainId}:`, error);
+      }
+    } else {
+      const popular = POPULAR_CHAINS.find(c => Number(c.chainId) === chainId);
+      if (popular) {
+        this.networkName.set(popular.name);
+        this.toastService.showToast(`Đã chọn mạng mong muốn: ${popular.name}`, 'success');
+      }
+    }
+  }
+
+  // Tự động thêm mạng lưới mới vào ví MetaMask ( wallet_addEthereumChain )
+  public async addNetworkToWallet(chainId: number | string): Promise<boolean> {
+    if (typeof window === 'undefined' || !(window as any).ethereum) return false;
+    const idNum = Number(chainId);
+    const idStr = idNum.toString();
+    const hexChainId = '0x' + idNum.toString(16);
+
+    const chainInfo = this.POPULAR_CHAINS.find(c => c.chainId === idStr);
+    if (!chainInfo) {
+      console.warn(`[Web3] Không tìm thấy thông tin mạng trong POPULAR_CHAINS cho chainId: ${chainId}`);
+      return false;
+    }
+
+    let symbol = 'ETH';
+    let currencyName = 'Ether';
+    if (idStr === '56' || idStr === '97') {
+      symbol = 'BNB';
+      currencyName = 'BNB';
+    }
+
+    const params = {
+      chainId: hexChainId,
+      chainName: chainInfo.name,
+      nativeCurrency: { name: currencyName, symbol: symbol, decimals: 18 },
+      rpcUrls: [chainInfo.rpcUrl],
+      blockExplorerUrls: [chainInfo.explorerUrl]
+    };
+
+    try {
+      await (window as any).ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [params]
+      });
+      return true;
+    } catch (e) {
+      console.warn('[Web3] Thêm mạng vào ví thất bại:', e);
+      return false;
+    }
+  }
+
+  // Tự động dọn dẹp dữ liệu kẹt trong IndexedDB & LocalStorage nếu chưa đăng nhập (Self-Healing)
+  private async clearWalletConnectStorage() {
+    if (typeof window === 'undefined') return;
+
+    try {
+      if ('indexedDB' in window) {
+        const dbs = (await indexedDB.databases?.()) || [];
+        for (const db of dbs) {
+          if (db.name && (db.name.includes('WALLET_CONNECT') || db.name.includes('walletconnect') || db.name.includes('reown') || db.name.includes('appkit'))) {
+            indexedDB.deleteDatabase(db.name);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Web3] Lỗi khi dọn dẹp IndexedDB:', e);
+    }
+
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('wc@2') || key.startsWith('@w3m') || key.startsWith('@appkit'))) {
+          if (key.includes('proposal') || key.includes('request') || key.includes('pending')) {
+            keysToRemove.push(key);
+          }
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+    } catch (e) {}
   }
 
   // Lấy Ethers Signer phục vụ giao dịch ghi
   public async getSigner() {
+    if (!this.isEnabled) throw new Error('Web3 đã bị tắt.');
     const walletProvider = this.modal.getWalletProvider();
     if (!walletProvider) {
       throw new Error('Ví chưa được kết nối');
@@ -307,12 +490,13 @@ export class Web3Service {
 
   // Lấy Ethers Provider phục vụ giao dịch đọc
   public getProvider() {
+    if (!this.isEnabled) throw new Error('Web3 đã bị tắt.');
     const walletProvider = this.modal?.getWalletProvider();
     if (walletProvider) {
       return new BrowserProvider(walletProvider as any);
     }
     
-    // Fallback sang Public JsonRpcProvider khi ví chưa kết nối
+    // Fallback sang Public JsonRpcProvider khi ví chưa kết nối để khách vãng lai vẫn đọc được thông tin on-chain
     const currentChainId = this.chainId();
     const defaultChainIdNum = Number(environment.defaultChainId || 56);
     const chainConfig = POPULAR_CHAINS.find(c => Number(c.chainId) === Number(currentChainId))

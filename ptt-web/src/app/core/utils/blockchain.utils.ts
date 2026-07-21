@@ -9,9 +9,8 @@ export const POPULAR_CHAINS = [
 export function getExplorerApiUrl(chainId: string | number): string | null {
   const id = chainId.toString().trim();
   switch (id) {
-    case '56':
-    case '97':
-      return 'https://api.etherscan.io/v2/api';
+    case '56': return 'https://api.bscscan.com/api';
+    case '97': return 'https://api-testnet.bscscan.com/api';
     default: return null;
   }
 }
@@ -27,3 +26,5 @@ export function getBackupRpcUrls(chainId: string | number): string[] {
     default: return [];
   }
 }
+
+

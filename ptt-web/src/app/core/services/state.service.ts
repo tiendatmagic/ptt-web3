@@ -72,6 +72,7 @@ export class StateService {
   public readonly gasMultiplier = this.web3Service.gasMultiplier;
   public readonly showWrongChainModal = this.web3Service.showWrongChainModal;
   public readonly POPULAR_CHAINS = this.web3Service.POPULAR_CHAINS;
+  public readonly configuredChainId = this.web3Service.configuredChainId;
 
   // Lấy thông tin mạng lưới (chain) của doanh nghiệp hiện tại
   public readonly currentCompanyChainInfo = computed(() => {
